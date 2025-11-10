@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+.venv/
+venv/
+env/
+node_modules/
+api-hub-express/node_modules/
+api-hub-express/dist/
+.git/
+.gitignore
+.DS_Store
+*.log
+
