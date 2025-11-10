@@ -5,10 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Code2, Github, Chrome } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Code2, Github, Chrome, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useRegister } from "@/hooks/useApi";
+import { useState } from "react";
 
 const SignUp = () => {
+  const navigate = useNavigate();
+  const register = useRegister();
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    password_confirm: '',
+    first_name: '',
+    last_name: '',
+  });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acceptedTerms) {
+      return;
+    }
+    try {
+      await register.mutateAsync(formData);
+      navigate('/dashboard');
+    } catch (error) {
+      // Error handled by hook
+    }
+  };
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -49,14 +75,42 @@ const SignUp = () => {
             </div>
 
             {/* Email Sign Up Form */}
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="first_name">نام</Label>
+                  <Input 
+                    id="first_name" 
+                    type="text" 
+                    placeholder="علی"
+                    className="mt-1"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="last_name">نام خانوادگی</Label>
+                  <Input 
+                    id="last_name" 
+                    type="text" 
+                    placeholder="احمدی"
+                    className="mt-1"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  />
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="name">نام کامل</Label>
+                <Label htmlFor="username">نام کاربری</Label>
                 <Input 
-                  id="name" 
+                  id="username" 
                   type="text" 
-                  placeholder="علی احمدی"
+                  placeholder="username"
                   className="mt-1"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  required
                 />
               </div>
 
@@ -67,6 +121,9 @@ const SignUp = () => {
                   type="email" 
                   placeholder="you@example.com"
                   className="mt-1"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
                 />
               </div>
 
@@ -77,14 +134,35 @@ const SignUp = () => {
                   type="password" 
                   placeholder="••••••••"
                   className="mt-1"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  minLength={8}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   حداقل ۸ کاراکتر
                 </p>
               </div>
 
+              <div>
+                <Label htmlFor="password_confirm">تکرار رمز عبور</Label>
+                <Input 
+                  id="password_confirm" 
+                  type="password" 
+                  placeholder="••••••••"
+                  className="mt-1"
+                  value={formData.password_confirm}
+                  onChange={(e) => setFormData({ ...formData, password_confirm: e.target.value })}
+                  required
+                />
+              </div>
+
               <div className="flex items-center space-x-2">
-                <Checkbox id="terms" />
+                <Checkbox 
+                  id="terms" 
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                />
                 <label
                   htmlFor="terms"
                   className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -101,8 +179,19 @@ const SignUp = () => {
                 </label>
               </div>
 
-              <Button className="w-full bg-gradient-primary hover:shadow-glow transition-all">
-                ساخت حساب کاربری
+              <Button 
+                type="submit"
+                className="w-full bg-gradient-primary hover:shadow-glow transition-all"
+                disabled={register.isPending || !acceptedTerms}
+              >
+                {register.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    در حال ثبت‌نام...
+                  </>
+                ) : (
+                  'ساخت حساب کاربری'
+                )}
               </Button>
             </form>
           </Card>

@@ -8,24 +8,61 @@ import {
   Database,
   Shield,
   Smartphone,
-  Layers
+  Layers,
+  Loader2
 } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useCategories } from "@/hooks/useApi";
+import { Link } from "react-router-dom";
 
-const categories = [
-  { name: "هوش مصنوعی", icon: Brain, count: "۲,۵۰۰+", gradient: "from-purple-500 to-pink-500" },
-  { name: "پرداخت و مالی", icon: CreditCard, count: "۱,۸۰۰+", gradient: "from-blue-500 to-cyan-500" },
-  { name: "ارتباطات", icon: MessageSquare, count: "۱,۲۰۰+", gradient: "from-green-500 to-teal-500" },
-  { name: "نقشه و مکان", icon: MapPin, count: "۹۰۰+", gradient: "from-orange-500 to-red-500" },
-  { name: "ذخیره‌سازی", icon: Cloud, count: "۱,۵۰۰+", gradient: "from-indigo-500 to-purple-500" },
-  { name: "پایگاه داده", icon: Database, count: "۳,۲۰۰+", gradient: "from-cyan-500 to-blue-500" },
-  { name: "امنیت", icon: Shield, count: "۸۰۰+", gradient: "from-red-500 to-pink-500" },
-  { name: "موبایل", icon: Smartphone, count: "۱,۱۰۰+", gradient: "from-violet-500 to-purple-500" },
+// Icon mapping for categories
+const iconMap: Record<string, any> = {
+  'هوش مصنوعی': Brain,
+  'پرداخت': CreditCard,
+  'ارتباطات': MessageSquare,
+  'نقشه': MapPin,
+  'ذخیره\u200cسازی': Cloud,
+  'پایگاه داده': Database,
+  'امنیت': Shield,
+  'موبایل': Smartphone,
+};
+
+const gradients = [
+  "from-purple-500 to-pink-500",
+  "from-blue-500 to-cyan-500",
+  "from-green-500 to-teal-500",
+  "from-orange-500 to-red-500",
+  "from-indigo-500 to-purple-500",
+  "from-cyan-500 to-blue-500",
+  "from-red-500 to-pink-500",
+  "from-violet-500 to-purple-500",
 ];
 
 export const Categories = () => {
   const { ref, isVisible } = useScrollAnimation();
+  const { data: categoriesData, isLoading } = useCategories();
   
+  const categories = categoriesData?.map((cat, index) => ({
+    id: cat.id,
+    name: cat.name,
+    name_en: cat.name_en,
+    slug: cat.slug,
+    icon: iconMap[cat.name] || Layers,
+    count: `${cat.apis_count || 0}+`,
+    gradient: gradients[index % gradients.length],
+    color: cat.color,
+  })) || [];
+  
+  if (isLoading) {
+    return (
+      <section className="py-32 px-4">
+        <div className="container mx-auto text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section ref={ref} className="py-32 px-4 relative">
       {/* Background gradient */}
@@ -48,7 +85,13 @@ export const Categories = () => {
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((category, index) => (
+          {categories.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground">دسته‌بندی‌ای یافت نشد</p>
+            </div>
+          ) : (
+            categories.map((category, index) => (
+            <Link key={category.id} to={`/browse?category=${category.id}`}>
             <Card 
               key={category.name}
               className={`group relative bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm hover:shadow-glow-secondary transition-all duration-700 hover:-translate-y-3 hover:scale-105 cursor-pointer overflow-hidden ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
@@ -89,7 +132,9 @@ export const Categories = () => {
                    }} 
               />
             </Card>
-          ))}
+            </Link>
+            ))
+          )}
         </div>
       </div>
     </section>

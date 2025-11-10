@@ -1,74 +1,50 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Code2, Zap, Star, TrendingUp, Clock, Activity } from "lucide-react";
+import { Code2, Zap, Star, TrendingUp, Clock, Activity, Loader2 } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
-
-const apis = [
-  {
-    name: "OpenAI GPT-4",
-    category: "هوش مصنوعی",
-    description: "مدل زبانی پیشرفته برای پردازش و تولید زبان طبیعی با دقت بالا",
-    popularity: "۹۹٪",
-    latency: "۱۲۰ms",
-    icon: Code2,
-    trending: true,
-    color: "primary",
-  },
-  {
-    name: "Stripe Payments",
-    category: "پرداخت",
-    description: "پلتفرم جامع پرداخت آنلاین با امنیت بانکی و پشتیبانی ۲۴/۷",
-    popularity: "۹۸٪",
-    latency: "۸۵ms",
-    icon: Zap,
-    trending: true,
-    color: "secondary",
-  },
-  {
-    name: "Weather API",
-    category: "داده",
-    description: "اطلاعات لحظه‌ای و پیش‌بینی آب و هوا برای تمام نقاط جهان",
-    popularity: "۹۶٪",
-    latency: "۴۵ms",
-    icon: Star,
-    trending: false,
-    color: "accent",
-  },
-  {
-    name: "SendGrid Email",
-    category: "ارتباطات",
-    description: "سرویس قدرتمند ارسال ایمیل با قابلیت ارسال میلیونی",
-    popularity: "۹۷٪",
-    latency: "۹۵ms",
-    icon: TrendingUp,
-    trending: true,
-    color: "primary",
-  },
-  {
-    name: "Google Maps",
-    category: "نقشه",
-    description: "نقشه‌های تعاملی، مسیریابی و اطلاعات مکانی دقیق",
-    popularity: "۹۹٪",
-    latency: "۱۱۰ms",
-    icon: Code2,
-    trending: false,
-    color: "secondary",
-  },
-  {
-    name: "Twilio SMS",
-    category: "پیامک",
-    description: "ارسال پیامک و تماس صوتی با کیفیت بالا در سراسر دنیا",
-    popularity: "۹۵٪",
-    latency: "۱۳۰ms",
-    icon: Zap,
-    trending: true,
-    color: "accent",
-  },
-];
+import { useAPIs } from "@/hooks/useApi";
+import { Link } from "react-router-dom";
 
 export const FeaturedApis = () => {
   const { ref, isVisible } = useScrollAnimation();
+  const { data: apisData, isLoading, error } = useAPIs({ featured: true, popular: true });
+  
+  // Map API data to component format
+  const apis = apisData?.results?.slice(0, 6).map((api) => ({
+    id: api.id,
+    name: api.name,
+    name_en: api.name_en,
+    slug: api.slug,
+    category: api.category?.name || 'عمومی',
+    description: api.short_description || '',
+    popularity: `${Math.round(parseFloat(api.rating || '0') * 20)}%`,
+    latency: '120ms', // This would come from API stats
+    icon: Code2,
+    trending: api.is_popular,
+    color: 'primary',
+    logo: api.logo,
+  })) || [];
+  
+  if (isLoading) {
+    return (
+      <section className="py-32 px-4">
+        <div className="container mx-auto text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+        </div>
+      </section>
+    );
+  }
+  
+  if (error) {
+    return (
+      <section className="py-32 px-4">
+        <div className="container mx-auto text-center">
+          <p className="text-muted-foreground">خطا در بارگذاری APIها</p>
+        </div>
+      </section>
+    );
+  }
   
   return (
     <section ref={ref} className="py-32 px-4 relative overflow-hidden">
@@ -96,9 +72,14 @@ export const FeaturedApis = () => {
 
         {/* API Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {apis.map((api, index) => (
+          {apis.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground">API ویژه‌ای یافت نشد</p>
+            </div>
+          ) : (
+            apis.map((api, index) => (
             <Card 
-              key={api.name}
+              key={api.id}
               className={`group relative bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm hover:shadow-glow-primary transition-all duration-700 hover:-translate-y-2 overflow-hidden ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
               style={{ transitionDelay: isVisible ? `${index * 100}ms` : '0ms' }}
             >
@@ -159,12 +140,15 @@ export const FeaturedApis = () => {
                 </div>
 
                 {/* Action button */}
-                <Button className="w-full bg-gradient-primary hover:shadow-glow-primary hover:scale-105 transition-all duration-300 font-bold text-base h-12">
-                  مشاهده جزئیات
-                </Button>
+                <Link to={`/api/${api.slug || api.id}`}>
+                  <Button className="w-full bg-gradient-primary hover:shadow-glow-primary hover:scale-105 transition-all duration-300 font-bold text-base h-12">
+                    مشاهده جزئیات
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </section>

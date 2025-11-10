@@ -4,10 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Code2, Github, Chrome } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Code2, Github, Chrome, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useLogin } from "@/hooks/useApi";
+import { useState } from "react";
 
 const SignIn = () => {
+  const navigate = useNavigate();
+  const login = useLogin();
+  const [formData, setFormData] = useState({ username: '', password: '' });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login.mutateAsync(formData);
+      navigate('/dashboard');
+    } catch (error) {
+      // Error handled by hook
+    }
+  };
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -48,14 +63,17 @@ const SignIn = () => {
             </div>
 
             {/* Email Sign In Form */}
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="email">ایمیل</Label>
+                <Label htmlFor="username">نام کاربری</Label>
                 <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="you@example.com"
+                  id="username" 
+                  type="text" 
+                  placeholder="username"
                   className="mt-1"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  required
                 />
               </div>
 
@@ -70,11 +88,25 @@ const SignIn = () => {
                   id="password" 
                   type="password" 
                   placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
                 />
               </div>
 
-              <Button className="w-full bg-gradient-primary hover:shadow-glow transition-all">
-                ورود
+              <Button 
+                type="submit"
+                className="w-full bg-gradient-primary hover:shadow-glow transition-all"
+                disabled={login.isPending}
+              >
+                {login.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    در حال ورود...
+                  </>
+                ) : (
+                  'ورود'
+                )}
               </Button>
             </form>
           </Card>
