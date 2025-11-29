@@ -4,10 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Pricing = () => {
+  const navigate = useNavigate();
+  
   const plans = [
     {
+      id: "free",
       name: "رایگان",
       price: "۰ تومان",
       description: "عالی برای تست و پروژه‌های کوچک",
@@ -24,6 +28,7 @@ const Pricing = () => {
       popular: false,
     },
     {
+      id: "pro",
       name: "حرفه‌ای",
       price: "۴۹ تومان",
       description: "برای برنامه‌ها و تیم‌های در حال رشد",
@@ -40,6 +45,7 @@ const Pricing = () => {
       popular: true,
     },
     {
+      id: "enterprise",
       name: "سازمانی",
       price: "سفارشی",
       description: "برای برنامه‌های در مقیاس بزرگ",
@@ -56,6 +62,10 @@ const Pricing = () => {
       popular: false,
     },
   ];
+
+  const handlePlanClick = (planId: string) => {
+    navigate(`/payment?plan=${planId}`);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,6 +122,7 @@ const Pricing = () => {
               <Button 
                 className={`w-full ${plan.popular ? 'bg-gradient-primary hover:shadow-glow' : ''}`}
                 variant={plan.popular ? "default" : "outline"}
+                onClick={() => handlePlanClick(plan.id)}
               >
                 {plan.cta}
               </Button>
@@ -162,10 +173,16 @@ const Pricing = () => {
               به هزاران توسعه‌دهنده که برنامه‌های شگفت‌انگیزی با بازار API ما می‌سازند، بپیوندید.
             </p>
             <div className="flex gap-4 justify-center">
-              <Button className="bg-gradient-primary hover:shadow-glow transition-all">
+              <Button 
+                className="bg-gradient-primary hover:shadow-glow transition-all"
+                onClick={() => handlePlanClick("pro")}
+              >
                 شروع دوره آزمایشی رایگان
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => handlePlanClick("enterprise")}
+              >
                 تماس با فروش
               </Button>
             </div>
