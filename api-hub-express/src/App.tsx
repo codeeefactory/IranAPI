@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Browse from "./pages/Browse";
 import ApiDetails from "./pages/ApiDetails";
 import Pricing from "./pages/Pricing";
+import Payment from "./pages/Payment";
 import Documentation from "./pages/Documentation";
 import Dashboard from "./pages/Dashboard";
 import SignIn from "./pages/SignIn";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/browse" element={<Browse />} />
               <Route path="/api/:id" element={<ApiDetails />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/payment" element={<Payment />} />
               <Route path="/documentation" element={<Documentation />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/signin" element={<SignIn />} />
