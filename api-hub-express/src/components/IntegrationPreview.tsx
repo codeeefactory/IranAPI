@@ -11,7 +11,7 @@ const options = {
   url: 'https://api.iranapi.ir/weather',
   headers: {
     'X-IranAPI-Key': 'YOUR_API_KEY',
-    'X-IranAPI-Host': 'weather-api.iranapi.ir'
+    'X-IranAPI-Host': 'iran-weather-api.iranapi.ir'
   }
 };
 

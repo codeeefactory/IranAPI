@@ -55,21 +55,26 @@ const Dashboard = () => {
     { label: "فراخوانی API", value: "۲۴,۵۹۱", change: "+۱۲.۵٪", icon: Activity, color: "text-primary" },
     { label: "نرخ موفقیت", value: "۹۹.۸٪", change: "+۰.۲٪", icon: TrendingUp, color: "text-secondary" },
     { label: "تاخیر میانگین", value: "۱۴۵ میلی‌ثانیه", change: "-۸ میلی‌ثانیه", icon: Zap, color: "text-accent" },
-    { label: "اعتبار مصرف‌شده", value: "۱۲۷.۵۰ دلار", change: "+۲۳ دلار", icon: DollarSign, color: "text-primary" },
+    { label: "اعتبار مصرف‌شده", value: "۱۲۷.۵۰ تومان", change: "+۲۳ تومان", icon: DollarSign, color: "text-primary" },
   ];
 
   const recentCalls = [
-    { api: "OpenAI GPT", status: "success", time: "۲ دقیقه پیش", latency: "۱۲۰ میلی‌ثانیه", cost: "۰.۰۲ دلار" },
-    { api: "Stripe Payments", status: "success", time: "۵ دقیقه پیش", latency: "۸۵ میلی‌ثانیه", cost: "۰.۰۱ دلار" },
-    { api: "SendGrid Email", status: "success", time: "۸ دقیقه پیش", latency: "۱۱۰ میلی‌ثانیه", cost: "۰.۰۱ دلار" },
-    { api: "Weather API", status: "error", time: "۱۲ دقیقه پیش", latency: "N/A", cost: "۰.۰۰ دلار" },
-    { api: "Google Maps", status: "success", time: "۱۵ دقیقه پیش", latency: "۹۰ میلی‌ثانیه", cost: "۰.۰۱ دلار" },
+    { api: "روبیکا AI", status: "success", time: "۲ دقیقه پیش", latency: "۱۲۰ میلی‌ثانیه", cost: "۰.۰۲ تومان" },
+    { api: "دیجی‌کالا", status: "success", time: "۳ دقیقه پیش", latency: "۸۸ میلی‌ثانیه", cost: "۰.۰۱۵ تومان" },
+    { api: "اسنپ", status: "success", time: "۵ دقیقه پیش", latency: "۷۵ میلی‌ثانیه", cost: "۰.۰۱ تومان" },
+    { api: "زرین‌پال", status: "success", time: "۷ دقیقه پیش", latency: "۸۵ میلی‌ثانیه", cost: "۰.۰۱ تومان" },
+    { api: "بله", status: "success", time: "۸ دقیقه پیش", latency: "۹۵ میلی‌ثانیه", cost: "۰.۰۰ تومان" },
+    { api: "ترب", status: "success", time: "۱۰ دقیقه پیش", latency: "۹۸ میلی‌ثانیه", cost: "۰.۰۰ تومان" },
+    { api: "تکنولایف", status: "success", time: "۱۲ دقیقه پیش", latency: "۱۰۲ میلی‌ثانیه", cost: "۰.۰۱۲ تومان" },
   ];
 
   const subscribedApis = [
-    { name: "OpenAI GPT", plan: "حرفه‌ای", calls: "۸,۴۳۲", limit: "۱۰,۰۰۰", callsNum: 8432, limitNum: 10000 },
-    { name: "Stripe Payments", plan: "رایگان", calls: "۱۵۶", limit: "۱,۰۰۰", callsNum: 156, limitNum: 1000 },
-    { name: "SendGrid Email", plan: "حرفه‌ای", calls: "۲,۳۴۱", limit: "۱۰,۰۰۰", callsNum: 2341, limitNum: 10000 },
+    { name: "روبیکا AI", plan: "حرفه‌ای", calls: "۸,۴۳۲", limit: "۱۰,۰۰۰", callsNum: 8432, limitNum: 10000 },
+    { name: "دیجی‌کالا", plan: "حرفه‌ای", calls: "۵,۲۳۴", limit: "۱۰,۰۰۰", callsNum: 5234, limitNum: 10000 },
+    { name: "اسنپ", plan: "پایه", calls: "۳,۱۲۳", limit: "۵,۰۰۰", callsNum: 3123, limitNum: 5000 },
+    { name: "زرین‌پال", plan: "رایگان", calls: "۱۵۶", limit: "۱,۰۰۰", callsNum: 156, limitNum: 1000 },
+    { name: "بله", plan: "رایگان", calls: "۴,۵۶۷", limit: "۵,۰۰۰", callsNum: 4567, limitNum: 5000 },
+    { name: "ترب", plan: "رایگان", calls: "۲,۸۹۰", limit: "۵,۰۰۰", callsNum: 2890, limitNum: 5000 },
   ];
 
   return (

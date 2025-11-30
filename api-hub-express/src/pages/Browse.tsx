@@ -4,22 +4,27 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, TrendingUp, Zap, Users, Cloud, Database, MessageSquare, Music, Image } from "lucide-react";
+import { Search, Filter, TrendingUp, Zap, Users, Cloud, Database, MessageSquare, Music, Image, ShoppingCart, Car, ShoppingBag, Smartphone } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const apis = [
-  { id: 1, name: "OpenAI GPT", category: "هوش مصنوعی", description: "مدل‌های زبانی پیشرفته هوش مصنوعی برای تولید متن", popularity: "۹۸٪", latency: "۱۲۰ میلی‌ثانیه", icon: MessageSquare, trending: true, price: "پلن رایگان موجود" },
-  { id: 2, name: "Stripe Payments", category: "پرداخت", description: "پذیرش پرداخت و مدیریت اشتراک", popularity: "۹۵٪", latency: "۸۵ میلی‌ثانیه", icon: Database, trending: true, price: "پرداخت بر اساس مصرف" },
-  { id: 3, name: "Weather API", category: "داده", description: "داده‌های آب و هوای لحظه‌ای در سراسر جهان", popularity: "۹۲٪", latency: "۹۵ میلی‌ثانیه", icon: Cloud, trending: false, price: "رایگان" },
-  { id: 4, name: "SendGrid Email", category: "ارتباطات", description: "سرویس قابل اعتماد ارسال ایمیل", popularity: "۹۰٪", latency: "۱۱۰ میلی‌ثانیه", icon: MessageSquare, trending: false, price: "۱۹.۹۵ دلار/ماه" },
-  { id: 5, name: "Spotify API", category: "موسیقی", description: "دسترسی به کاتالوگ موسیقی و داده‌های کاربر", popularity: "۸۸٪", latency: "۱۳۰ میلی‌ثانیه", icon: Music, trending: true, price: "رایگان" },
-  { id: 6, name: "Unsplash Images", category: "رسانه", description: "عکس‌های استوک رایگان با کیفیت بالا", popularity: "۸۵٪", latency: "۱۰۰ میلی‌ثانیه", icon: Image, trending: false, price: "رایگان" },
-  { id: 7, name: "Google Maps", category: "مکان", description: "نقشه‌ها و خدمات مکان", popularity: "۹۷٪", latency: "۹۰ میلی‌ثانیه", icon: Cloud, trending: true, price: "۷ دلار/۱۰۰۰ فراخوانی" },
-  { id: 8, name: "Twilio SMS", category: "ارتباطات", description: "ارسال پیامک و پیام‌های صوتی", popularity: "۹۳٪", latency: "۱۰۵ میلی‌ثانیه", icon: MessageSquare, trending: false, price: "۰.۰۰۷۵ دلار/پیامک" },
+  { id: 1, name: "روبیکا AI", category: "هوش مصنوعی", description: "مدل‌های زبانی پیشرفته هوش مصنوعی برای تولید متن و چت", popularity: "۹۸٪", latency: "۱۲۰ میلی‌ثانیه", icon: MessageSquare, trending: true, price: "پلن رایگان موجود" },
+  { id: 2, name: "زرین‌پال", category: "پرداخت", description: "درگاه پرداخت امن و سریع برای پذیرش پرداخت آنلاین", popularity: "۹۵٪", latency: "۸۵ میلی‌ثانیه", icon: Database, trending: true, price: "پرداخت بر اساس مصرف" },
+  { id: 3, name: "دیجی‌کالا", category: "خرید و فروش", description: "دسترسی به کاتالوگ محصولات و قیمت‌گذاری از بزرگترین فروشگاه آنلاین ایران", popularity: "۹۶٪", latency: "۸۸ میلی‌ثانیه", icon: ShoppingCart, trending: true, price: "پرداخت بر اساس مصرف" },
+  { id: 4, name: "اسنپ", category: "حمل و نقل", description: "سرویس درخواست تاکسی و پیک آنلاین با امکان ردیابی لحظه‌ای", popularity: "۹۴٪", latency: "۷۵ میلی‌ثانیه", icon: Car, trending: true, price: "پرداخت بر اساس مصرف" },
+  { id: 5, name: "ترب", category: "جستجو", description: "مقایسه قیمت محصولات از فروشگاه‌های مختلف و یافتن بهترین قیمت", popularity: "۹۱٪", latency: "۹۸ میلی‌ثانیه", icon: Search, trending: false, price: "رایگان" },
+  { id: 6, name: "تکنولایف", category: "خرید و فروش", description: "دسترسی به محصولات تکنولوژی و لوازم الکترونیکی با قیمت‌های به‌روز", popularity: "۸۹٪", latency: "۱۰۲ میلی‌ثانیه", icon: Smartphone, trending: false, price: "پرداخت بر اساس مصرف" },
+  { id: 7, name: "بله", category: "ارتباطات", description: "پیام‌رسان و شبکه اجتماعی ایرانی با امکانات چت، کانال و گروه", popularity: "۹۲٪", latency: "۹۵ میلی‌ثانیه", icon: MessageSquare, trending: true, price: "رایگان" },
+  { id: 8, name: "هواشناسی ایران", category: "داده", description: "داده‌های آب و هوای لحظه‌ای و پیش‌بینی برای شهرهای ایران", popularity: "۹۲٪", latency: "۹۵ میلی‌ثانیه", icon: Cloud, trending: false, price: "رایگان" },
+  { id: 9, name: "ایتا", category: "ارتباطات", description: "سرویس پیام‌رسانی و ارسال اعلان‌های فوری", popularity: "۹۰٪", latency: "۱۱۰ میلی‌ثانیه", icon: MessageSquare, trending: false, price: "۱۹.۹۵ تومان/ماه" },
+  { id: 10, name: "بیپ‌تونز", category: "موسیقی", description: "دسترسی به کاتالوگ موسیقی ایرانی و بین‌المللی", popularity: "۸۸٪", latency: "۱۳۰ میلی‌ثانیه", icon: Music, trending: true, price: "رایگان" },
+  { id: 11, name: "آپارات", category: "رسانه", description: "ویدئو و تصاویر با کیفیت بالا از پلتفرم آپارات", popularity: "۸۵٪", latency: "۱۰۰ میلی‌ثانیه", icon: Image, trending: false, price: "رایگان" },
+  { id: 12, name: "نشان", category: "مکان", description: "نقشه‌ها و خدمات مکان‌یابی برای ایران", popularity: "۹۷٪", latency: "۹۰ میلی‌ثانیه", icon: Cloud, trending: true, price: "۷ تومان/۱۰۰۰ فراخوانی" },
+  { id: 13, name: "سروش‌پلاس", category: "ارتباطات", description: "ارسال پیامک و پیام‌های صوتی و تصویری", popularity: "۹۳٪", latency: "۱۰۵ میلی‌ثانیه", icon: MessageSquare, trending: false, price: "۰.۰۰۷۵ تومان/پیامک" },
 ];
 
 const categories = [
-  "همه دسته‌ها", "هوش مصنوعی", "پرداخت", "ارتباطات", "داده", "موسیقی", "رسانه", "مکان"
+  "همه دسته‌ها", "هوش مصنوعی", "پرداخت", "خرید و فروش", "حمل و نقل", "جستجو", "ارتباطات", "داده", "موسیقی", "رسانه", "مکان"
 ];
 
 const Browse = () => {

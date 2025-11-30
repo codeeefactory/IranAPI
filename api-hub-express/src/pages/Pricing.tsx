@@ -25,7 +25,7 @@ const Pricing = () => {
     },
     {
       name: "حرفه‌ای",
-      price: "۴۹ دلار",
+      price: "۴۹ تومان",
       description: "برای برنامه‌ها و تیم‌های در حال رشد",
       features: [
         { text: "۱۰,۰۰۰ فراخوانی API/روز", included: true },

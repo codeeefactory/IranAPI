@@ -53,7 +53,7 @@ const client = iranapi.init({
 });
 
 // انجام درخواست
-client.call('OpenAI GPT', 'chat')
+client.call('روبیکا AI', 'chat')
   .then(response => {
     console.log(response.data);
   })

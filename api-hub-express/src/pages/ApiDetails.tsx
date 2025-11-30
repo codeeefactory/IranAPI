@@ -14,10 +14,10 @@ const ApiDetails = () => {
 
 const options = {
   method: 'GET',
-  url: 'https://api.iranapi.ir/openai/v1/chat',
+  url: 'https://api.iranapi.ir/rubika/v1/chat',
   headers: {
     'X-IranAPI-Key': 'YOUR_API_KEY',
-    'X-IranAPI-Host': 'openai-api.iranapi.ir'
+    'X-IranAPI-Host': 'rubika-api.iranapi.ir'
   }
 };
 
@@ -44,7 +44,7 @@ axios.request(options)
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-bold">OpenAI GPT API</h1>
+                <h1 className="text-4xl font-bold">روبیکا AI API</h1>
                 <Badge className="bg-secondary/20 text-secondary border-secondary/50">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   پرطرفدار
@@ -108,7 +108,7 @@ axios.request(options)
             <Card className="p-6">
               <h2 className="text-2xl font-bold mb-4">درباره این API</h2>
               <p className="text-muted-foreground mb-6">
-                API OpenAI GPT دسترسی به مدل‌های زبانی پیشرفته را فراهم می‌کند که می‌توانند متن شبیه انسان را درک و تولید کنند. عالی برای چت‌بات‌ها، تولید محتوا، ترجمه و بیشتر.
+                API روبیکا AI دسترسی به مدل‌های زبانی پیشرفته را فراهم می‌کند که می‌توانند متن شبیه انسان را درک و تولید کنند. عالی برای چت‌بات‌ها، تولید محتوا، ترجمه و بیشتر.
               </p>
 
               <h3 className="text-xl font-bold mb-3">ویژگی‌های کلیدی</h3>
@@ -216,7 +216,7 @@ axios.request(options)
               <Card className="p-6 border-primary shadow-glow">
                 <Badge className="mb-2 bg-gradient-primary">محبوب‌ترین</Badge>
                 <h3 className="text-xl font-bold mb-2">حرفه‌ای</h3>
-                <p className="text-3xl font-bold mb-4">۴۹ دلار<span className="text-sm text-muted-foreground">/ماه</span></p>
+                <p className="text-3xl font-bold mb-4">۴۹ تومان<span className="text-sm text-muted-foreground">/ماه</span></p>
                 <ul className="space-y-2 mb-6">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-primary" />
