@@ -42,7 +42,17 @@ export const Categories = () => {
   const { ref, isVisible } = useScrollAnimation();
   const { data: categoriesData, isLoading } = useCategories();
   
-  const categories = categoriesData?.map((cat, index) => ({
+  // Ensure categoriesData is an array - handle both paginated and direct array responses
+  let categoriesArray: any[] = [];
+  if (categoriesData) {
+    if (Array.isArray(categoriesData)) {
+      categoriesArray = categoriesData;
+    } else if (categoriesData.results && Array.isArray(categoriesData.results)) {
+      categoriesArray = categoriesData.results;
+    }
+  }
+  
+  const categories = categoriesArray.map((cat, index) => ({
     id: cat.id,
     name: cat.name,
     name_en: cat.name_en,
@@ -51,7 +61,7 @@ export const Categories = () => {
     count: `${cat.apis_count || 0}+`,
     gradient: gradients[index % gradients.length],
     color: cat.color,
-  })) || [];
+  }));
   
   if (isLoading) {
     return (

@@ -4,8 +4,53 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Activity, TrendingUp, Zap, DollarSign, Key, BarChart3, AlertCircle } from "lucide-react";
+import { useProfile, useGenerateApiKey } from "@/hooks/useApi";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
+  const generateApiKey = useGenerateApiKey();
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      navigate('/signin');
+    }
+  }, [navigate]);
+
+  // Redirect if profile fetch fails due to auth
+  useEffect(() => {
+    if (profileError && (profileError as any)?.response?.status === 401) {
+      localStorage.removeItem('auth_token');
+      navigate('/signin');
+    }
+  }, [profileError, navigate]);
+
+  const handleGenerateApiKey = () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      toast.error('لطفاً ابتدا وارد حساب کاربری خود شوید');
+      setTimeout(() => navigate('/signin'), 1500);
+      return;
+    }
+    
+    // Verify token is valid by checking if profile can be loaded
+    if (profileError) {
+      toast.error('خطا در احراز هویت. لطفاً دوباره وارد شوید');
+      localStorage.removeItem('auth_token');
+      setTimeout(() => navigate('/signin'), 1500);
+      return;
+    }
+    
+    if (window.confirm('آیا مطمئن هستید که می‌خواهید یک کلید API جدید بسازید؟ کلید قبلی غیرفعال خواهد شد.')) {
+      generateApiKey.mutate();
+    }
+  };
   const stats = [
     { label: "فراخوانی API", value: "۲۴,۵۹۱", change: "+۱۲.۵٪", icon: Activity, color: "text-primary" },
     { label: "نرخ موفقیت", value: "۹۹.۸٪", change: "+۰.۲٪", icon: TrendingUp, color: "text-secondary" },
@@ -56,7 +101,13 @@ const Dashboard = () => {
           <Card className="lg:col-span-2 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">فراخوانی‌های اخیر API</h2>
-              <Button variant="ghost" size="sm">مشاهده همه</Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/browse')}
+              >
+                مشاهده همه
+              </Button>
             </div>
             <div className="space-y-3">
               {recentCalls.map((call, index) => (
@@ -84,16 +135,79 @@ const Dashboard = () => {
               <h2 className="text-2xl font-bold">کلیدهای API</h2>
               <Button variant="ghost" size="icon"><Key className="h-4 w-4" /></Button>
             </div>
-            <div className="space-y-4">
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-semibold">کلید تولید</p>
-                  <Badge variant="default">فعال</Badge>
-                </div>
-                <code className="text-xs text-muted-foreground">iapi_••••••••••••۱۲۳۴</code>
-                <p className="text-xs text-muted-foreground mt-2">آخرین استفاده: ۲ دقیقه پیش</p>
+            {!localStorage.getItem('auth_token') && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive font-semibold">⚠️ شما وارد نشده‌اید</p>
+                <p className="text-xs text-muted-foreground mt-1">برای ساخت کلید API، لطفاً ابتدا وارد حساب کاربری خود شوید</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 w-full"
+                  onClick={() => navigate('/signin')}
+                >
+                  ورود به حساب کاربری
+                </Button>
               </div>
-              <Button variant="outline" className="w-full">ساخت کلید جدید</Button>
+            )}
+            <div className="space-y-4">
+              {profileLoading ? (
+                <div className="p-4 border border-border rounded-lg text-center">
+                  <p className="text-muted-foreground">در حال بارگذاری...</p>
+                </div>
+              ) : profileError ? (
+                <div className="p-4 border border-destructive/20 rounded-lg text-center">
+                  <p className="text-destructive font-semibold mb-2">خطا در بارگذاری پروفایل</p>
+                  <p className="text-xs text-muted-foreground mb-3">لطفاً دوباره وارد شوید</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      localStorage.removeItem('auth_token');
+                      navigate('/signin');
+                    }}
+                  >
+                    ورود مجدد
+                  </Button>
+                </div>
+              ) : profile?.api_key ? (
+                <div className="p-4 border border-border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold">کلید تولید</p>
+                    <Badge variant="default">فعال</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <code className="text-xs text-muted-foreground flex-1 break-all">
+                      {showApiKey ? profile.api_key : profile.api_key.substring(0, 8) + '••••••••••••' + profile.api_key.slice(-4)}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowApiKey(!showApiKey);
+                        if (!showApiKey && navigator.clipboard) {
+                          navigator.clipboard.writeText(profile.api_key);
+                        }
+                      }}
+                    >
+                      {showApiKey ? 'مخفی' : 'نمایش'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">برای کپی کردن کلید، روی نمایش کلیک کنید</p>
+                </div>
+              ) : (
+                <div className="p-4 border border-border rounded-lg text-center">
+                  <p className="text-muted-foreground mb-2">کلید API وجود ندارد</p>
+                  <p className="text-xs text-muted-foreground">برای شروع، یک کلید جدید بسازید</p>
+                </div>
+              )}
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleGenerateApiKey}
+                disabled={generateApiKey.isPending}
+              >
+                {generateApiKey.isPending ? 'در حال ساخت...' : 'ساخت کلید جدید'}
+              </Button>
             </div>
           </Card>
         </div>
@@ -101,7 +215,13 @@ const Dashboard = () => {
         <Card className="p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">APIهای مشترک</h2>
-            <Button variant="outline" size="sm">مدیریت</Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/browse')}
+            >
+              مدیریت
+            </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {subscribedApis.map((api) => (
@@ -119,7 +239,14 @@ const Dashboard = () => {
                     <div className="bg-gradient-primary h-2 rounded-full" style={{ width: `${(api.callsNum / api.limitNum) * 100}%` }} />
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="w-full">مشاهده جزئیات</Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => navigate(`/api/${api.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                >
+                  مشاهده جزئیات
+                </Button>
               </div>
             ))}
           </div>
@@ -128,11 +255,23 @@ const Dashboard = () => {
         <Card className="mt-6 p-4 border-accent bg-accent/5">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-accent mt-0.5" />
-            <div>
+            <div className="flex-1">
               <p className="font-semibold">به محدودیت API خود نزدیک می‌شوید</p>
               <p className="text-sm text-muted-foreground">۸۵٪ از سهمیه ماهانه خود را استفاده کرده‌اید. برای فراخوانی‌های نامحدود به حرفه‌ای ارتقا دهید.</p>
             </div>
-            <Button size="sm" className="ml-auto">ارتقا</Button>
+            <Button 
+              type="button"
+              size="sm" 
+              className="ml-auto shrink-0"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Upgrade button clicked');
+                navigate('/pricing');
+              }}
+            >
+              ارتقا
+            </Button>
           </div>
         </Card>
       </main>

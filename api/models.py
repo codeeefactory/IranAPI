@@ -151,8 +151,8 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True, verbose_name="تلفن")
     company = models.CharField(max_length=200, blank=True, verbose_name="شرکت")
     bio = models.TextField(blank=True, verbose_name="بیوگرافی")
-    avatar = models.URLField(blank=True, verbose_name="آواتار")
-    api_key = models.CharField(max_length=100, blank=True, unique=True, verbose_name="کلید API")
+    avatar = models.URLField(blank=True, null=True, verbose_name="آواتار")
+    api_key = models.CharField(max_length=100, blank=True, null=True, unique=True, verbose_name="کلید API")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

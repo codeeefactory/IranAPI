@@ -84,10 +84,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'password_confirm', 'first_name', 'last_name']
+        extra_kwargs = {
+            'email': {'required': False, 'allow_blank': True},
+            'first_name': {'required': False, 'allow_blank': True},
+            'last_name': {'required': False, 'allow_blank': True},
+        }
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -96,14 +104,38 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password_confirm')
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data.get('email', ''),
-            password=validated_data['password'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', ''),
+        # Handle email - convert empty string/None to empty string
+        email = validated_data.get('email')
+        if not email or email.strip() == '':
+            email = ''
+        
+        # Handle first_name and last_name
+        first_name = validated_data.get('first_name', '') or ''
+        last_name = validated_data.get('last_name', '') or ''
+        
+        try:
+            user = User.objects.create_user(
+                username=validated_data['username'],
+                email=email,
+                password=validated_data['password'],
+                first_name=first_name,
+                last_name=last_name,
+            )
+        except Exception as e:
+            # Log the error for debugging
+            import sys
+            print(f"Error creating user: {e}", file=sys.stderr)
+            print(f"Data: username={validated_data['username']}, email={email}", file=sys.stderr)
+            raise
+        # Create profile with default values (all fields allow blank=True)
+        UserProfile.objects.create(
+            user=user,
+            phone='',
+            company='',
+            bio='',
+            avatar=None,
+            api_key=None
         )
-        UserProfile.objects.create(user=user)
         return user
 
 

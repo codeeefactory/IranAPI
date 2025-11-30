@@ -124,7 +124,35 @@ export const useRegister = () => {
       toast.success('ثبت‌نام موفقیت‌آمیز بود');
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || 'خطا در ثبت‌نام';
+      console.error('Registration error:', error);
+      let message = 'خطا در ثبت‌نام';
+      
+      if (error.response?.data) {
+        // Handle validation errors
+        const data = error.response.data;
+        if (data.username) {
+          message = `نام کاربری: ${Array.isArray(data.username) ? data.username[0] : data.username}`;
+        } else if (data.email) {
+          message = `ایمیل: ${Array.isArray(data.email) ? data.email[0] : data.email}`;
+        } else if (data.password) {
+          message = `رمز عبور: ${Array.isArray(data.password) ? data.password[0] : data.password}`;
+        } else if (data.password_confirm) {
+          message = `تأیید رمز عبور: ${Array.isArray(data.password_confirm) ? data.password_confirm[0] : data.password_confirm}`;
+        } else if (data.detail) {
+          message = data.detail;
+        } else if (data.message) {
+          message = data.message;
+        } else if (typeof data === 'string') {
+          message = data;
+        } else {
+          // Show first error found
+          const firstError = Object.values(data)[0];
+          message = Array.isArray(firstError) ? firstError[0] : String(firstError);
+        }
+      } else if (error.message) {
+        message = error.message;
+      }
+      
       toast.error(message);
     },
   });
@@ -191,6 +219,37 @@ export const useUpdateProfile = () => {
     },
     onError: () => {
       toast.error('خطا در به‌روزرسانی پروفایل');
+    },
+  });
+};
+
+export const useGenerateApiKey = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => apiService.generateApiKey(),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast.success('کلید API جدید با موفقیت ساخته شد');
+      // Copy to clipboard
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(data.api_key);
+        toast.success('کلید API در کلیپ‌بورد کپی شد');
+      }
+    },
+    onError: (error: any) => {
+      console.error('API Key generation error:', error);
+      if (error.response?.status === 401 || error.message === 'Authentication required. Please log in first.') {
+        toast.error('لطفاً ابتدا وارد حساب کاربری خود شوید');
+        localStorage.removeItem('auth_token');
+        // Redirect to login after a delay
+        setTimeout(() => {
+          window.location.href = '/signin';
+        }, 2000);
+      } else {
+        const message = error.response?.data?.detail || error.response?.data?.message || error.message || 'خطا در ساخت کلید API';
+        toast.error(message);
+      }
     },
   });
 };

@@ -153,15 +153,59 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
         """User registration"""
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({
-                'user': UserSerializer(user).data,
-                'token': token.key
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        import sys
+        import json
+        
+        try:
+            # Log request data - use both print and logger
+            print("=" * 50, file=sys.stderr)
+            print("REGISTRATION REQUEST RECEIVED", file=sys.stderr)
+            print(f"Method: {request.method}", file=sys.stderr)
+            print(f"Content-Type: {request.content_type}", file=sys.stderr)
+            print(f"Data type: {type(request.data)}", file=sys.stderr)
+            
+            # Get data
+            if hasattr(request, 'data') and request.data:
+                data = dict(request.data) if hasattr(request.data, 'keys') else request.data
+            else:
+                import json
+                try:
+                    data = json.loads(request.body.decode('utf-8')) if request.body else {}
+                except:
+                    data = {}
+            
+            print(f"Request data: {json.dumps(data, default=str, ensure_ascii=False)}", file=sys.stderr)
+            sys.stderr.flush()
+            
+            serializer = UserRegistrationSerializer(data=data)
+            if serializer.is_valid():
+                user = serializer.save()
+                token, created = Token.objects.get_or_create(user=user)
+                print(f"Registration successful for user: {user.username}", file=sys.stderr)
+                sys.stderr.flush()
+                return Response({
+                    'user': UserSerializer(user).data,
+                    'token': token.key
+                }, status=status.HTTP_201_CREATED)
+            
+            # Log validation errors
+            errors = dict(serializer.errors)
+            print("=" * 50, file=sys.stderr)
+            print("SERIALIZER VALIDATION ERRORS", file=sys.stderr)
+            print(json.dumps(errors, default=str, ensure_ascii=False, indent=2), file=sys.stderr)
+            sys.stderr.flush()
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            import traceback
+            print("=" * 50, file=sys.stderr)
+            print("REGISTRATION EXCEPTION", file=sys.stderr)
+            print(f"Error: {str(e)}", file=sys.stderr)
+            print(traceback.format_exc(), file=sys.stderr)
+            sys.stderr.flush()
+            return Response(
+                {'detail': f'خطا در ثبت‌نام: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):
@@ -204,6 +248,46 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def generate_api_key(self, request):
+        """Generate a new API key for the user"""
+        import secrets
+        import string
+        
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        try:
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
+            # Generate a secure random API key
+            alphabet = string.ascii_letters + string.digits
+            api_key = 'iapi_' + ''.join(secrets.choice(alphabet) for _ in range(32))
+            
+            # Ensure uniqueness
+            max_attempts = 10
+            attempts = 0
+            while UserProfile.objects.filter(api_key=api_key).exclude(user=request.user).exists() and attempts < max_attempts:
+                api_key = 'iapi_' + ''.join(secrets.choice(alphabet) for _ in range(32))
+                attempts += 1
+            
+            profile.api_key = api_key
+            profile.save()
+            
+            serializer = UserProfileSerializer(profile)
+            return Response({
+                'api_key': api_key,
+                'profile': serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {'detail': f'خطا در ساخت کلید API: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class APIUsageViewSet(viewsets.ModelViewSet):

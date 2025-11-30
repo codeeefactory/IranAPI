@@ -29,10 +29,37 @@ const SignUp = () => {
       return;
     }
     try {
-      await register.mutateAsync(formData);
+      // Prepare form data - always include email (even if empty)
+      const cleanedData: {
+        username: string;
+        email: string;
+        password: string;
+        password_confirm: string;
+        first_name?: string;
+        last_name?: string;
+      } = {
+        username: formData.username.trim(),
+        email: formData.email.trim() || '', // Always send email, even if empty
+        password: formData.password,
+        password_confirm: formData.password_confirm,
+      };
+      
+      // Only add optional fields if they have values
+      const trimmedFirstName = formData.first_name.trim();
+      const trimmedLastName = formData.last_name.trim();
+      if (trimmedFirstName) {
+        cleanedData.first_name = trimmedFirstName;
+      }
+      if (trimmedLastName) {
+        cleanedData.last_name = trimmedLastName;
+      }
+      
+      console.log('Submitting registration with data:', cleanedData);
+      await register.mutateAsync(cleanedData);
       navigate('/dashboard');
     } catch (error) {
       // Error handled by hook
+      console.error('Registration failed:', error);
     }
   };
   return (
@@ -115,7 +142,7 @@ const SignUp = () => {
               </div>
 
               <div>
-                <Label htmlFor="email">ایمیل</Label>
+                <Label htmlFor="email">ایمیل (اختیاری)</Label>
                 <Input 
                   id="email" 
                   type="email" 
@@ -123,7 +150,6 @@ const SignUp = () => {
                   className="mt-1"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
                 />
               </div>
 
