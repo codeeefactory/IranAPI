@@ -1,5 +1,14 @@
-from rest_framework import viewsets, status, filters
-from rest_framework.decorators import action
+from __future__ import annotations
+
+from django.conf import settings
+from django.shortcuts import redirect
+from django.utils.text import slugify
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework import status
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
@@ -10,10 +19,27 @@ from datetime import timedelta
 
 from .models import Category, API, PricingPlan, Documentation, UserProfile, APIUsage
 from .serializers import (
-    CategorySerializer, APISerializer, APISummarySerializer,
-    PricingPlanSerializer, DocumentationSerializer,
-    UserSerializer, UserProfileSerializer, UserRegistrationSerializer,
-    LoginSerializer, APIUsageSerializer
+    APIReleaseSerializer,
+    LoginSerializer,
+    RatingSerializer,
+    RegistrationSerializer,
+    SubscriptionCheckoutSerializer,
+    UserProfileUpdateSerializer,
+    UserUpdateSerializer,
+    build_session_payload,
+    serialize_access_grant,
+    serialize_api_detail,
+    serialize_api_endpoint,
+    serialize_api_list,
+    serialize_category,
+    serialize_documentation,
+    serialize_pricing_plan,
+    serialize_profile,
+    serialize_subscription_checkout,
+    serialize_subscription_plan,
+    serialize_user_subscription,
+    serialize_usage_item,
+    serialize_user,
 )
 
 
@@ -36,58 +62,547 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class APIViewSet(viewsets.ModelViewSet):
     queryset = API.objects.all()
     permission_classes = [AllowAny]
-    search_fields = ['name', 'name_en', 'description', 'short_description', 'tags']
-    ordering_fields = ['created_at', 'rating', 'views_count', 'name']
-    filterset_fields = ['category', 'status', 'is_featured', 'is_popular']
 
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return APISummarySerializer
-        return APISerializer
+    def get(self, request):
+        return Response(build_session_payload(current_user_document(request)))
 
-    def get_queryset(self):
-        queryset = API.objects.select_related('category', 'created_by').prefetch_related('pricing_plans', 'documentations')
-        
-        # Filter by status if not authenticated or not admin
-        if not self.request.user.is_authenticated or not self.request.user.is_staff:
-            queryset = queryset.filter(status='active')
-        
-        # Filter featured APIs
-        if self.request.query_params.get('featured') == 'true':
-            queryset = queryset.filter(is_featured=True)
-        
-        # Filter popular APIs
-        if self.request.query_params.get('popular') == 'true':
-            queryset = queryset.filter(is_popular=True)
-        
-        return queryset
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        # Increment view count
-        instance.views_count += 1
-        instance.save(update_fields=['views_count'])
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+class CategoryListView(APIView):
+    permission_classes = [AllowAny]
 
-    @action(detail=True, methods=['get'])
-    def similar(self, request, pk=None):
-        """Get similar APIs"""
-        api = self.get_object()
-        similar_apis = API.objects.filter(
-            Q(category=api.category) | Q(tags__overlap=api.tags),
-            status='active'
-        ).exclude(id=api.id)[:5]
-        serializer = APISummarySerializer(similar_apis, many=True)
-        return Response(serializer.data)
+    def get(self, request):
+        repository = get_repository()
+        categories = repository.list_categories(
+            search=request.query_params.get("search"),
+            ordering=request.query_params.get("ordering"),
+        )
+        payload = [serialize_category(category) for category in categories]
+        return Response(paginate(request, payload))
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def rate(self, request, pk=None):
-        """Rate an API"""
-        api = self.get_object()
-        rating = request.data.get('rating')
-        
-        if not rating or not (1 <= float(rating) <= 5):
+
+class CategoryDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug: str):
+        repository = get_repository()
+        category = repository.get_category_by_slug(slug)
+        if not category:
+            raise NotFound("دسته‌بندی پیدا نشد.")
+        return Response(serialize_category(category))
+
+
+class CategoryApisView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug: str):
+        repository = get_repository()
+        category = repository.get_category_by_slug(slug)
+        if not category:
+            raise NotFound("دسته‌بندی پیدا نشد.")
+
+        api_docs = repository.list_apis(
+            category_slug=slug,
+            search=request.query_params.get("search"),
+            ordering=request.query_params.get("ordering"),
+            include_inactive=False,
+        )
+        return Response(paginate(request, enrich_api_list(api_docs, repository)))
+
+
+class APIListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        repository = get_repository()
+        owned_only = parse_bool(request.query_params.get("owned")) is True
+        if owned_only and (not request.user or not getattr(request.user, "is_authenticated", False)):
+            self.permission_denied(request)
+
+        include_inactive = bool(
+            request.user
+            and getattr(request.user, "is_authenticated", False)
+            and getattr(request.user, "is_staff", False)
+            and parse_bool(request.query_params.get("include_inactive")) is True
+        )
+        api_docs = repository.list_apis(
+            category_slug=request.query_params.get("category"),
+            featured=parse_bool(request.query_params.get("featured")),
+            popular=parse_bool(request.query_params.get("popular")),
+            tag=request.query_params.get("tag"),
+            search=request.query_params.get("search"),
+            ordering=request.query_params.get("ordering"),
+            include_inactive=include_inactive,
+            created_by_user_id=int(request.user.id) if owned_only else None,
+        )
+        return Response(paginate(request, enrich_api_list(api_docs, repository)))
+
+    def post(self, request):
+        if not request.user or not getattr(request.user, "is_authenticated", False):
+            self.permission_denied(request)
+
+        repository = get_repository()
+        serializer = APIReleaseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        now = timezone.now()
+        category_label = data.get("category") or "Community"
+        category_slug = slugify(category_label, allow_unicode=True).strip("-") or "community"
+        category = repository.categories.find_one(
+            {
+                "$or": [
+                    {"slug": category_slug},
+                    {"name": category_label},
+                    {"name_en": category_label},
+                ]
+            }
+        )
+        if not category:
+            category = repository.build_category_document(
+                {
+                    "slug": category_slug,
+                    "name": category_label,
+                    "name_en": category_label,
+                    "description": f"{category_label} APIs",
+                    "created_at": now,
+                    "updated_at": now,
+                }
+            )
+            repository.categories.insert_one(category)
+
+        api_doc = repository.build_api_document(
+            {
+                "name": data["name"],
+                "name_en": data["name"],
+                "description": data["description"],
+                "short_description": data["description"][:180],
+                "category_id": int(category["_id"]),
+                "base_url": data["base_url"],
+                "documentation_url": data.get("documentation_url", ""),
+                "logo": "",
+                "status": "active",
+                "is_featured": False,
+                "is_popular": False,
+                "tags": data.get("tags", []),
+                "canonical_version": "v1",
+                "public_auth_scheme": data["auth_scheme"],
+                "publication_status": "published",
+                "created_by_user_id": int(request.user.id),
+                "created_by_username": request.user.username,
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
+        repository.apis.insert_one(api_doc)
+
+        if data.get("documentation_url") or data.get("description"):
+            repository.documentations.insert_one(
+                repository.build_documentation_document(
+                    {
+                        "api_id": int(api_doc["_id"]),
+                        "api_slug": api_doc["slug"],
+                        "title": "Overview",
+                        "content": data.get("description", ""),
+                        "order": 1,
+                        "is_active": True,
+                        "created_at": now,
+                        "updated_at": now,
+                    }
+                )
+            )
+
+        return Response(
+            {
+                "message": "API released and published to Explore.",
+                "api": serialize_api_detail(
+                    api_doc,
+                    category=category,
+                    pricing_plans=[],
+                    documentations=repository.get_documentations_by_api_ids([int(api_doc["_id"])]).get(
+                        int(api_doc["_id"]),
+                        [],
+                    ),
+                    endpoints=[],
+                ),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class APIDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug: str):
+        repository = get_repository()
+        include_inactive = bool(
+            request.user and getattr(request.user, "is_authenticated", False) and getattr(request.user, "is_staff", False)
+        )
+        api_doc = repository.get_api_by_slug(slug, include_inactive=include_inactive)
+        if not api_doc:
+            raise NotFound("API پیدا نشد.")
+
+        api_doc = repository.increment_api_views(int(api_doc["_id"])) or api_doc
+        category = None
+        if api_doc.get("category_id") is not None:
+            category = repository.get_categories_by_ids([int(api_doc["category_id"])]).get(int(api_doc["category_id"]))
+        pricing_plans = repository.get_pricing_plans_by_api_ids([int(api_doc["_id"])]).get(int(api_doc["_id"]), [])
+        documentations = repository.get_documentations_by_api_ids([int(api_doc["_id"])]).get(int(api_doc["_id"]), [])
+        endpoints = repository.get_endpoints_by_api_ids([int(api_doc["_id"])]).get(int(api_doc["_id"]), [])
+        return Response(
+            serialize_api_detail(
+                api_doc,
+                category=category,
+                pricing_plans=pricing_plans,
+                documentations=documentations,
+                endpoints=endpoints,
+            )
+        )
+
+
+class APISimilarView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug: str):
+        repository = get_repository()
+        _, api_docs = repository.list_similar_apis(slug)
+        return Response(enrich_api_list(api_docs, repository))
+
+
+class APIRatingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug: str):
+        repository = get_repository()
+        serializer = RatingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        api_doc = repository.get_api_by_slug(slug)
+        if not api_doc:
+            raise NotFound("API پیدا نشد.")
+
+        rating_doc, created = repository.rate_api(
+            user_id=request.user.id,
+            api_id=int(api_doc["_id"]),
+            value=serializer.validated_data["rating"],
+        )
+        refreshed = repository.get_api_by_slug(slug, include_inactive=True) or api_doc
+        return Response(
+            {
+                "message": "امتیاز شما با موفقیت ثبت شد.",
+                "created": created,
+                "rating": f"{float(refreshed.get('rating', 0)):.2f}",
+                "rating_count": int(refreshed.get("rating_count", 0)),
+                "your_rating": int(rating_doc.get("value", serializer.validated_data["rating"])),
+            }
+        )
+
+
+class PricingPlanListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        repository = get_repository()
+        plans = repository.list_pricing_plans(api_slug=request.query_params.get("api"))
+        return Response(paginate(request, [serialize_pricing_plan(plan) for plan in plans]))
+
+
+class SubscriptionPlanListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        repository = get_repository()
+        plans = repository.list_subscription_plans()
+        return Response(paginate(request, [serialize_subscription_plan(plan) for plan in plans]))
+
+
+class CurrentSubscriptionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        repository = get_repository()
+        subscription = repository.get_current_subscription(request.user.id)
+        plan = (
+            repository.get_subscription_plan_by_id(subscription["subscription_plan_id"], active_only=False)
+            if subscription
+            else None
+        )
+        return Response({"subscription": serialize_user_subscription(subscription, plan)})
+
+    def post(self, request):
+        repository = get_repository()
+        serializer = SubscriptionCheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            checkout, plan = repository.create_subscription_checkout(
+                user_id=request.user.id,
+                plan_id=serializer.validated_data["plan_id"],
+            )
+        except LookupError as exc:
+            raise NotFound("Subscription plan was not found.") from exc
+        return Response(
+            {
+                "message": "Checkout created successfully.",
+                "checkout": serialize_subscription_checkout(checkout, plan),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class SubscriptionCheckoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, checkout_id: int):
+        repository = get_repository()
+        checkout, plan = repository.get_subscription_checkout(user_id=request.user.id, checkout_id=checkout_id)
+        if not checkout or not plan:
+            raise NotFound("Subscription checkout was not found.")
+        return Response({"checkout": serialize_subscription_checkout(checkout, plan)})
+
+    def delete(self, request, checkout_id: int):
+        repository = get_repository()
+        try:
+            checkout, plan = repository.cancel_subscription_checkout(
+                user_id=request.user.id,
+                checkout_id=checkout_id,
+            )
+        except LookupError as exc:
+            raise NotFound("Subscription checkout was not found.") from exc
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        return Response(
+            {
+                "message": "Checkout canceled successfully.",
+                "checkout": serialize_subscription_checkout(checkout, plan),
+            }
+        )
+
+
+class SubscriptionCheckoutConfirmView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, checkout_id: int):
+        repository = get_repository()
+        try:
+            checkout, subscription, plan = repository.confirm_subscription_checkout(
+                user_id=request.user.id,
+                checkout_id=checkout_id,
+            )
+        except LookupError as exc:
+            raise NotFound("Subscription checkout was not found.") from exc
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        return Response(
+            {
+                "message": "Subscription activated successfully.",
+                "checkout": serialize_subscription_checkout(checkout, plan),
+                "subscription": serialize_user_subscription(subscription, plan),
+            }
+        )
+
+
+class APIPlanListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug: str):
+        repository = get_repository()
+        plans = repository.list_pricing_plans(api_slug=slug)
+        return Response(paginate(request, [serialize_pricing_plan(plan) for plan in plans]))
+
+
+class DocumentationListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        repository = get_repository()
+        documentations = repository.list_documentations(api_slug=request.query_params.get("api"))
+        return Response(paginate(request, [serialize_documentation(document) for document in documentations]))
+
+
+class APIDocumentationListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug: str):
+        repository = get_repository()
+        documentations = repository.list_documentations(api_slug=slug)
+        return Response(paginate(request, [serialize_documentation(document) for document in documentations]))
+
+
+class APIEndpointListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug: str):
+        repository = get_repository()
+        if not repository.get_api_by_slug(slug):
+            raise NotFound("API not found.")
+        endpoints = repository.list_endpoints(api_slug=slug)
+        return Response(paginate(request, [serialize_api_endpoint(endpoint) for endpoint in endpoints]))
+
+
+class RegisterView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        repository = get_repository()
+        serializer = RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            repository.validate_unique_user_fields(
+                username=serializer.validated_data["username"],
+                email=serializer.validated_data.get("email", ""),
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        user_doc = repository.create_user(
+            username=serializer.validated_data["username"],
+            password=serializer.validated_data["password"],
+            email=serializer.validated_data.get("email", ""),
+            first_name=serializer.validated_data.get("first_name", ""),
+            last_name=serializer.validated_data.get("last_name", ""),
+        )
+        token = repository.create_or_get_legacy_token(int(user_doc["_id"]))
+        session_id = repository.create_session(int(user_doc["_id"]))
+        response = Response(
+            {
+                "message": "ثبت‌نام با موفقیت انجام شد.",
+                "token": token,
+                "user": serialize_user(user_doc),
+                "profile": serialize_profile(user_doc),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+        set_session_cookie(response, session_id)
+        return response
+
+
+class SessionRegisterView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        repository = get_repository()
+        serializer = RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            repository.validate_unique_user_fields(
+                username=serializer.validated_data["username"],
+                email=serializer.validated_data.get("email", ""),
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+        user_doc = repository.create_user(
+            username=serializer.validated_data["username"],
+            password=serializer.validated_data["password"],
+            email=serializer.validated_data.get("email", ""),
+            first_name=serializer.validated_data.get("first_name", ""),
+            last_name=serializer.validated_data.get("last_name", ""),
+        )
+        session_id = repository.create_session(int(user_doc["_id"]))
+        response = Response(
+            {
+                "message": "Registration completed successfully.",
+                **build_session_payload(user_doc),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+        set_session_cookie(response, session_id)
+        return response
+
+
+class LoginView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        repository = get_repository()
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_doc = repository.authenticate_user(
+            serializer.validated_data["username"],
+            serializer.validated_data["password"],
+        )
+        if not user_doc:
+            raise ValidationError("نام کاربری یا رمز عبور اشتباه است.")
+
+        token = repository.create_or_get_legacy_token(int(user_doc["_id"]))
+        session_id = repository.create_session(int(user_doc["_id"]))
+        response = Response(
+            {
+                "message": "ورود با موفقیت انجام شد.",
+                "token": token,
+                "user": serialize_user(user_doc),
+                "profile": serialize_profile(user_doc),
+            }
+        )
+        set_session_cookie(response, session_id)
+        return response
+
+
+class SessionLoginView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        repository = get_repository()
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user_doc = repository.authenticate_user(
+            serializer.validated_data["username"],
+            serializer.validated_data["password"],
+        )
+        if not user_doc:
+            raise ValidationError("نام کاربری یا رمز عبور اشتباه است.")
+
+        session_id = repository.create_session(int(user_doc["_id"]))
+        response = Response(
+            {
+                "message": "Signed in successfully.",
+                **build_session_payload(user_doc),
+            }
+        )
+        set_session_cookie(response, session_id)
+        return response
+
+
+def serialize_social_provider(slug: str, provider: dict[str, object]) -> dict[str, object]:
+    return {
+        "slug": slug,
+        "label": str(provider.get("label") or slug.title()),
+        "enabled": bool(provider.get("enabled") and provider.get("auth_url")),
+        "start_url": f"/api/v1/auth/social/{slug}/start/",
+    }
+
+
+class SocialAuthProviderListView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        providers = [
+            serialize_social_provider(slug, provider)
+            for slug, provider in settings.SOCIAL_AUTH_PROVIDERS.items()
+        ]
+        return Response({"providers": providers})
+
+
+class SocialAuthStartView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request, provider: str):
+        social_provider = settings.SOCIAL_AUTH_PROVIDERS.get(provider)
+        if not social_provider:
+            raise NotFound("Social login provider was not found.")
+
+        auth_url = str(social_provider.get("auth_url") or "")
+        if not social_provider.get("enabled") or not auth_url:
             return Response(
                 {'error': 'امتیاز باید بین 1 تا 5 باشد'},
                 status=status.HTTP_400_BAD_REQUEST

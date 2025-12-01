@@ -31,13 +31,267 @@ class DocumentationSerializer(serializers.ModelSerializer):
         read_only_fields = ['slug', 'created_at', 'updated_at']
 
 
-class APISerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    category_id = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), 
-        source='category', 
-        write_only=True, 
-        required=False
+def serialize_rapidapi(api_doc: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "canonical_version": api_doc.get("canonical_version", "v1"),
+        "listing_url": api_doc.get("rapidapi_listing_url", ""),
+        "package_slug": api_doc.get("rapidapi_package_slug", ""),
+        "public_auth_scheme": api_doc.get("public_auth_scheme", "api_key"),
+        "support_url": api_doc.get("support_url", ""),
+        "publication_status": api_doc.get("publication_status", "draft"),
+    }
+
+
+def serialize_pricing_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(plan["_id"]),
+        "api_slug": plan.get("api_slug", ""),
+        "api_rapidapi_listing_url": plan.get("api_rapidapi_listing_url", ""),
+        "name": plan.get("name", ""),
+        "plan_type": plan.get("plan_type", "basic"),
+        "price": format_decimal(plan.get("price", 0)),
+        "currency": plan.get("currency", "IRR"),
+        "requests_per_month": plan.get("requests_per_month"),
+        "requests_per_day": plan.get("requests_per_day"),
+        "features": plan.get("features", []),
+        "is_popular": bool(plan.get("is_popular", False)),
+        "is_active": bool(plan.get("is_active", True)),
+        "rapidapi_plan_slug": plan.get("rapidapi_plan_slug", ""),
+        "is_listed_on_rapidapi": bool(plan.get("is_listed_on_rapidapi", False)),
+        "created_at": plan.get("created_at"),
+        "updated_at": plan.get("updated_at"),
+    }
+
+
+def serialize_subscription_plan(plan: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(plan["_id"]),
+        "name": plan.get("name", ""),
+        "slug": plan.get("slug", ""),
+        "description": plan.get("description", ""),
+        "plan_type": plan.get("plan_type", "starter"),
+        "price": format_decimal(plan.get("price", 0)),
+        "currency": plan.get("currency", "IRR"),
+        "interval": plan.get("interval", "month"),
+        "interval_days": int(plan.get("interval_days", 30)),
+        "api_publish_limit": plan.get("api_publish_limit"),
+        "included_requests": plan.get("included_requests"),
+        "features": plan.get("features", []),
+        "is_popular": bool(plan.get("is_popular", False)),
+        "is_active": bool(plan.get("is_active", True)),
+        "created_at": plan.get("created_at"),
+        "updated_at": plan.get("updated_at"),
+    }
+
+
+def serialize_user_subscription(subscription: dict[str, Any] | None, plan: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not subscription or not plan:
+        return None
+    return {
+        "id": int(subscription["_id"]),
+        "status": subscription.get("status", "active"),
+        "plan": serialize_subscription_plan(plan),
+        "starts_at": subscription.get("starts_at"),
+        "renews_at": subscription.get("renews_at"),
+        "ends_at": subscription.get("ends_at"),
+        "created_at": subscription.get("created_at"),
+        "updated_at": subscription.get("updated_at"),
+    }
+
+
+def serialize_subscription_checkout(checkout: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(checkout["_id"]),
+        "status": checkout.get("status", "pending"),
+        "amount": format_decimal(checkout.get("amount", 0)),
+        "currency": checkout.get("currency", "IRR"),
+        "gateway": checkout.get("gateway", "manual"),
+        "reference": checkout.get("reference", ""),
+        "plan": serialize_subscription_plan(plan),
+        "created_at": checkout.get("created_at"),
+        "updated_at": checkout.get("updated_at"),
+        "expires_at": checkout.get("expires_at"),
+        "confirmed_at": checkout.get("confirmed_at"),
+    }
+
+
+def serialize_documentation(document: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(document["_id"]),
+        "api_slug": document.get("api_slug", ""),
+        "title": document.get("title", ""),
+        "slug": document.get("slug", ""),
+        "content": document.get("content", ""),
+        "order": int(document.get("order", 0)),
+        "is_active": bool(document.get("is_active", True)),
+        "created_at": document.get("created_at"),
+        "updated_at": document.get("updated_at"),
+    }
+
+
+def serialize_api_endpoint(endpoint: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(endpoint["_id"]),
+        "api_slug": endpoint.get("api_slug", ""),
+        "method": endpoint.get("method", "GET"),
+        "path": endpoint.get("path", "/"),
+        "name": endpoint.get("name", ""),
+        "summary": endpoint.get("summary", ""),
+        "group": endpoint.get("group", "General"),
+        "request_schema": endpoint.get("request_schema", {}),
+        "response_schema": endpoint.get("response_schema", {}),
+        "sample_request": endpoint.get("sample_request", {}),
+        "sample_response": endpoint.get("sample_response", {}),
+        "requires_auth": bool(endpoint.get("requires_auth", True)),
+        "is_active": bool(endpoint.get("is_active", True)),
+        "created_at": endpoint.get("created_at"),
+        "updated_at": endpoint.get("updated_at"),
+    }
+
+
+def serialize_api_list(
+    api_doc: dict[str, Any],
+    *,
+    category: dict[str, Any] | None,
+    pricing_from: str | None,
+) -> dict[str, Any]:
+    return {
+        "id": int(api_doc["_id"]),
+        "name": api_doc.get("name", ""),
+        "name_en": api_doc.get("name_en", ""),
+        "slug": api_doc.get("slug", ""),
+        "short_description": api_doc.get("short_description", ""),
+        "category": serialize_category_summary(category),
+        "logo": api_doc.get("logo", ""),
+        "status": api_doc.get("status", "active"),
+        "is_featured": bool(api_doc.get("is_featured", False)),
+        "is_popular": bool(api_doc.get("is_popular", False)),
+        "rating": format_decimal(api_doc.get("rating", 0)),
+        "rating_count": int(api_doc.get("rating_count", 0)),
+        "views_count": int(api_doc.get("views_count", 0)),
+        "tags": api_doc.get("tags", []),
+        "pricing_from": pricing_from,
+        "rapidapi": serialize_rapidapi(api_doc),
+        "created_at": api_doc.get("created_at"),
+        "updated_at": api_doc.get("updated_at"),
+    }
+
+
+def serialize_api_detail(
+    api_doc: dict[str, Any],
+    *,
+    category: dict[str, Any] | None,
+    pricing_plans: list[dict[str, Any]],
+    documentations: list[dict[str, Any]],
+    endpoints: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
+        **serialize_api_list(
+            api_doc,
+            category=category,
+            pricing_from=format_decimal(min((plan.get("price", 0) for plan in pricing_plans), default=0))
+            if pricing_plans
+            else None,
+        ),
+        "description": api_doc.get("description", ""),
+        "base_url": api_doc.get("base_url", ""),
+        "documentation_url": api_doc.get("documentation_url", ""),
+        "banner": api_doc.get("banner", ""),
+        "pricing_plans": [serialize_pricing_plan(plan) for plan in pricing_plans],
+        "documentations": [serialize_documentation(document) for document in documentations],
+        "endpoints": [serialize_api_endpoint(endpoint) for endpoint in endpoints or []],
+        "created_by_username": api_doc.get("created_by_username"),
+    }
+
+
+def serialize_user(user: dict[str, Any] | MongoUser | None) -> dict[str, Any] | None:
+    if not user:
+        return None
+
+    if isinstance(user, MongoUser):
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "date_joined": user.date_joined,
+        }
+
+    return {
+        "id": int(user["_id"]),
+        "username": user.get("username", ""),
+        "email": user.get("email", ""),
+        "first_name": user.get("first_name", ""),
+        "last_name": user.get("last_name", ""),
+        "date_joined": user.get("date_joined"),
+    }
+
+
+def serialize_profile(user_doc: dict[str, Any] | MongoUser | None) -> dict[str, Any] | None:
+    if not user_doc or isinstance(user_doc, MongoUser):
+        return None
+
+    profile = user_doc.get("profile", {})
+    return {
+        "id": int(user_doc["_id"]),
+        "user": serialize_user(user_doc),
+        "phone": profile.get("phone", ""),
+        "company": profile.get("company", ""),
+        "bio": profile.get("bio", ""),
+        "avatar": profile.get("avatar"),
+        "api_key": mask_secret(profile.get("api_key")),
+        "api_key_preview": mask_secret(profile.get("api_key")),
+        "has_api_key": bool(profile.get("api_key")),
+        "created_at": profile.get("created_at"),
+        "updated_at": profile.get("updated_at"),
+    }
+
+
+def serialize_access_grant(
+    grant: dict[str, Any],
+    *,
+    api_doc: dict[str, Any] | None,
+    pricing_plan: dict[str, Any] | None,
+    category: dict[str, Any] | None,
+    pricing_from: str | None,
+) -> dict[str, Any]:
+    return {
+        "id": int(grant["_id"]),
+        "api": serialize_api_list(api_doc, category=category, pricing_from=pricing_from) if api_doc else None,
+        "pricing_plan": serialize_pricing_plan(pricing_plan) if pricing_plan else None,
+        "source": grant.get("source", "manual"),
+        "status": grant.get("status", "pending"),
+        "external_subscription_id": grant.get("external_subscription_id", ""),
+        "starts_at": grant.get("starts_at"),
+        "ends_at": grant.get("ends_at"),
+        "requests_per_day": grant.get("requests_per_day"),
+        "requests_per_month": grant.get("requests_per_month"),
+        "metadata": grant.get("metadata", {}),
+        "created_at": grant.get("created_at"),
+        "updated_at": grant.get("updated_at"),
+    }
+
+
+def serialize_usage_item(
+    usage: dict[str, Any],
+    *,
+    api_doc: dict[str, Any] | None,
+    access_grant: dict[str, Any] | None,
+    pricing_plan: dict[str, Any] | None,
+    category: dict[str, Any] | None,
+    pricing_from: str | None,
+) -> dict[str, Any]:
+    serialized_grant = (
+        serialize_access_grant(
+            access_grant,
+            api_doc=api_doc,
+            pricing_plan=pricing_plan,
+            category=category,
+            pricing_from=pricing_from,
+        )
+        if access_grant
+        else None
     )
     pricing_plans = PricingPlanSerializer(many=True, read_only=True)
     documentations = DocumentationSerializer(many=True, read_only=True)
@@ -167,3 +421,45 @@ class APIUsageSerializer(serializers.ModelSerializer):
         fields = ['id', 'api', 'requests_count', 'last_used', 'created_at']
         read_only_fields = ['created_at']
 
+class APIReleaseSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=160)
+    base_url = serializers.URLField()
+    documentation_url = serializers.URLField(required=False, allow_blank=True)
+    auth_scheme = serializers.ChoiceField(
+        choices=["api-key", "api_key", "bearer", "oauth2", "basic", "none"],
+        default="api-key",
+    )
+    category = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=40),
+        required=False,
+        allow_empty=True,
+    )
+    description = serializers.CharField()
+
+    def validate(self, attrs):
+        attrs["name"] = attrs["name"].strip()
+        attrs["documentation_url"] = attrs.get("documentation_url", "").strip()
+        attrs["category"] = attrs.get("category", "").strip()
+        attrs["description"] = attrs["description"].strip()
+        attrs["tags"] = [str(tag).strip() for tag in attrs.get("tags", []) if str(tag).strip()]
+        if attrs["auth_scheme"] == "api-key":
+            attrs["auth_scheme"] = "api_key"
+        return attrs
+
+
+class SubscriptionCheckoutSerializer(serializers.Serializer):
+    plan_id = serializers.IntegerField(min_value=1)
+
+
+class UserUpdateSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False, allow_blank=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+
+
+class UserProfileUpdateSerializer(serializers.Serializer):
+    phone = serializers.CharField(required=False, allow_blank=True)
+    company = serializers.CharField(required=False, allow_blank=True)
+    bio = serializers.CharField(required=False, allow_blank=True)
+    avatar = serializers.URLField(required=False, allow_null=True, allow_blank=True)
