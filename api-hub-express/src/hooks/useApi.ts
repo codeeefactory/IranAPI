@@ -2,11 +2,33 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService, type API, type APISummary, type Category, type PricingPlan, type Documentation, type User, type UserProfile } from '@/lib/api';
 import { toast } from 'sonner';
 
-// Categories
-export const useCategories = () => {
-  return useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiService.getCategories(),
+import {
+  API,
+  APISummary,
+  Category,
+  Documentation,
+  PaginatedResponse,
+  PricingPlan,
+  APIReleaseInput,
+  SubscriptionCheckout,
+  SubscriptionPlan,
+  apiService,
+  getErrorMessage,
+  SessionResponse,
+  User,
+  UserProfile,
+} from "@/lib/api";
+
+interface QueryBootstrapOptions<T> {
+  initialData?: T;
+}
+
+
+export const useSession = () =>
+  useQuery({
+    queryKey: ["session"],
+    queryFn: () => apiService.getSession(),
+    retry: false,
   });
 };
 
@@ -32,6 +54,7 @@ export const useAPIs = (params?: {
   category?: number;
   featured?: boolean;
   popular?: boolean;
+  owned?: boolean;
   ordering?: string;
   page?: number;
 }) => {
@@ -73,19 +96,146 @@ export const useRateAPI = () => {
   });
 };
 
-// Pricing Plans
-export const usePricingPlans = (apiId?: number) => {
-  return useQuery({
-    queryKey: ['pricing-plans', apiId],
-    queryFn: () => apiService.getPricingPlans(apiId),
+
+export const useReleaseAPI = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: APIReleaseInput) => apiService.releaseAPI(data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["apis"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.setQueryData(["api", data.api.slug], data.api);
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "انتشار API انجام نشد."));
+    },
   });
 };
 
-// Documentation
-export const useDocumentations = (apiId?: number) => {
+
+export const usePricingPlans = (
+  apiSlug?: string,
+  page?: number,
+  options?: QueryBootstrapOptions<PaginatedResponse<PricingPlan>>,
+) =>
+  useQuery({
+    queryKey: ["pricing-plans", apiSlug, page],
+    queryFn: () => apiService.getPricingPlans(apiSlug, page),
+    initialData: options?.initialData,
+  });
+};
+
+
+export const useSubscriptionPlans = (options?: QueryBootstrapOptions<PaginatedResponse<SubscriptionPlan>>) =>
+  useQuery({
+    queryKey: ["subscription-plans"],
+    queryFn: () => apiService.getSubscriptionPlans(),
+    initialData: options?.initialData,
+  });
+
+
+export const useCurrentSubscription = () => {
+  const session = useSession();
   return useQuery({
-    queryKey: ['documentations', apiId],
-    queryFn: () => apiService.getDocumentations(apiId),
+    queryKey: ["subscription"],
+    queryFn: () => apiService.getCurrentSubscription(),
+    enabled: session.data?.authenticated === true,
+    retry: false,
+  });
+};
+
+
+export const useSubscribe = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (planId: number) => {
+      const checkout = await apiService.subscribe(planId);
+      return apiService.confirmSubscriptionCheckout(checkout.checkout.id);
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["subscription"], { subscription: data.subscription });
+      queryClient.invalidateQueries({ queryKey: ["access-grants"] });
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "فعال‌سازی اشتراک انجام نشد."));
+    },
+  });
+};
+
+
+export const useCreateSubscriptionCheckout = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (planId: number) => apiService.subscribe(planId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["subscription-checkout", data.checkout.id], { checkout: data.checkout });
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "ایجاد پرداخت اشتراک انجام نشد."));
+    },
+  });
+};
+
+
+export const useSubscriptionCheckout = (checkoutId: number | undefined, initialCheckout?: SubscriptionCheckout | null) =>
+  useQuery({
+    queryKey: ["subscription-checkout", checkoutId],
+    queryFn: () => apiService.getSubscriptionCheckout(checkoutId as number),
+    enabled: Boolean(checkoutId),
+    initialData: initialCheckout ? { checkout: initialCheckout } : undefined,
+    retry: false,
+  });
+
+
+export const useConfirmSubscriptionCheckout = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (checkoutId: number) => apiService.confirmSubscriptionCheckout(checkoutId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["subscription"], { subscription: data.subscription });
+      queryClient.setQueryData(["subscription-checkout", data.checkout.id], { checkout: data.checkout });
+      queryClient.invalidateQueries({ queryKey: ["access-grants"] });
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "تایید پرداخت اشتراک انجام نشد."));
+    },
+  });
+};
+
+
+export const useCancelSubscriptionCheckout = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (checkoutId: number) => apiService.cancelSubscriptionCheckout(checkoutId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["subscription-checkout", data.checkout.id], { checkout: data.checkout });
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "لغو پرداخت اشتراک انجام نشد."));
+    },
+  });
+};
+
+
+export const useDocumentations = (
+  apiSlug?: string,
+  page?: number,
+  options?: QueryBootstrapOptions<PaginatedResponse<Documentation>>,
+) =>
+  useQuery({
+    queryKey: ["documentations", apiSlug, page],
+    queryFn: () => apiService.getDocumentations(apiSlug, page),
+    initialData: options?.initialData,
   });
 };
 
@@ -254,8 +404,28 @@ export const useGenerateApiKey = () => {
   });
 };
 
-// API Usage
-export const useUsage = () => {
+
+export const useGenerateLegacyAPIKey = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => apiService.generateLegacyAPIKey(),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["profile"], data.profile);
+      queryClient.setQueryData(["session"], (current: SessionResponse | undefined) =>
+        current ? { ...current, profile: data.profile } : current,
+      );
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "API key rotation failed."));
+    },
+  });
+};
+
+
+export const useAccessGrants = () => {
+  const session = useSession();
   return useQuery({
     queryKey: ['usage'],
     queryFn: () => apiService.getUsage(),
