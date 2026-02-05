@@ -1,72 +1,53 @@
+import { useState } from "react";
+import { ArrowLeft, CircleAlert, Route, ShieldCheck } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+
+import { Footer } from "@/components/Footer";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { CheckCircle, CreditCard, Lock, ArrowRight, ArrowLeft } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  useCancelSubscriptionCheckout,
+  useConfirmSubscriptionCheckout,
+  useCreateSubscriptionCheckout,
+  usePricingPlans,
+  useSession,
+  useSubscriptionCheckout,
+  useSubscriptionPlans,
+} from "@/hooks/useApi";
+import { SubscriptionCheckout } from "@/lib/api";
+import { usePageMetadata } from "@/lib/metadata";
+import { formatCurrencyLabel, formatDateTimeFa, formatFaNumber } from "@/lib/site";
 
-const plans = {
-  free: {
-    name: "رایگان",
-    price: 0,
-    priceText: "۰ تومان",
-    description: "عالی برای تست و پروژه‌های کوچک",
-    features: [
-      "۱۰۰ فراخوانی API/روز",
-      "پشتیبانی پایه",
-      "دسترسی به انجمن",
-      "محدودیت نرخ استاندارد",
-    ],
-  },
-  pro: {
-    name: "حرفه‌ای",
-    price: 49,
-    priceText: "۴۹ تومان",
-    description: "برای برنامه‌ها و تیم‌های در حال رشد",
-    features: [
-      "۱۰,۰۰۰ فراخوانی API/روز",
-      "پشتیبانی اولویت‌دار",
-      "تحلیل پیشرفته",
-      "محدودیت نرخ بالاتر",
-      "وب‌هوک‌های سفارشی",
-      "همکاری تیمی",
-    ],
-  },
-  enterprise: {
-    name: "سازمانی",
-    price: 0,
-    priceText: "سفارشی",
-    description: "برای برنامه‌های در مقیاس بزرگ",
-    features: [
-      "فراخوانی API نامحدود",
-      "پشتیبانی اختصاصی ۲۴/۷",
-      "تحلیل سفارشی",
-      "بدون محدودیت نرخ",
-      "وب‌هوک‌های سفارشی",
-      "اعضای تیم نامحدود",
-      "یکپارچه‌سازی سفارشی",
-    ],
-  },
-};
-
-const Payment = () => {
+export default function Payment() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const planId = searchParams.get("plan") || "free";
-  const [selectedPlan, setSelectedPlan] = useState(plans[planId as keyof typeof plans] || plans.free);
-  const [formData, setFormData] = useState({
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-    cardholderName: "",
-    email: "",
-    phone: "",
+  const selectedPlanId = Number(searchParams.get("plan") || "0");
+  const selectedSubscriptionId = Number(searchParams.get("subscription") || "0");
+  const selectedCheckoutId = Number(searchParams.get("checkout") || "0");
+  const [createdCheckout, setCreatedCheckout] = useState<SubscriptionCheckout | null>(null);
+  const { data: pricingPlans } = usePricingPlans();
+  const { data: subscriptionPlans } = useSubscriptionPlans();
+  const session = useSession();
+  const createCheckout = useCreateSubscriptionCheckout();
+  const confirmCheckout = useConfirmSubscriptionCheckout();
+  const cancelCheckout = useCancelSubscriptionCheckout();
+  const checkoutId = selectedCheckoutId || createdCheckout?.id;
+  const checkoutQuery = useSubscriptionCheckout(checkoutId, createdCheckout);
+  const activeCheckout = checkoutQuery.data?.checkout || createdCheckout;
+  const plan = pricingPlans?.results.find((item) => item.id === selectedPlanId);
+  const subscriptionPlan =
+    activeCheckout?.plan || subscriptionPlans?.results.find((item) => item.id === selectedSubscriptionId);
+  const isReadyForActivation = Boolean(plan?.is_listed_on_rapidapi);
+  const isSubscriptionCheckout = Boolean(subscriptionPlan);
+
+  usePageMetadata({
+    title: isSubscriptionCheckout ? "فعال‌سازی اشتراک" : "فعال‌سازی دسترسی",
+    description: "جزئیات پلن، محدودیت‌ها و مرحله بعدی فعال‌سازی را در IranAPI بررسی کنید.",
+    path: selectedSubscriptionId ? `/payment?subscription=${selectedSubscriptionId}` : selectedPlanId ? `/payment?plan=${selectedPlanId}` : "/payment",
+    noindex: true,
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -114,6 +95,40 @@ const Payment = () => {
     }, 2000);
   };
 
+  const startSubscriptionPurchase = async () => {
+    if (!subscriptionPlan) {
+      return;
+    }
+    if (!session.data?.authenticated) {
+      navigate("/signin", { state: { from: `/payment?subscription=${subscriptionPlan.id}` } });
+      return;
+    }
+    const result = await createCheckout.mutateAsync(subscriptionPlan.id);
+    setCreatedCheckout(result.checkout);
+    navigate(`/payment?subscription=${subscriptionPlan.id}&checkout=${result.checkout.id}`, { replace: true });
+  };
+
+  const confirmSubscriptionPayment = async () => {
+    if (!activeCheckout) {
+      return;
+    }
+    await confirmCheckout.mutateAsync(activeCheckout.id);
+    navigate("/dashboard", { replace: true });
+  };
+
+  const cancelSubscriptionPayment = async () => {
+    if (!activeCheckout) {
+      return;
+    }
+    const result = await cancelCheckout.mutateAsync(activeCheckout.id);
+    setCreatedCheckout(result.checkout);
+  };
+
+  const checkoutIsPending = activeCheckout?.status === "pending";
+  const checkoutIsPaid = activeCheckout?.status === "paid";
+  const checkoutIsClosed = Boolean(activeCheckout && !checkoutIsPending && !checkoutIsPaid);
+  const isBusy = createCheckout.isPending || confirmCheckout.isPending || cancelCheckout.isPending;
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -130,70 +145,58 @@ const Payment = () => {
               <ArrowRight className="h-4 w-4 ml-2" />
               بازگشت به قیمت‌گذاری
             </Button>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
-              تکمیل خرید
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              پلن انتخابی خود را بررسی کرده و اطلاعات پرداخت را وارد کنید
-            </p>
+
+            <div className="space-y-3">
+              <p className="eyebrow">مسیر فعال‌سازی</p>
+              <h1 className="section-title">{isSubscriptionCheckout ? "فعال‌سازی اشتراک" : "فعال‌سازی دسترسی API"}</h1>
+              <p className="section-copy">
+                قبل از فعال‌سازی، جزئیات پلن، سقف مصرف و وضعیت سرویس را بررسی کنید. دسترسی‌ها و گزارش مصرف بعد از فعال‌سازی در داشبورد IranAPI مدیریت می‌شوند.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <span className="stat-chip">
+                <Route className="h-4 w-4 text-primary" />
+                جزئیات شفاف پلن
+              </span>
+              <span className="stat-chip">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                مدیریت امن دسترسی
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Payment Form */}
-            <div className="lg:col-span-2">
-              <Card className="p-6 mb-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  <h2 className="text-2xl font-bold">اطلاعات پرداخت</h2>
-                </div>
-
-                {selectedPlan.price === 0 && selectedPlan.name === "رایگان" ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="h-16 w-16 text-primary mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold mb-2">پلن رایگان</h3>
-                    <p className="text-muted-foreground mb-6">
-                      برای فعال‌سازی پلن رایگان نیازی به پرداخت نیست
-                    </p>
-                    <Button
-                      onClick={handleSubmit}
-                      className="bg-gradient-primary hover:shadow-glow"
-                      size="lg"
-                    >
-                      فعال‌سازی پلن رایگان
-                    </Button>
-                  </div>
-                ) : selectedPlan.name === "سازمانی" ? (
-                  <div className="text-center py-12">
-                    <Lock className="h-16 w-16 text-primary mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold mb-2">پلن سازمانی</h3>
-                    <p className="text-muted-foreground mb-6">
-                      برای پلن سازمانی، لطفاً با تیم فروش ما تماس بگیرید
-                    </p>
-                    <Button
-                      onClick={handleSubmit}
-                      variant="outline"
-                      size="lg"
-                    >
-                      تماس با فروش
-                    </Button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                      <Label htmlFor="cardNumber">شماره کارت</Label>
-                      <Input
-                        id="cardNumber"
-                        name="cardNumber"
-                        type="text"
-                        placeholder="۱۲۳۴ ۵۶۷۸ ۹۰۱۲ ۳۴۵۶"
-                        value={formData.cardNumber}
-                        onChange={handleInputChange}
-                        maxLength={19}
-                        className="mt-2"
-                      />
+          <div className="grid gap-6">
+            <Card className="surface-card">
+              <CardHeader>
+                <CardTitle>{isSubscriptionCheckout ? "اشتراک انتخاب‌شده" : "پلن انتخاب‌شده"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {subscriptionPlan ? (
+                  <>
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xl font-semibold">{subscriptionPlan.name}</p>
+                        <p className="text-sm text-muted-foreground">{subscriptionPlan.plan_type}</p>
+                      </div>
+                      <Badge>{formatCurrencyLabel(subscriptionPlan.price, subscriptionPlan.currency)}</Badge>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    <p className="text-sm leading-7 text-muted-foreground">{subscriptionPlan.description}</p>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>
+                        انتشار API:{" "}
+                        {subscriptionPlan.api_publish_limit === null ? "نامحدود" : `${formatFaNumber(subscriptionPlan.api_publish_limit)} API`}
+                      </p>
+                      <p>
+                        درخواست ماهانه:{" "}
+                        {subscriptionPlan.included_requests === null ? "نامحدود" : formatFaNumber(subscriptionPlan.included_requests)}
+                      </p>
+                      <p>دوره تمدید: هر {formatFaNumber(subscriptionPlan.interval_days)} روز</p>
+                    </div>
+                  </>
+                ) : plan ? (
+                  <>
+                    <div className="flex items-center justify-between gap-4">
                       <div>
                         <Label htmlFor="expiryDate">تاریخ انقضا</Label>
                         <Input
@@ -221,18 +224,10 @@ const Payment = () => {
                         />
                       </div>
                     </div>
-
-                    <div>
-                      <Label htmlFor="cardholderName">نام صاحب کارت</Label>
-                      <Input
-                        id="cardholderName"
-                        name="cardholderName"
-                        type="text"
-                        placeholder="نام و نام خانوادگی"
-                        value={formData.cardholderName}
-                        onChange={handleInputChange}
-                        className="mt-2"
-                      />
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>درخواست روزانه: {plan.requests_per_day?.toLocaleString("fa-IR") || "نامشخص"}</p>
+                      <p>درخواست ماهانه: {plan.requests_per_month?.toLocaleString("fa-IR") || "نامشخص"}</p>
+                      <p>وضعیت دسترسی: {isReadyForActivation ? "آماده فعال‌سازی" : "در حال آماده‌سازی"}</p>
                     </div>
 
                     <Separator />
@@ -278,36 +273,107 @@ const Payment = () => {
                     </div>
                   </form>
                 )}
-              </Card>
-            </div>
-
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <Card className="p-6 sticky top-4">
-                <h2 className="text-2xl font-bold mb-6">خلاصه سفارش</h2>
-                
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold">{selectedPlan.name}</p>
-                      <p className="text-sm text-muted-foreground">{selectedPlan.description}</p>
-                    </div>
-                    <Badge variant="outline">{selectedPlan.priceText}</Badge>
+                {activeCheckout ? (
+                  <div className="grid gap-3 rounded-md border border-border/70 bg-muted/40 p-4 text-sm text-muted-foreground sm:grid-cols-2">
+                    <p>
+                      <span className="font-medium text-foreground">شماره پیگیری: </span>
+                      {activeCheckout.reference}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">وضعیت پرداخت: </span>
+                      {activeCheckout.status}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">درگاه: </span>
+                      {activeCheckout.gateway}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">اعتبار تا: </span>
+                      {formatDateTimeFa(activeCheckout.expires_at)}
+                    </p>
                   </div>
+                ) : null}
+              </CardContent>
+            </Card>
 
-                  <Separator />
+            <Card className="surface-card">
+              <CardHeader className="flex flex-row items-center gap-3">
+                <CircleAlert className="h-5 w-5 text-accent" />
+                <CardTitle>مرحله‌های فعال‌سازی</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
+                <div className="metric-card">
+                  <p className="mb-2 font-semibold text-foreground">1. بررسی پلن و محدودیت‌ها</p>
+                  <p>سقف مصرف، نوع پلن و وضعیت آماده‌بودن سرویس را قبل از ادامه بررسی کنید.</p>
+                </div>
+                <div className="metric-card">
+                  <p className="mb-2 font-semibold text-foreground">2. فعال‌سازی از حساب کاربری</p>
+                  <p>دسترسی از حساب پرتال فعال می‌شود تا کلیدها، محدودیت‌ها و گزارش مصرف در یک مسیر واحد بمانند.</p>
+                </div>
+                <div className="metric-card">
+                  <p className="mb-2 font-semibold text-foreground">3. بازگشت به داشبورد</p>
+                  <p>بعد از فعال‌سازی، وضعیت دسترسی و مصرف را از داشبورد پیگیری کنید.</p>
+                </div>
 
-                  <div>
-                    <h3 className="font-semibold mb-2">ویژگی‌ها:</h3>
-                    <ul className="space-y-2">
-                      {selectedPlan.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                {subscriptionPlan ? (
+                  <div className="rounded-md border border-accent/30 bg-accent/10 p-4">
+                    <p className="font-semibold text-foreground">
+                      {activeCheckout ? "پرداخت اشتراک آماده تایید است" : "این اشتراک آماده خرید است"}
+                    </p>
+                    <p className="mt-2">
+                      {activeCheckout
+                        ? "بعد از تایید پرداخت، این پلن به عنوان اشتراک فعال حساب ثبت می‌شود."
+                        : "ابتدا پرداخت را ایجاد کنید تا شماره پیگیری و زمان اعتبار سفارش ثبت شود."}
+                    </p>
                   </div>
+                ) : isReadyForActivation ? (
+                  <div className="rounded-md border border-accent/30 bg-accent/10 p-4">
+                    <p className="font-semibold text-foreground">این پلن آماده فعال‌سازی است</p>
+                    <p className="mt-2">برای ادامه، داشبورد را باز کنید و دسترسی سرویس را از حساب خود نهایی کنید.</p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-dashed border-accent/35 bg-accent/10 p-4">
+                    <p className="font-semibold text-foreground">این پلن هنوز آماده فعال‌سازی نیست</p>
+                    <p className="mt-2">تا زمان تکمیل آماده‌سازی، این صفحه فقط وضعیت پلن را نمایش می‌دهد.</p>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  {subscriptionPlan ? (
+                    <>
+                      {!activeCheckout || checkoutIsClosed ? (
+                        <Button onClick={startSubscriptionPurchase} disabled={isBusy}>
+                          {createCheckout.isPending
+                            ? "در حال ایجاد پرداخت..."
+                            : session.data?.authenticated
+                              ? "خرید اشتراک"
+                              : "ورود و خرید اشتراک"}
+                        </Button>
+                      ) : null}
+                      {checkoutIsPending ? (
+                        <>
+                          <Button onClick={confirmSubscriptionPayment} disabled={isBusy}>
+                            {confirmCheckout.isPending ? "در حال تایید پرداخت..." : "تایید پرداخت و فعال‌سازی"}
+                          </Button>
+                          <Button variant="outline" onClick={cancelSubscriptionPayment} disabled={isBusy}>
+                            لغو پرداخت
+                          </Button>
+                        </>
+                      ) : null}
+                      {checkoutIsPaid ? (
+                        <Button asChild>
+                          <Link to="/dashboard">مشاهده اشتراک در داشبورد</Link>
+                        </Button>
+                      ) : null}
+                    </>
+                  ) : (
+                    <Button asChild>
+                      <Link to="/dashboard">رفتن به داشبورد</Link>
+                    </Button>
+                  )}
+                  <Button variant="outline" asChild>
+                    <Link to="/browse">کشف APIها</Link>
+                  </Button>
                 </div>
 
                 <Separator />

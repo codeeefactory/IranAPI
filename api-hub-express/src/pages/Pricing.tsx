@@ -1,71 +1,42 @@
 import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { RapidApiSyncPanel } from "@/components/RapidApiSyncPanel";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAPIs, useCurrentSubscription, usePricingPlans, useSubscriptionPlans } from "@/hooks/useApi";
+import { getPricingBootstrap } from "@/lib/bootstrap";
+import { createBreadcrumbSchema, usePageMetadata } from "@/lib/metadata";
+import { formatCurrencyLabel, formatFaNumber, toSiteUrl } from "@/lib/site";
 
-const Pricing = () => {
-  const navigate = useNavigate();
-  
-  const plans = [
-    {
-      id: "free",
-      name: "رایگان",
-      price: "۰ تومان",
-      description: "عالی برای تست و پروژه‌های کوچک",
-      features: [
-        { text: "۱۰۰ فراخوانی API/روز", included: true },
-        { text: "پشتیبانی پایه", included: true },
-        { text: "دسترسی به انجمن", included: true },
-        { text: "محدودیت نرخ استاندارد", included: true },
-        { text: "پشتیبانی اولویت‌دار", included: false },
-        { text: "تحلیل پیشرفته", included: false },
-        { text: "یکپارچه‌سازی سفارشی", included: false },
-      ],
-      cta: "شروع کنید",
-      popular: false,
-    },
-    {
-      id: "pro",
-      name: "حرفه‌ای",
-      price: "۴۹ تومان",
-      description: "برای برنامه‌ها و تیم‌های در حال رشد",
-      features: [
-        { text: "۱۰,۰۰۰ فراخوانی API/روز", included: true },
-        { text: "پشتیبانی اولویت‌دار", included: true },
-        { text: "تحلیل پیشرفته", included: true },
-        { text: "محدودیت نرخ بالاتر", included: true },
-        { text: "وب‌هوک‌های سفارشی", included: true },
-        { text: "همکاری تیمی", included: true },
-        { text: "یکپارچه‌سازی سفارشی", included: false },
-      ],
-      cta: "شروع دوره آزمایشی رایگان",
-      popular: true,
-    },
-    {
-      id: "enterprise",
-      name: "سازمانی",
-      price: "سفارشی",
-      description: "برای برنامه‌های در مقیاس بزرگ",
-      features: [
-        { text: "فراخوانی API نامحدود", included: true },
-        { text: "پشتیبانی اختصاصی ۲۴/۷", included: true },
-        { text: "تحلیل سفارشی", included: true },
-        { text: "بدون محدودیت نرخ", included: true },
-        { text: "وب‌هوک‌های سفارشی", included: true },
-        { text: "اعضای تیم نامحدود", included: true },
-        { text: "یکپارچه‌سازی سفارشی", included: true },
-      ],
-      cta: "تماس با فروش",
-      popular: false,
-    },
-  ];
+export default function Pricing() {
+  const bootstrap = getPricingBootstrap();
+  const { data: pricingPlans, isLoading } = usePricingPlans(undefined, undefined, {
+    initialData: bootstrap?.pricingPlans,
+  });
+  const { data: subscriptionPlans, isLoading: subscriptionsLoading } = useSubscriptionPlans();
+  const { data: currentSubscription } = useCurrentSubscription();
+  const { data: apis } = useAPIs({ ordering: "name", page_size: 100 }, { initialData: bootstrap?.apis });
+  const apiMap = new Map((apis?.results || []).map((api) => [api.slug, api.name]));
+  const activeSubscription = currentSubscription?.subscription?.status === "active" ? currentSubscription.subscription : null;
+  const activeSubscriptionPlanId = activeSubscription?.plan.id;
 
-  const handlePlanClick = (planId: string) => {
-    navigate(`/payment?plan=${planId}`);
-  };
+  usePageMetadata({
+    title: "قیمت‌گذاری",
+    description: "پلن‌های فعال، سقف مصرف و وضعیت آماده‌بودن سرویس‌ها را قبل از انتخاب و فعال‌سازی در IranAPI مقایسه کنید.",
+    path: "/pricing",
+    structuredData: [
+      createBreadcrumbSchema([
+        { name: "خانه", path: "/" },
+        { name: "قیمت‌گذاری", path: "/pricing" },
+      ]),
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: "قیمت‌گذاری APIها",
+        url: toSiteUrl("/pricing"),
+      },
+    ],
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,110 +53,171 @@ const Pricing = () => {
           </p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {plans.map((plan) => (
-            <Card 
-              key={plan.name} 
-              className={`p-8 ${plan.popular ? 'border-primary shadow-glow' : ''} relative`}
-            >
-              {plan.popular && (
-                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-primary">
-                  محبوب‌ترین
-                </Badge>
-              )}
+      <main id="main-content" className="container page-stack">
+        <section className="page-hero space-y-6">
+          <div className="space-y-3">
+            <p className="eyebrow">پلن‌ها و ظرفیت‌ها</p>
+            <h1 className="section-title">قیمت، سقف مصرف و وضعیت سرویس‌ها را یک‌جا مقایسه کنید</h1>
+            <p className="section-copy">
+              این صفحه اشتراک‌های حساب کاربری و پلن‌های هر API را از بک‌اند نمایش می‌دهد تا هزینه، ظرفیت و آمادگی سرویس‌ها شفاف باشد.
+            </p>
+          </div>
 
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="mb-2">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  {plan.price !== "سفارشی" && <span className="text-muted-foreground">/ماه</span>}
-                </div>
-                <p className="text-muted-foreground text-sm">{plan.description}</p>
-              </div>
-
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    {feature.included ? (
-                      <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <X className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    )}
-                    <span className={feature.included ? "" : "text-muted-foreground"}>
-                      {feature.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button 
-                className={`w-full ${plan.popular ? 'bg-gradient-primary hover:shadow-glow' : ''}`}
-                variant={plan.popular ? "default" : "outline"}
-                onClick={() => handlePlanClick(plan.id)}
-              >
-                {plan.cta}
-              </Button>
+          <div className="section-frame grid gap-4 md:grid-cols-3">
+            <Card className="surface-card">
+              <CardContent className="space-y-2 p-6">
+                <p className="text-sm text-muted-foreground">پلن‌های فعال</p>
+                <p className="text-3xl font-bold">{formatFaNumber(pricingPlans?.count || 0)}</p>
+              </CardContent>
             </Card>
-          ))}
-        </div>
-
-        {/* FAQ Section */}
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8">سوالات متداول</h2>
-          
-          <div className="space-y-6">
-            <Card className="p-6">
-              <h3 className="font-bold mb-2">آیا می‌توانم بعداً پلن را تغییر دهم؟</h3>
-              <p className="text-muted-foreground">
-                بله! شما می‌توانید در هر زمان پلن خود را ارتقا یا کاهش دهید. تغییرات فوراً اعمال می‌شود.
-              </p>
+            <Card className="surface-card">
+              <CardContent className="space-y-2 p-6">
+                <p className="text-sm text-muted-foreground">APIهای دارای پلن</p>
+                <p className="text-3xl font-bold">{formatFaNumber(new Set((pricingPlans?.results || []).map((item) => item.api_slug)).size)}</p>
+              </CardContent>
             </Card>
-
-            <Card className="p-6">
-              <h3 className="font-bold mb-2">اگر از محدودیت API خود عبور کنم چه اتفاقی می‌افتد؟</h3>
-              <p className="text-muted-foreground">
-                درخواست‌های شما تا چرخه صورتحساب بعدی محدود می‌شوند. ما قبل از رسیدن به محدودیت به شما اطلاع می‌دهیم.
-              </p>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="font-bold mb-2">آیا بازگشت وجه ارائه می‌دهید؟</h3>
-              <p className="text-muted-foreground">
-                ما برای همه پلن‌های پولی ضمانت بازگشت وجه ۳۰ روزه ارائه می‌دهیم. بدون هیچ سوالی.
-              </p>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="font-bold mb-2">آیا دوره آزمایشی رایگان وجود دارد؟</h3>
-              <p className="text-muted-foreground">
-                بله! پلن‌های حرفه‌ای و سازمانی با دوره آزمایشی رایگان ۱۴ روزه ارائه می‌شوند. بدون نیاز به کارت اعتباری.
-              </p>
+            <Card className="surface-card">
+              <CardContent className="space-y-2 p-6">
+                <p className="text-sm text-muted-foreground">پلن‌های محبوب</p>
+                <p className="text-3xl font-bold">{formatFaNumber((pricingPlans?.results || []).filter((item) => item.is_popular).length)}</p>
+              </CardContent>
             </Card>
           </div>
-        </div>
+        </section>
 
-        {/* CTA Section */}
-        <div className="mt-16 text-center">
-          <Card className="p-12 bg-gradient-hero">
-            <h2 className="text-3xl font-bold mb-4">آماده شروع هستید؟</h2>
-            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              به هزاران توسعه‌دهنده که برنامه‌های شگفت‌انگیزی با بازار API ما می‌سازند، بپیوندید.
+        <RapidApiSyncPanel compact />
+
+        <section className="section-frame space-y-6">
+          <div className="space-y-2">
+            <p className="eyebrow">اشتراک توسعه‌دهنده</p>
+            <h2 className="text-2xl font-bold">پلن‌های عضویت IranAPI</h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              این پلن‌ها ظرفیت انتشار API، سقف مصرف ماهانه و امکانات داشبورد را برای حساب توسعه‌دهنده مشخص می‌کنند.
             </p>
-            <div className="flex gap-4 justify-center">
-              <Button 
-                className="bg-gradient-primary hover:shadow-glow transition-all"
-                onClick={() => handlePlanClick("pro")}
-              >
-                شروع دوره آزمایشی رایگان
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => handlePlanClick("enterprise")}
-              >
-                تماس با فروش
-              </Button>
+          </div>
+
+          {activeSubscription ? (
+            <Card className="surface-card border-primary/35 bg-primary/5">
+              <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Current active subscription</p>
+                  <p className="text-sm text-muted-foreground">
+                    {activeSubscription.plan.name} - renews {formatFaNumber(activeSubscription.days_remaining)} days from now
+                  </p>
+                </div>
+                <Badge>{activeSubscription.status}</Badge>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {subscriptionsLoading ? (
+            <div className="grid gap-6 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Card key={index} className="h-72 animate-pulse bg-muted/60" />
+              ))}
             </div>
+          ) : subscriptionPlans?.results && subscriptionPlans.results.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-3">
+              {subscriptionPlans.results.map((plan) => (
+                <Card key={plan.id} className="surface-card">
+                  <CardHeader className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge variant="outline">{plan.plan_type}</Badge>
+                      {plan.is_popular ? <Badge>محبوب</Badge> : null}
+                    </div>
+                    <CardTitle>{plan.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-2xl font-bold">
+                      {formatCurrencyLabel(plan.price, plan.currency)}
+                      <span className="text-sm font-normal text-muted-foreground"> / ماه</span>
+                    </p>
+                    <p className="min-h-14 text-sm leading-7 text-muted-foreground">{plan.description}</p>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p>
+                        انتشار API:{" "}
+                        {plan.api_publish_limit === null ? "نامحدود" : `${formatFaNumber(plan.api_publish_limit)} API`}
+                      </p>
+                      <p>
+                        درخواست ماهانه:{" "}
+                        {plan.included_requests === null ? "نامحدود" : formatFaNumber(plan.included_requests)}
+                      </p>
+                    </div>
+                    {plan.features.length > 0 ? (
+                      <ul className="space-y-2 rounded-md bg-muted/50 p-4 text-sm text-muted-foreground">
+                        {plan.features.map((feature) => (
+                          <li key={feature}>• {feature}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <Button className="w-full" asChild={activeSubscriptionPlanId !== plan.id} disabled={activeSubscriptionPlanId === plan.id}>
+                      <Link to={`/payment?subscription=${plan.id}`}>انتخاب این اشتراک</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">هنوز پلن اشتراکی فعالی ثبت نشده است.</CardContent>
+            </Card>
+          )}
+        </section>
+
+        <h2 className="sr-only">Pricing plans list</h2>
+
+        {isLoading ? (
+          <div className="section-frame grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Card key={index} className="h-64 animate-pulse bg-muted/60" />
+            ))}
+          </div>
+        ) : pricingPlans?.results && pricingPlans.results.length > 0 ? (
+          <div className="section-frame grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {pricingPlans.results.map((plan) => (
+              <Card key={plan.id} className="surface-card">
+                <CardHeader className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge variant="outline">{apiMap.get(plan.api_slug) || plan.api_slug}</Badge>
+                    {plan.is_popular ? <Badge>محبوب</Badge> : null}
+                  </div>
+                  <CardTitle>{plan.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-2xl font-bold">{formatCurrencyLabel(plan.price, plan.currency)}</p>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>نوع پلن: {plan.plan_type}</p>
+                    <p>درخواست روزانه: {plan.requests_per_day ? formatFaNumber(plan.requests_per_day) : "نامشخص"}</p>
+                    <p>درخواست ماهانه: {plan.requests_per_month ? formatFaNumber(plan.requests_per_month) : "نامشخص"}</p>
+                    <p>وضعیت دسترسی: {plan.is_listed_on_rapidapi ? "آماده فعال‌سازی" : "در حال آماده‌سازی"}</p>
+                  </div>
+                  {plan.features.length > 0 ? (
+                    <ul className="space-y-2 rounded-md bg-muted/50 p-4 text-sm text-muted-foreground">
+                      {plan.features.map((feature) => (
+                        <li key={feature}>• {feature}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <div className="flex gap-3">
+                    <Button className="flex-1" asChild>
+                      <Link to={`/payment?plan=${plan.id}`}>
+                        {plan.is_listed_on_rapidapi ? "شروع فعال‌سازی" : "مشاهده وضعیت"}
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link to={`/api/${plan.api_slug}`}>جزئیات API</Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="space-y-4 p-8 text-center">
+              <h2 className="text-xl font-semibold">هنوز پلنی برای نمایش وجود ندارد</h2>
+              <p className="text-muted-foreground">بعد از ثبت پلن‌های قیمت‌گذاری در بک‌اند، این بخش به‌صورت خودکار به‌روز می‌شود.</p>
+            </CardContent>
           </Card>
         </div>
       </main>
