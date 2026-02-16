@@ -1,5 +1,7 @@
-"""
-URL configuration for IranAPIBackend project.
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path, re_path
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -30,8 +32,13 @@ router.register(r'profiles', views.UserProfileViewSet, basename='profile')
 router.register(r'usage', views.APIUsageViewSet, basename='usage')
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls')),
-    path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
+    path("admin/", admin.site.urls),
+    re_path(
+        r"^api/(?!(?:v1|auth|health|usage|profile|categories|apis|pricing-plans|documentations)/)(?P<slug>[-\w]+)/?$",
+        frontend_app,
+        name="frontend-api-detail",
+    ),
+    path("api/", include("api.urls")),
+    path("robots.txt", robots_txt, name="robots-txt"),
+    path("sitemap.xml", sitemap_xml, name="sitemap-xml"),
 ]
