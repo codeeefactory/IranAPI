@@ -16,7 +16,7 @@ export const FeaturedApis = () => {
     name: api.name,
     name_en: api.name_en,
     slug: api.slug,
-    category: api.category?.name || 'عمومی',
+    category: api.category?.name || 'بدون دسته',
     description: api.short_description || '',
     popularity: `${Math.round(parseFloat(api.rating || '0') * 20)}%`,
     latency: '120ms', // This would come from API stats
@@ -65,8 +65,7 @@ export const FeaturedApis = () => {
             APIهای <span className="bg-gradient-primary bg-clip-text text-transparent">پرطرفدار</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            به پرکاربردترین و معتبرترین APIها دسترسی داشته باشید. 
-            تست شده توسط میلیون‌ها توسعه‌دهنده در سراسر جهان.
+            APIهای پرتقاضا را سریع بررسی کنید، مستندات را بخوانید و گزینه مناسب محصول خود را انتخاب کنید.
           </p>
         </div>
 

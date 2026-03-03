@@ -23,8 +23,23 @@ const SignUp = () => {
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  usePageMetadata({
+    title: "ثبت‌نام",
+    description: "حساب توسعه‌دهنده IranAPI را بسازید و داشبورد، دسترسی‌ها و گزارش مصرف خود را مدیریت کنید.",
+    path: "/signup",
+    noindex: true,
+  });
+
+  useEffect(() => {
+    if (session.data?.authenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate, session.data?.authenticated]);
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setFormError("");
+
     if (!acceptedTerms) {
       return;
     }
@@ -80,93 +95,19 @@ const SignUp = () => {
             <p className="text-muted-foreground">شروع ساخت با هزاران API</p>
           </div>
 
-          {/* Sign Up Card */}
-          <Card className="p-8">
-            {/* Social Sign Up */}
-            <div className="space-y-3 mb-6">
-              <Button variant="outline" className="w-full gap-2">
-                <Chrome className="h-5 w-5" />
-                ادامه با گوگل
-              </Button>
-              <Button variant="outline" className="w-full gap-2">
-                <Github className="h-5 w-5" />
-                ادامه با گیت‌هاب
-              </Button>
-            </div>
-
-            <div className="relative mb-6">
-              <Separator />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-sm text-muted-foreground">
-                یا ثبت‌نام با ایمیل
-              </span>
-            </div>
-
-            {/* Email Sign Up Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="first_name">نام</Label>
-                  <Input 
-                    id="first_name" 
-                    type="text" 
-                    placeholder="علی"
-                    className="mt-1"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">نام خانوادگی</Label>
-                  <Input 
-                    id="last_name" 
-                    type="text" 
-                    placeholder="احمدی"
-                    className="mt-1"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                  />
-                </div>
+      <main id="main-content" className="container page-stack">
+        <section className="page-hero grid gap-6 lg:grid-cols-[1.12fr,0.88fr] lg:items-start">
+          <Card className="surface-card">
+            <CardHeader className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge variant="outline">ثبت‌نام توسعه‌دهنده</Badge>
+                <Badge variant="outline">Developer Account</Badge>
               </div>
-
-              <div>
-                <Label htmlFor="username">نام کاربری</Label>
-                <Input 
-                  id="username" 
-                  type="text" 
-                  placeholder="username"
-                  className="mt-1"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">ایمیل (اختیاری)</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="you@example.com"
-                  className="mt-1"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password">رمز عبور</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="••••••••"
-                  className="mt-1"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={8}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  حداقل ۸ کاراکتر
+              <div className="space-y-3">
+                <p className="eyebrow">ساخت حساب</p>
+                <CardTitle className="text-3xl">ساخت حساب IranAPI</CardTitle>
+                <p className="text-sm leading-7 text-muted-foreground">
+                  با این حساب به داشبورد، پروفایل توسعه‌دهنده، وضعیت دسترسی‌ها، کلیدهای امن و گزارش مصرف دسترسی پیدا می‌کنید.
                 </p>
               </div>
 
@@ -183,27 +124,37 @@ const SignUp = () => {
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="terms" 
-                  checked={acceptedTerms}
-                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                />
-                <label
-                  htmlFor="terms"
-                  className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  با{" "}
-                  <Link to="/terms" className="text-primary hover:underline">
-                    شرایط خدمات
-                  </Link>{" "}
-                  و{" "}
-                  <Link to="/privacy" className="text-primary hover:underline">
-                    حریم خصوصی
-                  </Link>{" "}
-                  موافقم
-                </label>
-              </div>
+              <form className="space-y-4 rounded-md border border-border/70 bg-background/45 p-4 shadow-[inset_0_1px_0_hsl(var(--foreground)/0.07)]" onSubmit={handleSubmit} aria-busy={register.isPending}>
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span className="font-black uppercase tracking-[0.22em] text-primary">اطلاعات حساب</span>
+                  <span>پروفایل توسعه‌دهنده</span>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="first_name">نام</Label>
+                    <Input
+                      id="first_name"
+                      autoComplete="given-name"
+                      value={formData.first_name}
+                      onChange={(event) => {
+                        setFormError("");
+                        setFormData((current) => ({ ...current, first_name: event.target.value }));
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last_name">نام خانوادگی</Label>
+                    <Input
+                      id="last_name"
+                      autoComplete="family-name"
+                      value={formData.last_name}
+                      onChange={(event) => {
+                        setFormError("");
+                        setFormData((current) => ({ ...current, last_name: event.target.value }));
+                      }}
+                    />
+                  </div>
+                </div>
 
               <Button 
                 type="submit"
@@ -222,14 +173,34 @@ const SignUp = () => {
             </form>
           </Card>
 
-          {/* Sign In Link */}
-          <p className="text-center mt-6 text-muted-foreground">
-            قبلاً حساب کاربری دارید؟{" "}
-            <Link to="/signin" className="text-primary hover:underline font-semibold">
-              ورود
-            </Link>
-          </p>
-        </div>
+          <div className="grid gap-4">
+            <Card className="surface-card">
+              <CardContent className="content-list p-6 text-sm leading-7 text-muted-foreground">
+                <div className="metric-card">
+                  <p className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    بعد از ثبت‌نام چه چیزی دارید؟
+                  </p>
+                  <p>دسترسی به داشبورد، ویرایش اطلاعات حساب، مدیریت پروفایل توسعه‌دهنده و مشاهده گزارش مصرف.</p>
+                </div>
+                <div className="metric-card">
+                  <p className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    مسیر شفاف دسترسی API
+                  </p>
+                  <p>این فرم حساب پرتال را ایجاد می‌کند. فعال‌سازی پلن‌های API از داشبورد انجام می‌شود تا دسترسی، مصرف و کلیدها قابل پیگیری بمانند.</p>
+                </div>
+                <div className="metric-card">
+                  <p className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                    <KeyRound className="h-4 w-4 text-primary" />
+                    استاندارد پایه امنیت
+                  </p>
+                  <p>حداقل طول رمز عبور ۸ کاراکتر است و نشست کاربر با کوکی امن مدیریت می‌شود.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       </main>
     </div>
   );

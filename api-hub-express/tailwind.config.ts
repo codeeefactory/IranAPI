@@ -14,7 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Vazirmatn', 'sans-serif'],
+        sans: ["var(--font-vault)"],
+        display: ["var(--font-display)"],
+        mono: ["var(--font-code)"],
       },
       colors: {
         border: "hsl(var(--border))",

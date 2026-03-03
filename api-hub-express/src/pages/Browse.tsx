@@ -1,31 +1,164 @@
 import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { RapidApiSyncPanel } from "@/components/RapidApiSyncPanel";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, TrendingUp, Zap, Users, Cloud, Database, MessageSquare, Music, Image, ShoppingCart, Car, ShoppingBag, Smartphone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useAPIs, useCategories } from "@/hooks/useApi";
+import { getBrowseBootstrap } from "@/lib/bootstrap";
+import { createBreadcrumbSchema, usePageMetadata } from "@/lib/metadata";
+import { formatCurrencyLabel, formatFaNumber, toSiteUrl } from "@/lib/site";
+import type { APISummary } from "@/lib/api";
 
-const apis = [
-  { id: 1, name: "روبیکا AI", category: "هوش مصنوعی", description: "مدل‌های زبانی پیشرفته هوش مصنوعی برای تولید متن و چت", popularity: "۹۸٪", latency: "۱۲۰ میلی‌ثانیه", icon: MessageSquare, trending: true, price: "پلن رایگان موجود" },
-  { id: 2, name: "زرین‌پال", category: "پرداخت", description: "درگاه پرداخت امن و سریع برای پذیرش پرداخت آنلاین", popularity: "۹۵٪", latency: "۸۵ میلی‌ثانیه", icon: Database, trending: true, price: "پرداخت بر اساس مصرف" },
-  { id: 3, name: "دیجی‌کالا", category: "خرید و فروش", description: "دسترسی به کاتالوگ محصولات و قیمت‌گذاری از بزرگترین فروشگاه آنلاین ایران", popularity: "۹۶٪", latency: "۸۸ میلی‌ثانیه", icon: ShoppingCart, trending: true, price: "پرداخت بر اساس مصرف" },
-  { id: 4, name: "اسنپ", category: "حمل و نقل", description: "سرویس درخواست تاکسی و پیک آنلاین با امکان ردیابی لحظه‌ای", popularity: "۹۴٪", latency: "۷۵ میلی‌ثانیه", icon: Car, trending: true, price: "پرداخت بر اساس مصرف" },
-  { id: 5, name: "ترب", category: "جستجو", description: "مقایسه قیمت محصولات از فروشگاه‌های مختلف و یافتن بهترین قیمت", popularity: "۹۱٪", latency: "۹۸ میلی‌ثانیه", icon: Search, trending: false, price: "رایگان" },
-  { id: 6, name: "تکنولایف", category: "خرید و فروش", description: "دسترسی به محصولات تکنولوژی و لوازم الکترونیکی با قیمت‌های به‌روز", popularity: "۸۹٪", latency: "۱۰۲ میلی‌ثانیه", icon: Smartphone, trending: false, price: "پرداخت بر اساس مصرف" },
-  { id: 7, name: "بله", category: "ارتباطات", description: "پیام‌رسان و شبکه اجتماعی ایرانی با امکانات چت، کانال و گروه", popularity: "۹۲٪", latency: "۹۵ میلی‌ثانیه", icon: MessageSquare, trending: true, price: "رایگان" },
-  { id: 8, name: "هواشناسی ایران", category: "داده", description: "داده‌های آب و هوای لحظه‌ای و پیش‌بینی برای شهرهای ایران", popularity: "۹۲٪", latency: "۹۵ میلی‌ثانیه", icon: Cloud, trending: false, price: "رایگان" },
-  { id: 9, name: "ایتا", category: "ارتباطات", description: "سرویس پیام‌رسانی و ارسال اعلان‌های فوری", popularity: "۹۰٪", latency: "۱۱۰ میلی‌ثانیه", icon: MessageSquare, trending: false, price: "۱۹.۹۵ تومان/ماه" },
-  { id: 10, name: "بیپ‌تونز", category: "موسیقی", description: "دسترسی به کاتالوگ موسیقی ایرانی و بین‌المللی", popularity: "۸۸٪", latency: "۱۳۰ میلی‌ثانیه", icon: Music, trending: true, price: "رایگان" },
-  { id: 11, name: "آپارات", category: "رسانه", description: "ویدئو و تصاویر با کیفیت بالا از پلتفرم آپارات", popularity: "۸۵٪", latency: "۱۰۰ میلی‌ثانیه", icon: Image, trending: false, price: "رایگان" },
-  { id: 12, name: "نشان", category: "مکان", description: "نقشه‌ها و خدمات مکان‌یابی برای ایران", popularity: "۹۷٪", latency: "۹۰ میلی‌ثانیه", icon: Cloud, trending: true, price: "۷ تومان/۱۰۰۰ فراخوانی" },
-  { id: 13, name: "سروش‌پلاس", category: "ارتباطات", description: "ارسال پیامک و پیام‌های صوتی و تصویری", popularity: "۹۳٪", latency: "۱۰۵ میلی‌ثانیه", icon: MessageSquare, trending: false, price: "۰.۰۰۷۵ تومان/پیامک" },
+const orderingOptions = [
+  { label: "بهترین امتیاز", value: "-rating" },
+  { label: "پربازدیدترین", value: "-views_count" },
+  { label: "تازه‌ترین", value: "-created_at" },
+  { label: "نام", value: "name" },
 ];
 
-const categories = [
-  "همه دسته‌ها", "هوش مصنوعی", "پرداخت", "خرید و فروش", "حمل و نقل", "جستجو", "ارتباطات", "داده", "موسیقی", "رسانه", "مکان"
-];
+export default function Browse() {
+  const bootstrap = getBrowseBootstrap();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
+  const currentPage = Number(searchParams.get("page") || "1");
+  const selectedCategory = searchParams.get("category") || "";
+  const ordering = searchParams.get("ordering") || "-rating";
+  const [searchValue, setSearchValue] = useState(initialSearch);
+  const hasActiveFilters = Boolean(searchParams.get("search") || selectedCategory || ordering !== "-rating");
+  const showCategorizedResults = !searchParams.get("search") && !selectedCategory;
+  const pageSize = showCategorizedResults ? 100 : 12;
+
+  const apiParams = useMemo(
+    () => ({
+      search: searchParams.get("search") || undefined,
+      category: selectedCategory || undefined,
+      ordering,
+      page: currentPage,
+      page_size: pageSize,
+    }),
+    [currentPage, ordering, pageSize, searchParams, selectedCategory],
+  );
+
+  const defaultBrowseData =
+    currentPage === 1 && !selectedCategory && !searchParams.get("search") && ordering === "-rating"
+      ? bootstrap?.apis
+      : undefined;
+
+  const { data: categories } = useCategories(undefined, { initialData: bootstrap?.categories });
+  const { data: recommendedApis } = useAPIs(
+    { featured: true, ordering: "-rating" },
+    { initialData: bootstrap?.recommendedApis },
+  );
+  const { data: apis, isLoading, isError } = useAPIs(apiParams, { initialData: defaultBrowseData });
+  const selectedCategoryLabel = categories?.results.find((category) => category.slug === selectedCategory)?.name;
+  const categorizedResults = useMemo(() => {
+    const categoryOrder = new Map((categories?.results || []).map((category, index) => [category.slug, index]));
+    const groups = new Map<string, { slug: string; name: string; apis: APISummary[] }>();
+
+    (apis?.results || []).forEach((api) => {
+      const slug = api.category?.slug || "uncategorized";
+      const name = api.category?.name || "بدون دسته";
+      const current = groups.get(slug) || { slug, name, apis: [] };
+      current.apis.push(api);
+      groups.set(slug, current);
+    });
+
+    return Array.from(groups.values()).sort((left, right) => {
+      const leftIndex = categoryOrder.get(left.slug) ?? Number.MAX_SAFE_INTEGER;
+      const rightIndex = categoryOrder.get(right.slug) ?? Number.MAX_SAFE_INTEGER;
+      return leftIndex - rightIndex || left.name.localeCompare(right.name);
+    });
+  }, [apis?.results, categories?.results]);
+
+  usePageMetadata({
+    title: "کشف APIها",
+    description: "فهرست APIها را با جست‌وجو، دسته‌بندی و مرتب‌سازی دقیق بررسی کنید و سریع‌تر سرویس مناسب محصول خود را پیدا کنید.",
+    path: "/browse",
+    structuredData: [
+      createBreadcrumbSchema([
+        { name: "خانه", path: "/" },
+        { name: "کشف APIها", path: "/browse" },
+      ]),
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: "کشف APIها",
+        url: toSiteUrl("/browse"),
+        description: "فهرست APIها با جست‌وجو، دسته‌بندی و مرتب‌سازی.",
+        mainEntity: (apis?.results || []).slice(0, 10).map((api) => ({
+          "@type": "SoftwareApplication",
+          name: api.name,
+          url: toSiteUrl(`/api/${api.slug}`),
+          applicationCategory: "DeveloperApplication",
+        })),
+      },
+    ],
+  });
+
+  const updateParams = (patch: Record<string, string | undefined>) => {
+    const nextParams = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([key, value]) => {
+      if (!value) {
+        nextParams.delete(key);
+      } else {
+        nextParams.set(key, value);
+      }
+    });
+    if (!patch.page) {
+      nextParams.delete("page");
+    }
+    startTransition(() => setSearchParams(nextParams));
+  };
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    updateParams({
+      search: searchValue.trim() || undefined,
+      page: undefined,
+    });
+  };
+
+  const totalPages = apis ? Math.max(1, Math.ceil(apis.count / pageSize)) : 1;
+
+  const renderApiCard = (api: NonNullable<typeof apis>["results"][number]) => (
+    <Card key={api.slug} className="surface-card">
+      <CardHeader className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <Badge variant="outline">{api.category?.name || "بدون دسته"}</Badge>
+          <div className="flex gap-2">
+            {api.is_featured ? <Badge>ویژه</Badge> : null}
+            {api.is_popular ? <Badge variant="secondary">محبوب</Badge> : null}
+          </div>
+        </div>
+        <CardTitle>{api.name}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="min-h-16 text-sm leading-7 text-muted-foreground">
+          {api.short_description || "توضیح کوتاه این API هنوز ثبت نشده است."}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <ApiStatusBadge status={api.status} />
+          <HealthSignalBadge />
+          <AuthSchemeBadge scheme={api.rapidapi.public_auth_scheme} />
+          <MethodBadge method="GET" />
+        </div>
+        <div className="grid gap-3 rounded-md bg-muted/50 p-4 text-sm sm:grid-cols-2">
+          <div>
+            <p className="text-muted-foreground">امتیاز</p>
+            <p className="font-semibold">{api.rating}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">شروع قیمت</p>
+            <p className="font-semibold">{formatCurrencyLabel(api.pricing_from)}</p>
+          </div>
+        </div>
+        <Button className="w-full" asChild>
+          <Link to={`/api/${api.slug}`}>جزئیات API</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
 const Browse = () => {
   return (
@@ -41,20 +174,14 @@ const Browse = () => {
           </p>
         </div>
 
-        {/* Search & Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-              <Input 
-                placeholder="جستجوی APIها..." 
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              فیلترها
-            </Button>
+      <main id="main-content" className="container page-stack">
+        <section className="page-hero space-y-6">
+          <div className="space-y-3">
+            <p className="eyebrow">کشف و انتخاب</p>
+            <h1 className="section-title">APIها را با فیلترهای دقیق و نتیجه‌های قابل مقایسه پیدا کنید</h1>
+            <p className="section-copy">
+              نتیجه‌ها بر اساس دسته‌بندی، جست‌وجو و مرتب‌سازی به‌روز نمایش داده می‌شوند تا انتخاب سرویس برای تیم‌های فنی سریع‌تر و مطمئن‌تر شود.
+            </p>
           </div>
 
           {/* Category Pills */}
@@ -66,9 +193,132 @@ const Browse = () => {
                 size="sm"
                 className={category === "همه دسته‌ها" ? "bg-gradient-primary" : ""}
               >
-                {category}
-              </Button>
-            ))}
+                <div className="space-y-2">
+                  <label htmlFor="browse-search" className="text-sm font-medium text-foreground">
+                    جست‌وجوی نام یا کاربرد API
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="browse-search"
+                      value={searchValue}
+                      onChange={(event) => setSearchValue(event.target.value)}
+                      placeholder="مثلا پرداخت، نقشه، پیامک، هوش مصنوعی"
+                      className="pr-9"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="browse-ordering" className="text-sm font-medium text-foreground">
+                    نمایش بر اساس
+                  </label>
+                  <select
+                    id="browse-ordering"
+                    value={ordering}
+                    onChange={(event) => updateParams({ ordering: event.target.value, page: undefined })}
+                    className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  >
+                    {orderingOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                  <Button type="submit" className="w-full">
+                    نمایش نتایج
+                  </Button>
+                  {hasActiveFilters ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setSearchValue("");
+                        updateParams({
+                          search: undefined,
+                          category: undefined,
+                          ordering: "-rating",
+                          page: undefined,
+                        });
+                      }}
+                    >
+                      حذف فیلترها
+                    </Button>
+                  ) : null}
+                </div>
+              </form>
+
+              <div className="lg:col-span-3 flex flex-wrap gap-2">
+                <Button
+                  variant={selectedCategory ? "outline" : "default"}
+                  size="sm"
+                  onClick={() => updateParams({ category: undefined, page: undefined })}
+                >
+                  همه دسته‌ها
+                </Button>
+                {categories?.results.map((category) => (
+                  <Button
+                    key={category.slug}
+                    variant={selectedCategory === category.slug ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => updateParams({ category: category.slug, page: undefined })}
+                  >
+                    {category.name}
+                    <span className="mr-1 text-xs opacity-70">{formatFaNumber(category.apis_count)}</span>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <RapidApiSyncPanel compact />
+
+        {!searchParams.get("search") && !selectedCategory ? (
+          <section className="section-frame space-y-5">
+            <div className="space-y-2">
+              <p className="eyebrow">برای شروع</p>
+              <h2 className="text-2xl font-bold">APIهای پیشنهادی برای بررسی سریع</h2>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {(recommendedApis?.results || []).slice(0, 3).map((api) => (
+                <Card key={api.slug} className="surface-card">
+                  <CardContent className="space-y-4 p-6">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline">{api.category?.name || "بدون دسته"}</Badge>
+                      <span className="text-sm text-muted-foreground">امتیاز {api.rating}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold">{api.name}</h3>
+                      <p className="text-sm leading-7 text-muted-foreground">{api.short_description}</p>
+                    </div>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link to={`/api/${api.slug}`}>جزئیات API</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="section-frame space-y-6" aria-live="polite" aria-busy={isLoading}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold">نتایج</h2>
+              <p className="text-sm text-muted-foreground">
+                {apis ? `${formatFaNumber(apis.count)} API پیدا شد` : "در حال بارگذاری نتایج"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedCategory ? <Badge variant="outline">دسته: {selectedCategoryLabel || selectedCategory}</Badge> : null}
+              {searchParams.get("search") ? <Badge variant="outline">عبارت: {searchParams.get("search")}</Badge> : null}
+            </div>
           </div>
         </div>
 
@@ -84,82 +334,71 @@ const Browse = () => {
                 <p className="text-sm text-muted-foreground">API موجود</p>
               </div>
             </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-secondary/10">
-                <Users className="h-5 w-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">۵ میلیون+</p>
-                <p className="text-sm text-muted-foreground">توسعه‌دهنده</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/10">
-                <TrendingUp className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">۹۹.۹٪</p>
-                <p className="text-sm text-muted-foreground">زمان فعالیت</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Zap className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">۵۰ میلی‌ثانیه</p>
-                <p className="text-sm text-muted-foreground">تاخیر میانگین</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* API Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {apis.map((api) => (
-            <Card key={api.id} className="p-6 hover:shadow-glow transition-all group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-gradient-primary transition-all">
-                  <api.icon className="h-6 w-6 text-primary group-hover:text-primary-foreground" />
+          ) : isError ? (
+            <Card className="border-destructive/30">
+              <CardContent className="p-6 text-destructive">بارگذاری فهرست APIها انجام نشد. دوباره تلاش کنید.</CardContent>
+            </Card>
+          ) : apis && apis.results.length > 0 ? (
+            <>
+              {showCategorizedResults ? (
+                <div className="space-y-8">
+                  {categorizedResults.map((group) => (
+                    <section key={group.slug} className="space-y-4" aria-labelledby={`category-${group.slug}`}>
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+                        <div className="space-y-1">
+                          <h3 id={`category-${group.slug}`} className="text-xl font-bold">
+                            {group.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {formatFaNumber(group.apis.length)} API
+                          </p>
+                        </div>
+                        {group.slug !== "uncategorized" ? (
+                          <Button variant="outline" size="sm" onClick={() => updateParams({ category: group.slug, page: undefined })}>
+                            دیدن همه
+                          </Button>
+                        ) : null}
+                      </div>
+                      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{group.apis.map(renderApiCard)}</div>
+                    </section>
+                  ))}
                 </div>
-                {api.trending && (
-                  <Badge className="bg-secondary/20 text-secondary border-secondary/50">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    پرطرفدار
-                  </Badge>
-                )}
-              </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{apis.results.map(renderApiCard)}</div>
+              )}
 
-              <h3 className="text-xl font-bold mb-2">{api.name}</h3>
-              <p className="text-muted-foreground text-sm mb-4">{api.description}</p>
-
-              <div className="flex items-center gap-4 text-sm mb-4">
-                <Badge variant="outline">{api.category}</Badge>
-                <span className="text-muted-foreground">{api.price}</span>
-              </div>
-
-              <div className="flex items-center justify-between mb-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">محبوبیت: </span>
-                  <span className="font-semibold">{api.popularity}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">تاخیر: </span>
-                  <span className="font-semibold">{api.latency}</span>
+              {totalPages > 1 ? (
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  صفحه {formatFaNumber(currentPage)} از {formatFaNumber(totalPages)}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => updateParams({ page: currentPage > 1 ? String(currentPage - 1) : undefined })}
+                    disabled={currentPage <= 1}
+                  >
+                    قبلی
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      updateParams({ page: currentPage < totalPages ? String(currentPage + 1) : String(currentPage) })
+                    }
+                    disabled={currentPage >= totalPages}
+                  >
+                    بعدی
+                  </Button>
                 </div>
               </div>
-
-              <Link to={`/api/${api.id}`}>
-                <Button className="w-full bg-gradient-primary hover:shadow-glow transition-all">
-                  مشاهده جزئیات
-                </Button>
-              </Link>
+              ) : null}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="space-y-3 p-8 text-center">
+                <h2 className="text-xl font-semibold">نتیجه‌ای پیدا نشد</h2>
+                <p className="text-muted-foreground">فیلترها را ساده‌تر کنید یا با عبارت دیگری جست‌وجو کنید.</p>
+              </CardContent>
             </Card>
           ))}
         </div>

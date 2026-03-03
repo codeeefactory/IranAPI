@@ -12,7 +12,30 @@ import { useState } from "react";
 const SignIn = () => {
   const navigate = useNavigate();
   const login = useLogin();
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+  const [formError, setFormError] = useState("");
+
+  usePageMetadata({
+    title: "ورود",
+    description: "وارد حساب IranAPI شوید و داشبورد، دسترسی‌ها و گزارش مصرف خود را مدیریت کنید.",
+    path: "/signin",
+    noindex: true,
+  });
+
+  useEffect(() => {
+    if (session.data?.authenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate, session.data?.authenticated]);
+
+  const nextPath = useMemo(() => (location.state as { from?: string } | null)?.from || "/dashboard", [location.state]);
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setFormError("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,44 +64,57 @@ const SignIn = () => {
             <p className="text-muted-foreground">به بازار API خوش آمدید</p>
           </div>
 
-          {/* Sign In Card */}
-          <Card className="p-8">
-            {/* Social Sign In */}
-            <div className="space-y-3 mb-6">
-              <Button variant="outline" className="w-full gap-2">
-                <Chrome className="h-5 w-5" />
-                ادامه با گوگل
-              </Button>
-              <Button variant="outline" className="w-full gap-2">
-                <Github className="h-5 w-5" />
-                ادامه با گیت‌هاب
-              </Button>
-            </div>
-
-            <div className="relative mb-6">
-              <Separator />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-sm text-muted-foreground">
-                یا ورود با ایمیل
-              </span>
-            </div>
-
-            {/* Email Sign In Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="username">نام کاربری</Label>
-                <Input 
-                  id="username" 
-                  type="text" 
-                  placeholder="username"
-                  className="mt-1"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  required
-                />
+      <main id="main-content" className="container page-stack">
+        <section className="page-hero grid gap-6 lg:grid-cols-[1.05fr,0.95fr] lg:items-start">
+          <Card className="surface-card">
+            <CardHeader className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge variant="outline">ورود امن</Badge>
+                <Badge variant="outline">Account Access</Badge>
               </div>
+              <div className="space-y-3">
+                <p className="eyebrow">حساب توسعه‌دهنده</p>
+                <CardTitle className="text-3xl">ورود به حساب IranAPI</CardTitle>
+                <p className="text-sm leading-7 text-muted-foreground">
+                  از این حساب برای مدیریت پروفایل، دسترسی‌های ثبت‌شده، کلیدهای امن و تاریخچه مصرف استفاده می‌کنید.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {nextPath !== "/dashboard" ? (
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-sm leading-7 text-muted-foreground">
+                  برای ادامه، ابتدا وارد حساب خود شوید. بعد از ورود به صفحه قبلی برمی‌گردید.
+                </div>
+              ) : null}
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
+              <SocialAuthPanel mode="signin" />
+
+              {formError ? (
+                <div className="flex items-start gap-3 rounded-md border border-destructive/35 bg-destructive/10 p-4 text-sm leading-7 text-destructive" role="alert">
+                  <AlertTriangle className="mt-1 h-4 w-4 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              ) : null}
+
+              <form className="space-y-4 rounded-md border border-border/70 bg-background/45 p-4 shadow-[inset_0_1px_0_hsl(var(--foreground)/0.07)]" onSubmit={handleSubmit} aria-busy={login.isPending}>
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span className="font-black uppercase tracking-[0.22em] text-primary">ورود امن</span>
+                  <span>نشست محافظت‌شده</span>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">نام کاربری</Label>
+                  <Input
+                    id="username"
+                    autoComplete="username"
+                    value={formData.username}
+                    onChange={(event) => {
+                      setFormError("");
+                      setFormData((current) => ({ ...current, username: event.target.value }));
+                    }}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="password">رمز عبور</Label>
                   <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                     فراموشی رمز عبور؟
@@ -111,14 +147,51 @@ const SignIn = () => {
             </form>
           </Card>
 
-          {/* Sign Up Link */}
-          <p className="text-center mt-6 text-muted-foreground">
-            حساب کاربری ندارید؟{" "}
-            <Link to="/signup" className="text-primary hover:underline font-semibold">
-              ثبت‌نام کنید
-            </Link>
-          </p>
-        </div>
+          <div className="grid gap-4">
+            <Card className="surface-card">
+              <CardContent className="content-list p-6 text-sm leading-7 text-muted-foreground">
+                <div className="metric-card">
+                  <p className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                    <LayoutDashboard className="h-4 w-4 text-primary" />
+                    داشبورد آماده مدیریت
+                  </p>
+                  <p>پس از ورود می‌توانید پروفایل، مصرف، دسترسی‌های فعال و اشتراک‌ها را در یک نگاه بررسی کنید.</p>
+                </div>
+                <div className="metric-card">
+                  <p className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    نشست امن
+                  </p>
+                  <p>ورود با نشست محافظت‌شده انجام می‌شود و رابط فقط داده‌های موردنیاز حساب شما را دریافت می‌کند.</p>
+                </div>
+                <div className="metric-card">
+                  <p className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                    <KeyRound className="h-4 w-4 text-primary" />
+                    نقش‌ها و دسترسی‌های روشن
+                  </p>
+                  <p>حساب پرتال از دسترسی مصرفی APIها جداست و هر دسترسی از داشبورد قابل پیگیری است.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="surface-card">
+              <CardContent className="p-6 text-sm leading-7 text-muted-foreground">
+                <p className="mb-2 font-semibold text-foreground">حساب نمونه برای QA</p>
+                <p>اگر در محیط محلی با داده نمونه کار می‌کنید، این حساب در فرآیند seed ساخته می‌شود و داشبورد را با داده واقعی‌تر باز می‌کند.</p>
+                <div className="mt-4 grid gap-3 rounded-md border border-border/70 bg-background/60 p-4">
+                  <div className="grid gap-2 text-left font-mono text-xs" dir="ltr">
+                    <code>username: {demoCredentials.username}</code>
+                    <code>password: {demoCredentials.password}</code>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" className="w-full gap-2" onClick={fillDemoAccount}>
+                    <KeyRound className="h-4 w-4" />
+                    پر کردن حساب نمونه
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       </main>
     </div>
   );

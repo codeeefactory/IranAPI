@@ -86,10 +86,10 @@ export const Categories = () => {
             <span className="text-sm font-semibold text-secondary">دسته‌بندی‌های متنوع</span>
           </div>
           <h2 className="text-5xl md:text-6xl font-black">
-            مرور بر اساس <span className="bg-gradient-secondary bg-clip-text text-transparent">دسته‌بندی</span>
+            کشف API بر اساس <span className="bg-gradient-secondary bg-clip-text text-transparent">دسته‌بندی</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            از هزاران API در دسته‌بندی‌های مختلف، مناسب‌ترین را برای پروژه خود انتخاب کنید
+            APIهای مرتبط را بر اساس نیاز محصول پیدا کنید و سریع‌تر به گزینه مناسب برسید
           </p>
         </div>
 
