@@ -1,0 +1,62 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor Visitor
+actor "Authenticated Developer" as Developer
+actor "Admin / Operator" as Admin
+actor "RapidAPI Marketplace" as RapidAPI
+
+rectangle "IranAPI Portal & API Marketplace" {
+  usecase "Browse API catalog" as UC_Catalog
+  usecase "Search and filter APIs" as UC_Search
+  usecase "View API details,\npricing, and docs" as UC_View
+  usecase "Register portal account" as UC_Register
+  usecase "Sign in and sign out" as UC_Auth
+  usecase "Manage account and profile" as UC_Profile
+  usecase "Checkout and activate\nsubscription" as UC_Subscribe
+  usecase "Release API to Explore" as UC_Publish
+  usecase "Rate an API" as UC_Rate
+  usecase "View access grants" as UC_Access
+  usecase "View usage stats and history" as UC_Usage
+  usecase "Access OpenAPI schema" as UC_Schema
+  usecase "Manage categories and APIs" as UC_CatalogAdmin
+  usecase "Manage plans and documentation" as UC_ContentAdmin
+  usecase "Manage publication metadata" as UC_PublishAdmin
+  usecase "Review access grants\nand usage records" as UC_AccessAdmin
+}
+
+Visitor --> UC_Catalog
+Visitor --> UC_Search
+Visitor --> UC_View
+Visitor --> UC_Register
+Visitor --> UC_Auth
+Visitor --> UC_Schema
+
+Developer --> UC_Catalog
+Developer --> UC_Search
+Developer --> UC_View
+Developer --> UC_Auth
+Developer --> UC_Profile
+Developer --> UC_Subscribe
+Developer --> UC_Publish
+Developer --> UC_Rate
+Developer --> UC_Access
+Developer --> UC_Usage
+
+Admin --> UC_Schema
+Admin --> UC_CatalogAdmin
+Admin --> UC_ContentAdmin
+Admin --> UC_PublishAdmin
+Admin --> UC_AccessAdmin
+
+RapidAPI --> UC_Schema
+RapidAPI --> UC_PublishAdmin
+
+note bottom of RapidAPI
+External marketplace metadata can be mapped,
+but account subscriptions are IranAPI-managed.
+end note
+@enduml
