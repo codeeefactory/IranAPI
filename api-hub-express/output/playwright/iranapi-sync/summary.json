@@ -1,0 +1,68 @@
+[
+  {
+    "name": "home",
+    "path": "/",
+    "url": "http://127.0.0.1:4180/",
+    "title": "هاب API برای تیم‌های ایرانی | IranAPI",
+    "textLength": 2962,
+    "height": 3307.25,
+    "hasRapidApiParity": false,
+    "hasSyncCopy": true,
+    "hasMojibake": false
+  },
+  {
+    "name": "browse",
+    "path": "/browse",
+    "url": "http://127.0.0.1:4180/browse",
+    "title": "کشف APIها | IranAPI",
+    "textLength": 2374,
+    "height": 3370,
+    "hasRapidApiParity": false,
+    "hasSyncCopy": true,
+    "hasMojibake": false
+  },
+  {
+    "name": "pricing",
+    "path": "/pricing",
+    "url": "http://127.0.0.1:4180/pricing",
+    "title": "قیمت‌گذاری | IranAPI",
+    "textLength": 3018,
+    "height": 2576,
+    "hasRapidApiParity": false,
+    "hasSyncCopy": true,
+    "hasMojibake": false
+  },
+  {
+    "name": "docs",
+    "path": "/documentation",
+    "url": "http://127.0.0.1:4180/documentation",
+    "title": "مستندات | IranAPI",
+    "textLength": 2709,
+    "height": 2400,
+    "hasRapidApiParity": false,
+    "hasSyncCopy": true,
+    "hasMojibake": false
+  },
+  {
+    "name": "caller",
+    "path": "/caller",
+    "url": "http://127.0.0.1:4180/caller",
+    "title": "API Caller | IranAPI",
+    "textLength": 2121,
+    "height": 2235,
+    "hasRapidApiParity": false,
+    "hasSyncCopy": true,
+    "hasMojibake": false
+  },
+  {
+    "name": "studio",
+    "path": "/studio",
+    "url": "http://127.0.0.1:4180/studio",
+    "title": "ورود | IranAPI",
+    "textLength": 1449,
+    "height": 1410,
+    "hasRapidApiParity": false,
+    "hasSyncCopy": false,
+    "hasMojibake": false
+  }
+]

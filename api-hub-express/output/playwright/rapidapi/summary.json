@@ -1,0 +1,27 @@
+[
+  {
+    "name": "home",
+    "url": "https://rapidapi.com/",
+    "error": "TimeoutError: page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://rapidapi.com/\", waiting until \"domcontentloaded\"\u001b[22m\n"
+  },
+  {
+    "name": "hub",
+    "url": "https://rapidapi.com/hub",
+    "error": "Error: page.goto: net::ERR_CONNECTION_TIMED_OUT at https://rapidapi.com/hub\nCall log:\n\u001b[2m  - navigating to \"https://rapidapi.com/hub\", waiting until \"domcontentloaded\"\u001b[22m\n"
+  },
+  {
+    "name": "search",
+    "url": "https://rapidapi.com/search/google",
+    "error": "Error: page.goto: Navigation to \"https://rapidapi.com/search/google\" is interrupted by another navigation to \"chrome-error://chromewebdata/\"\nCall log:\n\u001b[2m  - navigating to \"https://rapidapi.com/search/google\", waiting until \"domcontentloaded\"\u001b[22m\n"
+  },
+  {
+    "name": "marketplace-product",
+    "url": "https://rapidapi.com/products/api-marketplace",
+    "error": "Error: page.goto: Navigation to \"https://rapidapi.com/products/api-marketplace\" is interrupted by another navigation to \"https://rapidapi.com/search/google\"\nCall log:\n\u001b[2m  - navigating to \"https://rapidapi.com/products/api-marketplace\", waiting until \"domcontentloaded\"\u001b[22m\n"
+  },
+  {
+    "name": "docs",
+    "url": "https://docs.rapidapi.com/",
+    "error": "Error: page.goto: Navigation to \"https://docs.rapidapi.com/\" is interrupted by another navigation to \"https://rapidapi.com/products/api-marketplace\"\nCall log:\n\u001b[2m  - navigating to \"https://docs.rapidapi.com/\", waiting until \"domcontentloaded\"\u001b[22m\n"
+  }
+]
