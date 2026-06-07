@@ -4,8 +4,8 @@ import type {
   CatalogCategory,
   CatalogEndpoint,
   CatalogStats,
-  PricingKind,
 } from "@/types/catalog";
+import { toApiItem } from "@/lib/catalog-adapter";
 
 const now = "2026-06-07T00:00:00+03:30";
 
@@ -294,39 +294,7 @@ export const MOCK_CATALOG_APIS: CatalogApiDetail[] = [
   },
 ].map((api) => ({ ...api, created_at: now, updated_at: now } as CatalogApiDetail));
 
-const latencyBySlug: Record<string, number> = {
-  "speech-gateway": 186,
-  "payments-hub": 154,
-  "geo-routes": 112,
-};
-
-const callsBySlug: Record<string, string> = {
-  "speech-gateway": "1.8M",
-  "payments-hub": "977K",
-  "geo-routes": "1.3M",
-};
-
-function pricingKind(api: CatalogApiDetail): PricingKind {
-  if (api.pricing_plans.some((plan) => Number(plan.price) === 0)) return "free";
-  if (api.pricing_plans.some((plan) => plan.plan_type === "basic")) return "freemium";
-  return "paid";
-}
-
-export const APIS: ApiItem[] = MOCK_CATALOG_APIS.map((api) => ({
-  ...api,
-  tagline: api.short_description,
-  categorySlug: api.category.slug,
-  category: api.category.slug,
-  ratingValue: Number(api.rating),
-  latency: latencyBySlug[api.slug] ?? 180,
-  uptime: api.rapidapi.publication_status === "published" ? 99.97 : 99.91,
-  calls: callsBySlug[api.slug] ?? `${api.views_count.toLocaleString()} views`,
-  pricing: pricingKind(api),
-  apiEndpoints: api.endpoints,
-  endpointCount: api.endpoints.length,
-  endpoints: api.endpoints.length,
-  org: api.created_by_username ?? "iranapi.dev",
-}));
+export const APIS: ApiItem[] = MOCK_CATALOG_APIS.map(toApiItem);
 
 export const STATS: CatalogStats = {
   apiCount: 312,
