@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { catalogApi, type ApiListParams } from "@/lib/api-client";
 import { buildCatalogStats, toApiItem } from "@/lib/catalog-adapter";
 import { APIS, CATEGORIES, STATS } from "@/data/mock";
@@ -8,6 +8,7 @@ export const catalogKeys = {
   all: ["catalog"] as const,
   apis: (params?: ApiListParams) => [...catalogKeys.all, "apis", params ?? {}] as const,
   api: (slug?: string) => [...catalogKeys.all, "api", slug ?? ""] as const,
+  similar: (slug?: string) => [...catalogKeys.all, "api", slug ?? "", "similar"] as const,
   categories: () => [...catalogKeys.all, "categories"] as const,
 };
 
@@ -59,4 +60,27 @@ export function useCatalogApi(slug?: string) {
 
   const api = query.data ? toApiItem(query.data) : fallbackApi;
   return { ...query, api, isFallback: !query.data };
+}
+
+export function useSimilarApis(slug?: string) {
+  const fallbackApi = APIS.find((api) => api.slug === slug);
+  const fallbackSimilar = APIS.filter((api) => api.slug !== slug && (!fallbackApi || api.category === fallbackApi.category)).slice(0, 3);
+  const query = useQuery({
+    queryKey: catalogKeys.similar(slug),
+    queryFn: () => catalogApi.listSimilarApis(slug as string),
+    enabled: Boolean(slug),
+  });
+
+  const apis = query.data?.map(toApiItem) ?? fallbackSimilar;
+  return { ...query, apis, isFallback: !query.data };
+}
+
+export function useRateApi(slug?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rating: number) => catalogApi.rateApi(slug as string, rating),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    },
+  });
 }

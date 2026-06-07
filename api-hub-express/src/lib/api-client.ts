@@ -156,6 +156,13 @@ export type CallerExecuteResponse = {
   usage: UsageItem;
 };
 
+export type ApiRatingResponse = {
+  rating: string;
+  rating_count: number;
+  your_rating: number;
+  created: boolean;
+};
+
 export type ApiListParams = {
   category?: string | null;
   featured?: boolean;
@@ -219,6 +226,18 @@ export const catalogApi = {
 
   async getApi(slug: string): Promise<CatalogApiDetail> {
     const { data } = await http.get<CatalogApiDetail>(`/catalog/apis/${encodeURIComponent(slug)}/`);
+    return data;
+  },
+
+  async listSimilarApis(slug: string): Promise<CatalogApiSummary[]> {
+    const { data } = await http.get<CatalogApiSummary[]>(`/catalog/apis/${encodeURIComponent(slug)}/similar/`);
+    return data;
+  },
+
+  async rateApi(slug: string, rating: number): Promise<ApiRatingResponse> {
+    const { data } = await http.post<ApiRatingResponse>(`/catalog/apis/${encodeURIComponent(slug)}/ratings/`, {
+      rating,
+    });
     return data;
   },
 
