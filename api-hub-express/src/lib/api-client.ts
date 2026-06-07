@@ -114,6 +114,48 @@ export type SubscriptionConfirmResponse = SubscriptionCheckoutResponse & {
   subscription: UserSubscription;
 };
 
+export type UsageItem = {
+  id: number;
+  api: CatalogApiSummary | null;
+  access_grant?: unknown | null;
+  pricing_plan?: unknown | null;
+  source: string;
+  requests_count: number;
+  last_used?: string | null;
+  created_at?: string | null;
+  window_started_at?: string | null;
+  window_ended_at?: string | null;
+  method?: string;
+  path?: string;
+  status_code?: number | null;
+  latency_ms?: number | null;
+  response_size?: number | null;
+};
+
+export type UsageListParams = {
+  api?: string | number | null;
+  source?: string | null;
+  search?: string;
+  page?: number;
+  page_size?: number;
+};
+
+export type CallerExecuteInput = {
+  api_slug: string;
+  endpoint_id?: number;
+  method: string;
+  path?: string;
+  body?: unknown;
+};
+
+export type CallerExecuteResponse = {
+  status_code: number;
+  latency_ms: number;
+  region: string;
+  body: unknown;
+  usage: UsageItem;
+};
+
 export type ApiListParams = {
   category?: string | null;
   featured?: boolean;
@@ -161,7 +203,7 @@ http.interceptors.response.use(
   },
 );
 
-function cleanParams(params: ApiListParams = {}) {
+function cleanParams(params: Record<string, unknown> = {}) {
   return Object.fromEntries(
     Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ""),
   );
@@ -245,6 +287,18 @@ export const accountApi = {
 
   async usageStats(): Promise<Record<string, unknown>> {
     const { data } = await http.get<Record<string, unknown>>("/account/usage/stats/");
+    return data;
+  },
+
+  async usage(params?: UsageListParams): Promise<PaginatedResponse<UsageItem>> {
+    const { data } = await http.get<PaginatedResponse<UsageItem>>("/account/usage/", {
+      params: cleanParams(params),
+    });
+    return data;
+  },
+
+  async executeCaller(input: CallerExecuteInput): Promise<CallerExecuteResponse> {
+    const { data } = await http.post<CallerExecuteResponse>("/account/caller/", input);
     return data;
   },
 

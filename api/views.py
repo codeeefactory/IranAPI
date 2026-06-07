@@ -26,6 +26,7 @@ from .schema import build_openapi_schema
 from .serializers import (
     APIUsageSerializer,
     APISummarySerializer,
+    CallerRequestSerializer,
     CategorySerializer,
     DocumentationSerializer,
     APIReleaseSerializer,
@@ -198,7 +199,20 @@ class UsageListView(APIView):
 
     def get(self, request):
         repository = get_repository()
-        usage_items = repository.list_usage(int(request.user.id))
+        api_param = request.query_params.get("api")
+        api_id = None
+        if api_param:
+            if str(api_param).isdigit():
+                api_id = int(api_param)
+            else:
+                api_doc = repository.get_api_by_slug(str(api_param))
+                api_id = int(api_doc["_id"]) if api_doc else -1
+        usage_items = repository.list_usage(
+            int(request.user.id),
+            api_id=api_id,
+            source=request.query_params.get("source"),
+            search=request.query_params.get("search"),
+        )
         api_map = repository.get_apis_by_ids([int(item["api_id"]) for item in usage_items if item.get("api_id")])
         grant_map = repository.get_access_grants_by_ids(
             [int(item["access_grant_id"]) for item in usage_items if item.get("access_grant_id")]
@@ -233,6 +247,77 @@ class UsageStatsView(APIView):
 
     def get(self, request):
         return Response(get_repository().usage_stats(int(request.user.id)))
+
+
+class CallerExecuteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CallerRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        repository = get_repository()
+
+        api_doc = repository.get_api_by_slug(data["api_slug"])
+        if not api_doc:
+            raise NotFound("API was not found.")
+
+        endpoints = repository.list_endpoints(api_slug=api_doc["slug"])
+        endpoint = None
+        endpoint_id = data.get("endpoint_id")
+        if endpoint_id:
+            endpoint = next((item for item in endpoints if int(item["_id"]) == int(endpoint_id)), None)
+            if not endpoint:
+                raise NotFound("API endpoint was not found.")
+        elif data.get("path"):
+            endpoint = next(
+                (
+                    item
+                    for item in endpoints
+                    if item.get("path") == data["path"] and item.get("method", "GET").upper() == data["method"]
+                ),
+                None,
+            )
+        elif endpoints:
+            endpoint = endpoints[0]
+
+        method = data["method"]
+        path = data.get("path") or (endpoint.get("path") if endpoint else "/")
+        response_body = endpoint.get("sample_response", {"ok": True}) if endpoint else {"ok": True}
+        latency_ms = 90 + (int(api_doc["_id"]) * 17 + len(path) * 3) % 220
+        response_size = len(str(response_body).encode("utf-8"))
+        usage_doc = repository.record_caller_usage(
+            user_id=int(request.user.id),
+            api_doc=api_doc,
+            method=method,
+            path=path,
+            status_code=200,
+            latency_ms=latency_ms,
+            response_size=response_size,
+        )
+
+        category = (
+            repository.get_categories_by_ids([int(api_doc["category_id"])]).get(int(api_doc["category_id"]))
+            if api_doc.get("category_id") is not None
+            else None
+        )
+        pricing_from = repository.pricing_min_map([int(api_doc["_id"])]).get(int(api_doc["_id"]))
+        return Response(
+            {
+                "status_code": 200,
+                "latency_ms": latency_ms,
+                "region": "ir-tehran-1",
+                "body": response_body,
+                "usage": serialize_usage_item(
+                    usage_doc,
+                    api_doc=api_doc,
+                    access_grant=None,
+                    pricing_plan=None,
+                    category=category,
+                    pricing_from=pricing_from,
+                ),
+            }
+        )
 
 
 class GenerateApiKeyView(APIView):

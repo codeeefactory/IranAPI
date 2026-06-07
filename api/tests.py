@@ -425,10 +425,38 @@ class MongoApiTests(APISimpleTestCase):
 
         self.assertEqual(usage_response.status_code, 200)
         self.assertEqual(usage_response.data["count"], 2)
+        filtered = self.client.get(f"/api/v1/account/usage/?api={self.api['slug']}&source=rapidapi_sync")
+        self.assertEqual(filtered.status_code, 200)
+        self.assertEqual(filtered.data["count"], 1)
+        self.assertEqual(filtered.data["results"][0]["api"]["slug"], self.api["slug"])
         self.assertEqual(stats_response.status_code, 200)
         self.assertEqual(stats_response.data["total_requests"], 272)
         self.assertEqual(stats_response.data["active_apis"], 2)
         self.assertEqual(stats_response.data["top_apis"][0]["slug"], self.api["slug"])
+
+    def test_caller_execute_records_usage_history(self):
+        self.authenticate_with_token(self.user)
+
+        response = self.client.post(
+            "/api/v1/account/caller/",
+            {
+                "api_slug": self.api["slug"],
+                "endpoint_id": int(self.endpoint["_id"]),
+                "method": "POST",
+                "body": {"audio_url": "https://example.com/audio.wav"},
+            },
+            format="json",
+        )
+        usage_response = self.client.get(f"/api/v1/account/usage/?api={self.api['slug']}&source=caller")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status_code"], 200)
+        self.assertEqual(response.data["body"]["confidence"], 0.98)
+        self.assertEqual(response.data["usage"]["source"], "caller")
+        self.assertEqual(response.data["usage"]["method"], "POST")
+        self.assertEqual(usage_response.status_code, 200)
+        self.assertEqual(usage_response.data["count"], 1)
+        self.assertEqual(usage_response.data["results"][0]["path"], "/speech/transcriptions")
 
     def test_account_user_and_profile_patch_crud_operations(self):
         self.authenticate_with_token(self.user)
@@ -676,6 +704,7 @@ class MongoApiTests(APISimpleTestCase):
         self.assertIn("/api/v1/account/subscription/", response.data["paths"])
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/", response.data["paths"])
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/confirm/", response.data["paths"])
+        self.assertIn("/api/v1/account/caller/", response.data["paths"])
 
     def test_site_metadata_routes(self):
         robots = self.client.get("/robots.txt")

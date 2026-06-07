@@ -342,6 +342,11 @@ def serialize_usage_item(
         "created_at": usage.get("created_at"),
         "window_started_at": usage.get("window_started_at"),
         "window_ended_at": usage.get("window_ended_at"),
+        "method": usage.get("method", ""),
+        "path": usage.get("path", ""),
+        "status_code": usage.get("status_code"),
+        "latency_ms": usage.get("latency_ms"),
+        "response_size": usage.get("response_size"),
     }
 
 
@@ -512,3 +517,15 @@ class UserProfileUpdateSerializer(serializers.Serializer):
 class RatingSerializer(serializers.Serializer):
     rating = serializers.IntegerField(min_value=1, max_value=5)
 
+
+class CallerRequestSerializer(serializers.Serializer):
+    api_slug = serializers.SlugField(max_length=160)
+    endpoint_id = serializers.IntegerField(required=False, min_value=1)
+    method = serializers.ChoiceField(choices=["GET", "POST", "PUT", "PATCH", "DELETE"], default="GET")
+    path = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    body = serializers.JSONField(required=False)
+
+    def validate(self, attrs):
+        attrs["method"] = attrs.get("method", "GET").upper()
+        attrs["path"] = (attrs.get("path") or "").strip()
+        return attrs

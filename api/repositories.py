@@ -849,8 +849,55 @@ class MongoRepository:
             for grant in self.access_grants.find({"_id": {"$in": list({int(value) for value in grant_ids})}})
         }
 
-    def list_usage(self, user_id: int) -> list[dict[str, Any]]:
-        return list(self.api_usage.find({"user_id": int(user_id)}).sort([("last_used", DESCENDING)]))
+    def list_usage(
+        self,
+        user_id: int,
+        *,
+        api_id: int | None = None,
+        source: str | None = None,
+        search: str | None = None,
+    ) -> list[dict[str, Any]]:
+        query: dict[str, Any] = {"user_id": int(user_id)}
+        if api_id is not None:
+            query["api_id"] = int(api_id)
+        if source:
+            query["source"] = source
+        if search:
+            regex = {"$regex": search, "$options": "i"}
+            query["$or"] = [{"method": regex}, {"path": regex}, {"source": regex}]
+        return list(self.api_usage.find(query).sort([("last_used", DESCENDING), ("created_at", DESCENDING)]))
+
+    def record_caller_usage(
+        self,
+        *,
+        user_id: int,
+        api_doc: dict[str, Any],
+        method: str,
+        path: str,
+        status_code: int,
+        latency_ms: int,
+        response_size: int,
+    ) -> dict[str, Any]:
+        grant = self.access_grants.find_one(
+            {"user_id": int(user_id), "api_id": int(api_doc["_id"]), "status": "active"},
+            sort=[("created_at", DESCENDING)],
+        )
+        usage = self.build_usage_document(
+            {
+                "user_id": int(user_id),
+                "api_id": int(api_doc["_id"]),
+                "access_grant_id": int(grant["_id"]) if grant else None,
+                "source": "caller",
+                "requests_count": 1,
+                "method": method.upper(),
+                "path": path,
+                "status_code": int(status_code),
+                "latency_ms": int(latency_ms),
+                "response_size": int(response_size),
+            }
+        )
+        self.api_usage.insert_one(usage)
+        return usage
 
     def usage_stats(self, user_id: int) -> dict[str, Any]:
         usage_docs = self.list_usage(user_id)
@@ -1107,4 +1154,9 @@ class MongoRepository:
             "external_event_id": payload.get("external_event_id", "").strip(),
             "window_started_at": payload.get("window_started_at"),
             "window_ended_at": payload.get("window_ended_at"),
+            "method": payload.get("method", ""),
+            "path": payload.get("path", ""),
+            "status_code": payload.get("status_code"),
+            "latency_ms": payload.get("latency_ms"),
+            "response_size": payload.get("response_size"),
         }

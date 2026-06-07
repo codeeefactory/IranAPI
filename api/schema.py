@@ -198,6 +198,9 @@ def build_openapi_schema() -> dict:
             "/api/v1/account/usage/stats/": {
                 "get": {"tags": ["Account"], "summary": "Get aggregated usage statistics", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
             },
+            "/api/v1/account/caller/": {
+                "post": {"tags": ["Account"], "summary": "Execute a catalog API sample call and record usage", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+            },
         },
         "components": {
             "securitySchemes": {

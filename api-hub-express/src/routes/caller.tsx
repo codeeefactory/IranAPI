@@ -1,34 +1,65 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Tag, Prompt, CodeBlock } from "@/components/site/Terminal";
 import { useCatalogApis } from "@/hooks/useCatalog";
 import { Play, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useSession } from "@/hooks/useAuth";
+import { useCallerExecute, useUsageHistory } from "@/hooks/useUsage";
 
 export default function CallerPage() {
   const { t } = useI18n();
+  const { isAuthenticated, isLoading: sessionLoading } = useSession();
   const { apis } = useCatalogApis({ page_size: 6 });
+  const firstApi = apis[0];
+  const [apiSlug, setApiSlug] = useState(firstApi?.slug ?? "");
   const [method, setMethod] = useState("POST");
-  const [url, setUrl] = useState("https://api.iranapi.dev/v1/zarinpal/pay");
+  const [url, setUrl] = useState("https://api.iranapi.dev/v1/payments-hub/ping");
   const [body, setBody] = useState('{\n  "amount": 50000,\n  "callback": "https://app/ok"\n}');
   const [resp, setResp] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const caller = useCallerExecute();
+  const usage = useUsageHistory({ source: "caller", page_size: 5 }, isAuthenticated);
+  const selectedApi = useMemo(() => apis.find((api) => api.slug === apiSlug) ?? firstApi, [apiSlug, apis, firstApi]);
+  const loading = caller.isPending;
 
-  function send() {
-    setLoading(true);
+  useEffect(() => {
+    if (!apiSlug && firstApi?.slug) setApiSlug(firstApi.slug);
+  }, [apiSlug, firstApi?.slug]);
+
+  async function send() {
+    if (!isAuthenticated) {
+      setError("Sign in required for caller execution.");
+      return;
+    }
+    if (!selectedApi?.slug) {
+      setError("Select an API target first.");
+      return;
+    }
     setResp(null);
     setError(null);
-    setTimeout(() => {
-      setResp(JSON.stringify({
-        ok: true,
-        intent_id: "pi_4f9c8b2a",
-        redirect: "https://gw.zarinpal.com/pg/StartPay/...",
-        expires_in: 900,
-        latency_ms: 142,
-      }, null, 2));
-      setLoading(false);
-    }, 600);
+    let parsedBody: unknown = undefined;
+    if (body.trim()) {
+      try {
+        parsedBody = JSON.parse(body);
+      } catch {
+        setError("Request body must be valid JSON.");
+        return;
+      }
+    }
+    try {
+      const path = new URL(url).pathname.replace(/^\/v\d+\/[^/]+/, "") || "/";
+      const result = await caller.mutateAsync({
+        api_slug: selectedApi.slug,
+        method,
+        path,
+        body: parsedBody,
+      });
+      setResp(JSON.stringify(result.body, null, 2));
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Caller request failed.");
+    }
   }
 
   return (
@@ -63,7 +94,7 @@ export default function CallerPage() {
                 />
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || sessionLoading}
                   className="btn-primary !py-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
@@ -100,18 +131,26 @@ export default function CallerPage() {
               <div className="space-y-2 text-sm">
                 <Prompt>{t("caller.response")}</Prompt>
                 <div className="text-xs flex flex-wrap items-center gap-2" data-ltr>
-                  <Tag color="primary">200</Tag>
-                  <span className="text-muted-foreground">142ms // ir-tehran-1</span>
+                  <Tag color="primary">{caller.data?.status_code ?? 200}</Tag>
+                  <span className="text-muted-foreground">
+                    {caller.data?.latency_ms ?? 0}ms // {caller.data?.region ?? "ir-tehran-1"}
+                  </span>
                 </div>
                 <CodeBlock className="mt-2">{resp}</CodeBlock>
               </div>
             ) : (
               <div className="state-block">
                 <div className="state-title">{"// "}{t("caller.waiting")}</div>
-                <div className="state-sub">press ./execute to fire a request</div>
+                <div className="state-sub">
+                  {isAuthenticated ? "press ./execute to fire a request" : "signin required to execute"}
+                </div>
               </div>
             )}
           </TerminalWindow>
+
+          {!isAuthenticated && !sessionLoading ? (
+            <Link to="/signin" className="btn-primary justify-center">./signin</Link>
+          ) : null}
         </div>
 
         <aside className="space-y-3">
@@ -122,14 +161,35 @@ export default function CallerPage() {
                 <li key={a.slug}>
                   <button
                     type="button"
-                    onClick={() => setUrl(`https://api.iranapi.dev/v1/${a.slug.split("-")[0]}/ping`)}
+                    onClick={() => {
+                      setApiSlug(a.slug);
+                      setUrl(`https://api.iranapi.dev/v1/${a.slug}/ping`);
+                    }}
                     className="block w-full text-start rounded-sm px-2 py-1 text-foreground/80 hover:bg-primary/10 hover:text-primary transition-colors"
+                    data-active={a.slug === selectedApi?.slug || undefined}
                   >
                     {a.name}
                   </button>
                 </li>
               ))}
             </ul>
+          </div>
+          <div className="terminal-border rounded-sm bg-card/50 p-4">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">{"// usage.history"}</div>
+            <div className="mt-3 space-y-2 text-xs" data-ltr>
+              {usage.isLoading ? (
+                <div className="text-muted-foreground">loading...</div>
+              ) : usage.data?.results.length ? (
+                usage.data.results.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-0">
+                    <span className="truncate">{item.method || "GET"} {item.path || item.api?.slug || "api"}</span>
+                    <span className="text-amber tabular-nums">{item.latency_ms ?? 0}ms</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted-foreground">no caller usage yet</div>
+              )}
+            </div>
           </div>
         </aside>
       </div>

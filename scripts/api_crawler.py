@@ -276,6 +276,12 @@ def main() -> int:
     )
     usage = crawler.request("GET", "/api/v1/account/usage/", schema_path="/api/v1/account/usage/")
     usage_stats = crawler.request("GET", "/api/v1/account/usage/stats/", schema_path="/api/v1/account/usage/stats/")
+    caller = crawler.request(
+        "POST",
+        "/api/v1/account/caller/",
+        schema_path="/api/v1/account/caller/",
+        data={"api_slug": first_api_slug, "method": "GET"},
+    )
 
     expect(user.body["username"] == "demo-dev", f"Unexpected current user payload: {user.body}")
     expect(bool(profile.body["company"]), "Profile should include seeded company details.")
@@ -283,6 +289,7 @@ def main() -> int:
     expect(current_subscription.body["subscription"]["status"] == "active", "Expected active seeded subscription.")
     expect(usage.body["count"] >= 2, "Expected seeded usage items.")
     expect(usage_stats.body["total_requests"] > 0, "Usage stats should aggregate seeded requests.")
+    expect(caller.body["status_code"] == 200, "Caller endpoint should execute a sample call.")
 
     growth_plan = next((plan for plan in subscription_plans.body["results"] if plan["slug"] == "growth"), None)
     expect(growth_plan is not None, "Expected Growth subscription plan.")
@@ -363,6 +370,7 @@ def main() -> int:
         ("GET", "/api/v1/account/subscription/"),
         ("POST", "/api/v1/account/subscription/"),
         ("POST", "/api/v1/account/subscription/checkout/{checkout_id}/confirm/"),
+        ("POST", "/api/v1/account/caller/"),
         ("GET", "/api/v1/account/usage/"),
         ("GET", "/api/v1/account/usage/stats/"),
         ("GET", "/api/v1/catalog/categories/{slug}/"),
