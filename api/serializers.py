@@ -1,7 +1,45 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+from typing import Any
 from .models import Category, API, PricingPlan, Documentation, UserProfile, APIUsage
+from .repositories import MongoUser, format_decimal
+
+
+def mask_secret(value: str | None) -> str | None:
+    if not value:
+        return None
+    if len(value) <= 10:
+        return "*" * len(value)
+    return f"{value[:6]}...{value[-4:]}"
+
+
+def serialize_category_summary(category: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not category:
+        return None
+    return {
+        "id": int(category["_id"]),
+        "name": category.get("name", ""),
+        "name_en": category.get("name_en", ""),
+        "slug": category.get("slug", ""),
+        "description": category.get("description", ""),
+        "icon": category.get("icon", ""),
+        "color": category.get("color", "#2563eb"),
+        "apis_count": int(category.get("active_apis_count", 0)),
+        "created_at": category.get("created_at"),
+        "updated_at": category.get("updated_at"),
+    }
+
+
+serialize_category = serialize_category_summary
+
+
+def build_session_payload(user_doc: dict[str, Any] | MongoUser | None) -> dict[str, Any]:
+    return {
+        "authenticated": bool(user_doc),
+        "user": serialize_user(user_doc),
+        "profile": serialize_profile(user_doc),
+    }
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -293,19 +331,18 @@ def serialize_usage_item(
         if access_grant
         else None
     )
-    pricing_plans = PricingPlanSerializer(many=True, read_only=True)
-    documentations = DocumentationSerializer(many=True, read_only=True)
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
-
-    class Meta:
-        model = API
-        fields = ['id', 'name', 'name_en', 'slug', 'description', 'short_description', 
-                  'category', 'category_id', 'base_url', 'documentation_url', 
-                  'logo', 'banner', 'status', 'is_featured', 'is_popular', 
-                  'views_count', 'rating', 'rating_count', 'tags', 
-                  'created_by', 'created_by_username', 'created_at', 'updated_at',
-                  'pricing_plans', 'documentations']
-        read_only_fields = ['slug', 'views_count', 'rating', 'rating_count', 'created_by', 'created_at', 'updated_at']
+    return {
+        "id": int(usage["_id"]),
+        "api": serialize_api_list(api_doc, category=category, pricing_from=pricing_from) if api_doc else None,
+        "access_grant": serialized_grant,
+        "pricing_plan": serialize_pricing_plan(pricing_plan) if pricing_plan else None,
+        "source": usage.get("source", "manual"),
+        "requests_count": int(usage.get("requests_count", 0)),
+        "last_used": usage.get("last_used"),
+        "created_at": usage.get("created_at"),
+        "window_started_at": usage.get("window_started_at"),
+        "window_ended_at": usage.get("window_ended_at"),
+    }
 
 
 class APISummarySerializer(serializers.ModelSerializer):
@@ -393,6 +430,20 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
+class RegistrationSerializer(serializers.Serializer):
+    username = serializers.CharField(min_length=1, max_length=150)
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password": "رمزهای عبور مطابقت ندارند"})
+        return attrs
+
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
@@ -401,14 +452,7 @@ class LoginSerializer(serializers.Serializer):
         username = attrs.get('username')
         password = attrs.get('password')
 
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if not user:
-                raise serializers.ValidationError('نام کاربری یا رمز عبور اشتباه است')
-            if not user.is_active:
-                raise serializers.ValidationError('حساب کاربری غیرفعال است')
-            attrs['user'] = user
-        else:
+        if not username or not password:
             raise serializers.ValidationError('نام کاربری و رمز عبور الزامی است')
         return attrs
 
@@ -463,3 +507,8 @@ class UserProfileUpdateSerializer(serializers.Serializer):
     company = serializers.CharField(required=False, allow_blank=True)
     bio = serializers.CharField(required=False, allow_blank=True)
     avatar = serializers.URLField(required=False, allow_null=True, allow_blank=True)
+
+
+class RatingSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+

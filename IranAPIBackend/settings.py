@@ -14,6 +14,8 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = BASE_DIR / "frontend_static"
+TEMPLATE_DIRS = [FRONTEND_DIR]
 
 
 # Quick-start development settings - unsuitable for production
@@ -41,6 +43,7 @@ CORS_ALLOW_CREDENTIALS = True
 # REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'api.authentication.MongoSessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
@@ -53,6 +56,12 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'EXCEPTION_HANDLER': 'api.exceptions.exception_handler',
+}
+
+SOCIAL_AUTH_PROVIDERS = {
+    "google": {"label": "Google", "enabled": False, "auth_url": ""},
+    "github": {"label": "GitHub", "enabled": False, "auth_url": ""},
 }
 
 
@@ -162,6 +171,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [FRONTEND_DIR / "assets"]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

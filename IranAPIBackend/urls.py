@@ -1,35 +1,40 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path, re_path
+from django.utils.html import escape
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.contrib import admin
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from rest_framework.authtoken.views import obtain_auth_token
-from api import views
 
-router = DefaultRouter()
-router.register(r'categories', views.CategoryViewSet, basename='category')
-router.register(r'apis', views.APIViewSet, basename='api')
-router.register(r'pricing-plans', views.PricingPlanViewSet, basename='pricing-plan')
-router.register(r'documentations', views.DocumentationViewSet, basename='documentation')
-router.register(r'users', views.UserViewSet, basename='user')
-router.register(r'profiles', views.UserProfileViewSet, basename='profile')
-router.register(r'usage', views.APIUsageViewSet, basename='usage')
+def frontend_app(request, slug: str | None = None):
+    index_path = settings.FRONTEND_DIR / "index.html"
+    html = index_path.read_text(encoding="utf-8")
+    bootstrap = f'<script id="iranapi-bootstrap-data" type="application/json">{{"slug":"{escape(slug or "")}"}}</script>'
+    html = html.replace("</body>", f"{bootstrap}</body>")
+    return HttpResponse(html)
+
+
+def robots_txt(_request):
+    return HttpResponse("User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n", content_type="text/plain")
+
+
+def sitemap_xml(_request):
+    try:
+        from api.repositories import MongoRepository
+
+        urls = "".join(
+            f"  <url><loc>http://localhost:8000/api/{api['slug']}</loc></url>\n"
+            for api in MongoRepository().list_apis(include_inactive=False)
+        )
+    except Exception:
+        urls = ""
+    body = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>http://localhost:8000/</loc></url>
+%s
+</urlset>
+""" % urls
+    return HttpResponse(body, content_type="application/xml")
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -41,4 +46,12 @@ urlpatterns = [
     path("api/", include("api.urls")),
     path("robots.txt", robots_txt, name="robots-txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap-xml"),
+    re_path(
+        r"^(?!(?:api|admin|robots\.txt|sitemap\.xml)(?:/|$)).*$",
+        frontend_app,
+        name="frontend-app",
+    ),
 ]
+
+if settings.DEBUG:
+    urlpatterns.append(path("", frontend_app, name="frontend-root"))

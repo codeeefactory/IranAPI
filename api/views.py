@@ -7,9 +7,12 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
+from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
@@ -18,9 +21,16 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import Category, API, PricingPlan, Documentation, UserProfile, APIUsage
+from .repositories import MongoRepository
+from .schema import build_openapi_schema
 from .serializers import (
+    APIUsageSerializer,
+    APISummarySerializer,
+    CategorySerializer,
+    DocumentationSerializer,
     APIReleaseSerializer,
     LoginSerializer,
+    PricingPlanSerializer,
     RatingSerializer,
     RegistrationSerializer,
     SubscriptionCheckoutSerializer,
@@ -40,7 +50,215 @@ from .serializers import (
     serialize_user_subscription,
     serialize_usage_item,
     serialize_user,
+    UserProfileSerializer,
+    UserRegistrationSerializer,
+    UserSerializer,
 )
+
+
+def get_repository() -> MongoRepository:
+    return MongoRepository()
+
+
+def current_user_document(request):
+    if request.user and getattr(request.user, "is_authenticated", False):
+        if hasattr(request.user, "id"):
+            return get_repository().get_user_by_id(int(request.user.id))
+    session_id = request.COOKIES.get(settings.SESSION_COOKIE_NAME, "")
+    return get_repository().session_user(session_id)
+
+
+def parse_bool(value):
+    if value is None:
+        return None
+    return str(value).lower() in {"1", "true", "yes", "on"}
+
+
+def paginate(request, results):
+    page_size = int(request.query_params.get("page_size") or 20)
+    page = max(int(request.query_params.get("page") or 1), 1)
+    start = (page - 1) * page_size
+    end = start + page_size
+    return {"count": len(results), "page": page, "page_size": page_size, "results": results[start:end]}
+
+
+def enrich_api_list(api_docs, repository):
+    category_ids = [int(api_doc["category_id"]) for api_doc in api_docs if api_doc.get("category_id") is not None]
+    categories = repository.get_categories_by_ids(category_ids)
+    pricing = repository.pricing_min_map([int(api_doc["_id"]) for api_doc in api_docs])
+    return [
+        serialize_api_list(
+            api_doc,
+            category=categories.get(int(api_doc["category_id"])) if api_doc.get("category_id") is not None else None,
+            pricing_from=pricing.get(int(api_doc["_id"])),
+        )
+        for api_doc in api_docs
+    ]
+
+
+def set_session_cookie(response, session_id: str):
+    response.set_cookie(
+        settings.SESSION_COOKIE_NAME,
+        session_id,
+        max_age=settings.SESSION_COOKIE_AGE,
+        httponly=True,
+        samesite="Lax",
+    )
+
+
+class HealthCheckView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"status": "ok", "timestamp": timezone.now()})
+
+
+class OpenAPISchemaView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(build_openapi_schema())
+
+
+class SessionView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(build_session_payload(current_user_document(request)))
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        response = Response(serialize_user(get_repository().get_user_by_id(int(request.user.id))))
+        response["Cache-Control"] = "no-store, max-age=0"
+        response["Pragma"] = "no-cache"
+        return response
+
+    def patch(self, request):
+        serializer = UserUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user_doc = get_repository().update_user(int(request.user.id), serializer.validated_data)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        response = Response({"user": serialize_user(user_doc)})
+        response["Cache-Control"] = "no-store, max-age=0"
+        response["Pragma"] = "no-cache"
+        return response
+
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_doc = get_repository().get_user_by_id(int(request.user.id))
+        return Response(serialize_profile(user_doc))
+
+    def patch(self, request):
+        serializer = UserProfileUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_doc = get_repository().update_profile(int(request.user.id), serializer.validated_data)
+        return Response({"profile": serialize_profile(user_doc)})
+
+
+class AccessGrantListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        repository = get_repository()
+        grants = repository.list_access_grants(int(request.user.id))
+        api_map = repository.get_apis_by_ids([int(grant["api_id"]) for grant in grants if grant.get("api_id")])
+        plan_map = repository.get_pricing_plans_by_ids(
+            [int(grant["pricing_plan_id"]) for grant in grants if grant.get("pricing_plan_id")]
+        )
+        category_map = repository.get_categories_by_ids(
+            [int(api.get("category_id")) for api in api_map.values() if api.get("category_id") is not None]
+        )
+        pricing_map = repository.pricing_min_map([int(api_id) for api_id in api_map])
+        payload = [
+            serialize_access_grant(
+                grant,
+                api_doc=api_map.get(int(grant["api_id"])) if grant.get("api_id") else None,
+                pricing_plan=plan_map.get(int(grant["pricing_plan_id"])) if grant.get("pricing_plan_id") else None,
+                category=category_map.get(int(api_map.get(int(grant["api_id"]), {}).get("category_id")))
+                if grant.get("api_id") and api_map.get(int(grant["api_id"]), {}).get("category_id") is not None
+                else None,
+                pricing_from=pricing_map.get(int(grant["api_id"])) if grant.get("api_id") else None,
+            )
+            for grant in grants
+        ]
+        return Response(paginate(request, payload))
+
+
+class UsageListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        repository = get_repository()
+        usage_items = repository.list_usage(int(request.user.id))
+        api_map = repository.get_apis_by_ids([int(item["api_id"]) for item in usage_items if item.get("api_id")])
+        grant_map = repository.get_access_grants_by_ids(
+            [int(item["access_grant_id"]) for item in usage_items if item.get("access_grant_id")]
+        )
+        plan_map = repository.get_pricing_plans_by_ids(
+            [int(grant["pricing_plan_id"]) for grant in grant_map.values() if grant.get("pricing_plan_id")]
+        )
+        category_map = repository.get_categories_by_ids(
+            [int(api.get("category_id")) for api in api_map.values() if api.get("category_id") is not None]
+        )
+        pricing_map = repository.pricing_min_map([int(api_id) for api_id in api_map])
+        payload = [
+            serialize_usage_item(
+                item,
+                api_doc=api_map.get(int(item["api_id"])) if item.get("api_id") else None,
+                access_grant=grant_map.get(int(item.get("access_grant_id"))) if item.get("access_grant_id") else None,
+                pricing_plan=plan_map.get(int(grant_map.get(int(item.get("access_grant_id")), {}).get("pricing_plan_id")))
+                if item.get("access_grant_id") and grant_map.get(int(item.get("access_grant_id")), {}).get("pricing_plan_id")
+                else None,
+                category=category_map.get(int(api_map.get(int(item["api_id"]), {}).get("category_id")))
+                if item.get("api_id") and api_map.get(int(item["api_id"]), {}).get("category_id") is not None
+                else None,
+                pricing_from=pricing_map.get(int(item["api_id"])) if item.get("api_id") else None,
+            )
+            for item in usage_items
+        ]
+        return Response(paginate(request, payload))
+
+
+class UsageStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(get_repository().usage_stats(int(request.user.id)))
+
+
+class GenerateApiKeyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        raise PermissionDenied("Legacy API key generation is disabled.")
+
+
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        SessionLogoutView().post(request)
+        return Response({"message": "Logged out."})
+
+
+class SessionLogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        session_id = request.COOKIES.get(settings.SESSION_COOKIE_NAME, "")
+        get_repository().delete_session(session_id)
+        response = Response({"authenticated": False})
+        response.delete_cookie(settings.SESSION_COOKIE_NAME)
+        return response
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -134,7 +352,12 @@ class APIListView(APIView):
             include_inactive=include_inactive,
             created_by_user_id=int(request.user.id) if owned_only else None,
         )
-        return Response(paginate(request, enrich_api_list(api_docs, repository)))
+        payload = paginate(request, enrich_api_list(api_docs, repository))
+        response = Response(payload)
+        if request.path.startswith("/api/apis/") or request.path == "/api/apis/":
+            response["X-API-Deprecated"] = "true"
+            response.data["meta"] = {"deprecated": {"canonical_path": "/api/v1/catalog/apis/"}}
+        return response
 
     def post(self, request):
         if not request.user or not getattr(request.user, "is_authenticated", False):
