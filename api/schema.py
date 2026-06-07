@@ -168,7 +168,14 @@ def build_openapi_schema() -> dict:
                 "get": {"tags": ["Catalog"], "summary": "List active user subscription plans"},
             },
             "/api/v1/catalog/documentations/": {
-                "get": {"tags": ["Catalog"], "summary": "List active documentation pages"},
+                "get": {
+                    "tags": ["Catalog"],
+                    "summary": "List active documentation pages",
+                    "parameters": [
+                        {"name": "api", "in": "query", "schema": {"type": "string"}},
+                        {"name": "search", "in": "query", "schema": {"type": "string"}},
+                    ],
+                },
             },
             "/api/v1/account/user/": {
                 "get": {"tags": ["Account"], "summary": "Fetch current user", "security": [{"sessionCookie": []}, {"legacyToken": []}]},

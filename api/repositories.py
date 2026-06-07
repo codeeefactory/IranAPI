@@ -702,10 +702,13 @@ class MongoRepository:
             docs_by_api.setdefault(int(document["api_id"]), []).append(document)
         return docs_by_api
 
-    def list_documentations(self, *, api_slug: str | None = None) -> list[dict[str, Any]]:
+    def list_documentations(self, *, api_slug: str | None = None, search: str | None = None) -> list[dict[str, Any]]:
         query: dict[str, Any] = {"is_active": True}
         if api_slug:
             query["api_slug"] = api_slug
+        if search:
+            regex = {"$regex": search, "$options": "i"}
+            query["$or"] = [{"title": regex}, {"slug": regex}, {"content": regex}, {"api_slug": regex}]
         return list(self.documentations.find(query).sort([("order", ASCENDING), ("title", ASCENDING)]))
 
     def get_endpoints_by_api_ids(self, api_ids: list[int], *, active_only: bool = True) -> dict[int, list[dict[str, Any]]]:

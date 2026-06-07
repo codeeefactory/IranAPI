@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { catalogApi, type ApiListParams } from "@/lib/api-client";
+import { catalogApi, type ApiListParams, type DocumentationListParams } from "@/lib/api-client";
 import { buildCatalogStats, toApiItem } from "@/lib/catalog-adapter";
-import { APIS, CATEGORIES, STATS } from "@/data/mock";
+import { APIS, CATEGORIES, MOCK_CATALOG_APIS, STATS } from "@/data/mock";
 
 export const catalogKeys = {
   all: ["catalog"] as const,
@@ -10,6 +10,7 @@ export const catalogKeys = {
   api: (slug?: string) => [...catalogKeys.all, "api", slug ?? ""] as const,
   similar: (slug?: string) => [...catalogKeys.all, "api", slug ?? "", "similar"] as const,
   categories: () => [...catalogKeys.all, "categories"] as const,
+  documentations: (params?: DocumentationListParams) => [...catalogKeys.all, "documentations", params ?? {}] as const,
 };
 
 export function useCatalogApis(params?: ApiListParams) {
@@ -30,6 +31,16 @@ export function useCatalogCategories() {
 
   const categories = query.data?.results ?? CATEGORIES;
   return { ...query, categories, isFallback: !query.data };
+}
+
+export function useCatalogDocumentations(params?: DocumentationListParams) {
+  const query = useQuery({
+    queryKey: catalogKeys.documentations(params),
+    queryFn: () => catalogApi.listDocumentations(params),
+  });
+
+  const documentations = query.data?.results ?? MOCK_CATALOG_APIS.flatMap((api) => api.documentations);
+  return { ...query, documentations, isFallback: !query.data };
 }
 
 export function useCatalogHome() {

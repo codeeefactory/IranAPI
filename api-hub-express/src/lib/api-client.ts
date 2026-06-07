@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import type { CatalogApiDetail, CatalogApiSummary, CatalogCategory } from "@/types/catalog";
+import type { CatalogApiDetail, CatalogApiSummary, CatalogCategory, CatalogDocumentation } from "@/types/catalog";
 
 export type CurrentUser = {
   id: number;
@@ -173,6 +173,13 @@ export type ApiListParams = {
   page_size?: number;
 };
 
+export type DocumentationListParams = {
+  api?: string | null;
+  search?: string;
+  page?: number;
+  page_size?: number;
+};
+
 const apiBaseURL = (import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(/\/$/, "");
 
 export class ApiClientError extends Error {
@@ -244,6 +251,13 @@ export const catalogApi = {
   async listCategories(): Promise<PaginatedResponse<CatalogCategory>> {
     const { data } = await http.get<PaginatedResponse<CatalogCategory>>("/catalog/categories/", {
       params: { page_size: 100 },
+    });
+    return data;
+  },
+
+  async listDocumentations(params?: DocumentationListParams): Promise<PaginatedResponse<CatalogDocumentation>> {
+    const { data } = await http.get<PaginatedResponse<CatalogDocumentation>>("/catalog/documentations/", {
+      params: cleanParams(params),
     });
     return data;
   },

@@ -723,7 +723,10 @@ class DocumentationListView(APIView):
 
     def get(self, request):
         repository = get_repository()
-        documentations = repository.list_documentations(api_slug=request.query_params.get("api"))
+        documentations = repository.list_documentations(
+            api_slug=request.query_params.get("api"),
+            search=request.query_params.get("search"),
+        )
         return Response(paginate(request, [serialize_documentation(document) for document in documentations]))
 
 

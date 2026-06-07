@@ -382,6 +382,20 @@ class MongoApiTests(APISimpleTestCase):
         self.assertEqual(response.data["results"][0]["method"], "POST")
         self.assertEqual(response.data["results"][0]["sample_response"]["confidence"], 0.98)
 
+    def test_documentation_list_filters_by_api_and_search(self):
+        api_response = self.client.get(f"/api/v1/catalog/documentations/?api={self.api['slug']}")
+        search_response = self.client.get("/api/v1/catalog/documentations/?search=Run")
+        empty_response = self.client.get("/api/v1/catalog/documentations/?search=missing")
+
+        self.assertEqual(api_response.status_code, 200)
+        self.assertEqual(api_response.data["count"], 1)
+        self.assertEqual(api_response.data["results"][0]["api_slug"], self.api["slug"])
+        self.assertEqual(search_response.status_code, 200)
+        self.assertEqual(search_response.data["count"], 1)
+        self.assertEqual(search_response.data["results"][0]["title"], "شروع سریع")
+        self.assertEqual(empty_response.status_code, 200)
+        self.assertEqual(empty_response.data["count"], 0)
+
     def test_rate_api_creates_then_updates_single_rating(self):
         self.authenticate_with_token(self.user)
 
@@ -705,6 +719,8 @@ class MongoApiTests(APISimpleTestCase):
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/", response.data["paths"])
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/confirm/", response.data["paths"])
         self.assertIn("/api/v1/account/caller/", response.data["paths"])
+        docs_params = response.data["paths"]["/api/v1/catalog/documentations/"]["get"]["parameters"]
+        self.assertIn("search", {param["name"] for param in docs_params})
 
     def test_site_metadata_routes(self):
         robots = self.client.get("/robots.txt")
