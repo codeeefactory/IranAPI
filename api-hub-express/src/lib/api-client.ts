@@ -61,6 +61,59 @@ export type PaginatedResponse<T> = {
   results: T[];
 };
 
+export type SubscriptionPlan = {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  plan_type: string;
+  price: string;
+  currency: string;
+  interval: string;
+  interval_days: number;
+  api_publish_limit?: number | null;
+  included_requests?: number | null;
+  features: string[];
+  is_popular: boolean;
+  is_active: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type UserSubscription = {
+  id: number;
+  status: string;
+  plan: SubscriptionPlan;
+  starts_at?: string | null;
+  renews_at?: string | null;
+  ends_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type SubscriptionCheckout = {
+  id: number;
+  status: string;
+  amount: string;
+  currency: string;
+  gateway: string;
+  reference: string;
+  plan: SubscriptionPlan;
+  created_at?: string | null;
+  updated_at?: string | null;
+  expires_at?: string | null;
+  confirmed_at?: string | null;
+};
+
+export type SubscriptionCheckoutResponse = {
+  message?: string;
+  checkout: SubscriptionCheckout;
+};
+
+export type SubscriptionConfirmResponse = SubscriptionCheckoutResponse & {
+  subscription: UserSubscription;
+};
+
 export type ApiListParams = {
   category?: string | null;
   featured?: boolean;
@@ -133,6 +186,13 @@ export const catalogApi = {
     });
     return data;
   },
+
+  async listSubscriptionPlans(): Promise<PaginatedResponse<SubscriptionPlan>> {
+    const { data } = await http.get<PaginatedResponse<SubscriptionPlan>>("/catalog/subscription-plans/", {
+      params: { page_size: 100 },
+    });
+    return data;
+  },
 };
 
 export const authApi = {
@@ -188,9 +248,33 @@ export const accountApi = {
     return data;
   },
 
-  async subscription(): Promise<{ subscription: { status: string; plan?: { name?: string; slug?: string } } | null }> {
-    const { data } = await http.get<{ subscription: { status: string; plan?: { name?: string; slug?: string } } | null }>(
-      "/account/subscription/",
+  async subscription(): Promise<{ subscription: UserSubscription | null }> {
+    const { data } = await http.get<{ subscription: UserSubscription | null }>("/account/subscription/");
+    return data;
+  },
+
+  async createSubscriptionCheckout(planId: number): Promise<SubscriptionCheckoutResponse> {
+    const { data } = await http.post<SubscriptionCheckoutResponse>("/account/subscription/", { plan_id: planId });
+    return data;
+  },
+
+  async getSubscriptionCheckout(checkoutId: number): Promise<{ checkout: SubscriptionCheckout }> {
+    const { data } = await http.get<{ checkout: SubscriptionCheckout }>(
+      `/account/subscription/checkout/${encodeURIComponent(checkoutId)}/`,
+    );
+    return data;
+  },
+
+  async cancelSubscriptionCheckout(checkoutId: number): Promise<SubscriptionCheckoutResponse> {
+    const { data } = await http.delete<SubscriptionCheckoutResponse>(
+      `/account/subscription/checkout/${encodeURIComponent(checkoutId)}/`,
+    );
+    return data;
+  },
+
+  async confirmSubscriptionCheckout(checkoutId: number): Promise<SubscriptionConfirmResponse> {
+    const { data } = await http.post<SubscriptionConfirmResponse>(
+      `/account/subscription/checkout/${encodeURIComponent(checkoutId)}/confirm/`,
     );
     return data;
   },
