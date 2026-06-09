@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import type { CatalogApiDetail, CatalogApiSummary, CatalogCategory, CatalogDocumentation } from "@/types/catalog";
+import type { CatalogApiDetail, CatalogApiSummary, CatalogCategory, CatalogDocumentation, CatalogPricingPlan } from "@/types/catalog";
 
 export type CurrentUser = {
   id: number;
@@ -130,6 +130,22 @@ export type UsageItem = {
   status_code?: number | null;
   latency_ms?: number | null;
   response_size?: number | null;
+};
+
+export type AccessGrant = {
+  id: number;
+  api: CatalogApiSummary | null;
+  pricing_plan?: CatalogPricingPlan | null;
+  source: string;
+  status: string;
+  external_subscription_id: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  requests_per_day?: number | null;
+  requests_per_month?: number | null;
+  metadata?: Record<string, unknown>;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type UsageListParams = {
@@ -313,8 +329,8 @@ export const accountApi = {
     return data;
   },
 
-  async access(): Promise<PaginatedResponse<unknown>> {
-    const { data } = await http.get<PaginatedResponse<unknown>>("/account/access/");
+  async access(): Promise<PaginatedResponse<AccessGrant>> {
+    const { data } = await http.get<PaginatedResponse<AccessGrant>>("/account/access/");
     return data;
   },
 

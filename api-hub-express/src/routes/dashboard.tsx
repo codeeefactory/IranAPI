@@ -5,13 +5,16 @@ import { TerminalWindow, Tag, Prompt } from "@/components/site/Terminal";
 import { Activity, Key, Server, TrendingUp, Copy, Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAccountDashboard, useSession } from "@/hooks/useAuth";
+import { useUsageHistory } from "@/hooks/useUsage";
 
 export default function DashboardPage() {
   const { t } = useI18n();
   const { isAuthenticated, user, profile: sessionProfile, isLoading } = useSession();
   const account = useAccountDashboard(isAuthenticated);
+  const recentUsage = useUsageHistory({ page_size: 5 }, isAuthenticated);
   const profile = account.profile.data ?? sessionProfile;
   const usageStats = account.usageStats.data;
+  const accessGrants = account.access.data?.results ?? [];
   const accessCount = account.access.data?.count ?? 0;
   const subscription = account.subscription.data?.subscription;
 
@@ -31,8 +34,14 @@ export default function DashboardPage() {
     );
   }
 
-  const totalRequests = Number(usageStats?.total_requests ?? 0);
+  const recentRequests = Number(usageStats?.recent_requests ?? usageStats?.total_requests ?? 0);
   const activeApis = Number(usageStats?.active_apis ?? accessCount);
+  const usageRows = recentUsage.data?.results ?? [];
+  const latencyValues = usageRows.map((item) => Number(item.latency_ms ?? 0)).filter((value) => value > 0);
+  const p95Latency = latencyValues.length ? Math.max(...latencyValues) : 0;
+  const trafficBars = usageRows.length
+    ? usageRows.map((item) => Math.max(1, Number(item.requests_count ?? 0))).reverse()
+    : [1];
 
   return (
     <PageShell>
@@ -61,8 +70,8 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { i: TrendingUp, l: t("dash.calls24h"), v: totalRequests.toLocaleString(), d: t("dash.requests") },
-          { i: Activity, l: t("dash.p95"), v: "168ms", d: "-8ms" },
+          { i: TrendingUp, l: t("dash.calls24h"), v: recentRequests.toLocaleString(), d: t("dash.requests") },
+          { i: Activity, l: t("dash.p95"), v: p95Latency ? `${p95Latency}ms` : "0ms", d: "recent" },
           { i: Server, l: t("dash.edge"), v: String(activeApis), d: t("dash.apis") },
           { i: Key, l: t("dash.keys"), v: String(accessCount), d: t("dash.access") },
         ].map((s) => (
@@ -82,20 +91,26 @@ export default function DashboardPage() {
             <div className="text-xs uppercase tracking-widest text-primary">{"// "}{t("dash.traffic")}</div>
             <Tag color="primary">{t("dash.live")}</Tag>
           </div>
-          <FakeChart />
+          <TrafficChart bars={trafficBars} />
         </div>
 
         <TerminalWindow title="~/iranapi/keys">
           <div className="space-y-2 text-sm">
             <Prompt>iran keys list</Prompt>
             <div className="mt-2 divide-y divide-border text-xs">
-              {[
-                ["ir_live_4f9c…2a", "prod", "primary"],
-                ["ir_live_8a31…f6", "prod", "cyan"],
-                ["ir_test_22d0…11", "test", "amber"],
-              ].map(([k, env, color]) => (
-                <KeyRow key={k} k={k} env={env} color={color as any} t={t} />
-              ))}
+              {accessGrants.length ? (
+                accessGrants.slice(0, 4).map((grant) => (
+                  <KeyRow
+                    key={grant.id}
+                    k={grant.external_subscription_id || `grant_${grant.id}`}
+                    env={grant.status}
+                    color={grant.status === "active" ? "primary" : "amber"}
+                    t={t}
+                  />
+                ))
+              ) : (
+                <div className="py-3 text-muted-foreground" data-ltr>// no access grants yet</div>
+              )}
             </div>
             <button className="cta-grad mt-3 w-full !py-2 text-xs">
               {t("dash.generate")}
@@ -115,20 +130,24 @@ export default function DashboardPage() {
               <tr><th>time</th><th>status</th><th>endpoint</th><th className="text-end">latency</th></tr>
             </thead>
             <tbody>
-              {[
-                ["12:42:18", "200", "POST /v1/zarinpal/pay", "142ms"],
-                ["12:42:11", "200", "GET /v1/neshan/geocode", "94ms"],
-                ["12:42:07", "429", "POST /v1/kavenegar/sms", "12ms"],
-                ["12:41:59", "200", "POST /v1/openai-bridge/chat", "412ms"],
-                ["12:41:52", "200", "GET /v1/tapsi/distance", "118ms"],
-              ].map(([time, s, ep, lat]) => (
-                <tr key={time}>
-                  <td className="text-muted-foreground tabular-nums w-[80px]">{time}</td>
-                  <td className="w-[64px]"><Tag color={s === "200" ? "primary" : "magenta"}>{s}</Tag></td>
-                  <td className="font-mono text-foreground/90 truncate">{ep}</td>
-                  <td className="text-end text-amber tabular-nums w-[80px]">{lat}</td>
+              {usageRows.length ? (
+                usageRows.map((item) => {
+                  const status = item.status_code ? String(item.status_code) : "ok";
+                  const endpoint = `${item.method || "GET"} ${item.path || item.api?.slug || "catalog"}`;
+                  return (
+                    <tr key={item.id}>
+                      <td className="text-muted-foreground tabular-nums w-[80px]">{formatTime(item.last_used ?? item.created_at)}</td>
+                      <td className="w-[64px]"><Tag color={status.startsWith("2") || status === "ok" ? "primary" : "magenta"}>{status}</Tag></td>
+                      <td className="font-mono text-foreground/90 truncate">{endpoint}</td>
+                      <td className="text-end text-amber tabular-nums w-[80px]">{item.latency_ms ? `${item.latency_ms}ms` : `${item.requests_count} req`}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-5 text-center text-muted-foreground">// no usage events yet</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -146,7 +165,7 @@ function KeyRow({ k, env, color, t }: { k: string; env: string; color: any; t: (
         <Tag color={color}>{env}</Tag>
       </div>
       <div className="flex items-center gap-2 text-muted-foreground">
-        <span>{t("dash.usedAgo", { t: "3m" })}</span>
+        <span>{t("dash.usedAgo", { t: "live" })}</span>
         <button
           type="button"
           onClick={() => { navigator.clipboard.writeText(k); setDone(true); setTimeout(() => setDone(false), 1200); }}
@@ -160,8 +179,14 @@ function KeyRow({ k, env, color, t }: { k: string; env: string; color: any; t: (
   );
 }
 
-function FakeChart() {
-  const bars = [42, 58, 51, 67, 74, 62, 81, 79, 88, 72, 65, 81, 92, 87, 76, 84, 90, 78, 71, 83, 95, 89, 76, 81];
+function formatTime(value?: string | null) {
+  if (!value) return "--:--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--:--";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+}
+
+function TrafficChart({ bars }: { bars: number[] }) {
   const max = Math.max(...bars);
   return (
     <div className="mt-5 flex h-32 sm:h-40 items-end gap-1" aria-hidden>
