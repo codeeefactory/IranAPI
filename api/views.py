@@ -31,6 +31,7 @@ from .serializers import (
     DocumentationSerializer,
     APIReleaseSerializer,
     LoginSerializer,
+    OrganizationCreateSerializer,
     PricingPlanSerializer,
     RatingSerializer,
     RegistrationSerializer,
@@ -44,6 +45,7 @@ from .serializers import (
     serialize_api_list,
     serialize_category,
     serialize_documentation,
+    serialize_organization,
     serialize_pricing_plan,
     serialize_profile,
     serialize_subscription_checkout,
@@ -192,6 +194,27 @@ class AccessGrantListView(APIView):
             for grant in grants
         ]
         return Response(paginate(request, payload))
+
+
+class OrganizationListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        organizations = get_repository().list_organizations(int(request.user.id))
+        return Response(paginate(request, [serialize_organization(item) for item in organizations]))
+
+    def post(self, request):
+        serializer = OrganizationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        organization = get_repository().create_organization(
+            user_id=int(request.user.id),
+            name=serializer.validated_data["name"],
+            region=serializer.validated_data["region"],
+        )
+        return Response(
+            {"message": "Organization created successfully.", "organization": serialize_organization(organization)},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class UsageListView(APIView):

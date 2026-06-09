@@ -528,6 +528,35 @@ class MongoApiTests(APISimpleTestCase):
         self.assertEqual(response.data["results"][0]["api"]["slug"], self.api["slug"])
         self.assertEqual(response.data["results"][0]["pricing_plan"]["rapidapi_plan_slug"], "pro")
 
+    def test_organization_create_and_list(self):
+        self.authenticate_with_token(self.user)
+
+        create = self.client.post(
+            "/api/v1/account/organizations/",
+            {"name": "Acme Payments", "region": "ir-mashhad-1"},
+            format="json",
+        )
+        listing = self.client.get("/api/v1/account/organizations/")
+
+        self.assertEqual(create.status_code, 201)
+        self.assertEqual(create.data["organization"]["name"], "Acme Payments")
+        self.assertEqual(create.data["organization"]["region"], "ir-mashhad-1")
+        self.assertEqual(create.data["organization"]["status"], "active")
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(listing.data["count"], 1)
+        self.assertEqual(listing.data["results"][0]["slug"], create.data["organization"]["slug"])
+        self.assertEqual(self.repository.organizations.count_documents({"owner_user_id": int(self.user["_id"])}), 1)
+
+    def test_organization_create_requires_authentication(self):
+        response = self.client.post(
+            "/api/v1/account/organizations/",
+            {"name": "No Auth Org", "region": "ir-tehran-1"},
+            format="json",
+        )
+
+        self.assertIn(response.status_code, {401, 403})
+        self.assertEqual(self.repository.organizations.count_documents({}), 0)
+
     def test_subscription_plans_and_checkout_flow(self):
         plan = self.repository.build_subscription_plan_document(
             {
@@ -718,6 +747,7 @@ class MongoApiTests(APISimpleTestCase):
         self.assertIn("/api/v1/account/subscription/", response.data["paths"])
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/", response.data["paths"])
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/confirm/", response.data["paths"])
+        self.assertIn("/api/v1/account/organizations/", response.data["paths"])
         self.assertIn("/api/v1/account/caller/", response.data["paths"])
         docs_params = response.data["paths"]["/api/v1/catalog/documentations/"]["get"]["parameters"]
         self.assertIn("search", {param["name"] for param in docs_params})

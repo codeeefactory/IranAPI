@@ -1,10 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { accountApi, authApi, type LoginInput, type RegisterInput, type SessionPayload } from "@/lib/api-client";
+import {
+  accountApi,
+  authApi,
+  type LoginInput,
+  type OrganizationCreateInput,
+  type RegisterInput,
+  type SessionPayload,
+} from "@/lib/api-client";
 
 export const authKeys = {
   session: ["auth", "session"] as const,
   profile: ["account", "profile"] as const,
   access: ["account", "access"] as const,
+  organizations: ["account", "organizations"] as const,
   usageStats: ["account", "usageStats"] as const,
   subscription: ["account", "subscription"] as const,
 };
@@ -87,4 +95,23 @@ export function useAccountDashboard(enabled: boolean) {
   });
 
   return { profile, access, usageStats, subscription };
+}
+
+export function useOrganizations(enabled: boolean) {
+  return useQuery({
+    queryKey: authKeys.organizations,
+    queryFn: accountApi.organizations,
+    enabled,
+  });
+}
+
+export function useCreateOrganization() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: OrganizationCreateInput) => accountApi.createOrganization(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.organizations });
+      queryClient.invalidateQueries({ queryKey: authKeys.profile });
+    },
+  });
 }

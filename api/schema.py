@@ -188,6 +188,10 @@ def build_openapi_schema() -> dict:
             "/api/v1/account/access/": {
                 "get": {"tags": ["Account"], "summary": "List access grants", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
             },
+            "/api/v1/account/organizations/": {
+                "get": {"tags": ["Account"], "summary": "List organizations", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Create an organization", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+            },
             "/api/v1/account/subscription/": {
                 "get": {"tags": ["Account"], "summary": "Fetch current user subscription", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
                 "post": {"tags": ["Account"], "summary": "Create a subscription checkout", "security": [{"sessionCookie": []}, {"legacyToken": []}]},

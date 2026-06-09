@@ -118,6 +118,7 @@ class MongoRepository:
         self.api_usage = self.db["api_usage"]
         self.sessions = self.db["sessions"]
         self.legacy_tokens = self.db["legacy_tokens"]
+        self.organizations = self.db["organizations"]
 
     def build_mongo_user(self, user_doc: dict[str, Any]) -> MongoUser:
         return MongoUser(
@@ -844,6 +845,21 @@ class MongoRepository:
     def list_access_grants(self, user_id: int) -> list[dict[str, Any]]:
         return list(self.access_grants.find({"user_id": int(user_id)}).sort([("created_at", DESCENDING)]))
 
+    def list_organizations(self, user_id: int) -> list[dict[str, Any]]:
+        return list(self.organizations.find({"owner_user_id": int(user_id)}).sort([("created_at", DESCENDING)]))
+
+    def create_organization(self, *, user_id: int, name: str, region: str) -> dict[str, Any]:
+        document = self.build_organization_document(
+            {
+                "owner_user_id": int(user_id),
+                "name": name,
+                "region": region,
+                "status": "active",
+            }
+        )
+        self.organizations.insert_one(document)
+        return document
+
     def get_access_grants_by_ids(self, grant_ids: list[int]) -> dict[int, dict[str, Any]]:
         if not grant_ids:
             return {}
@@ -1131,6 +1147,25 @@ class MongoRepository:
             "created_at": payload.get("created_at", now),
             "updated_at": payload.get("updated_at", now),
         }
+
+    def build_organization_document(self, payload: dict[str, Any], *, current_id: int | None = None) -> dict[str, Any]:
+        now = timezone.now()
+        document = {
+            "_id": current_id or next_id("organizations"),
+            "owner_user_id": int(payload.get("owner_user_id")),
+            "name": payload.get("name", "").strip(),
+            "region": payload.get("region", "ir-tehran-1").strip() or "ir-tehran-1",
+            "status": payload.get("status", "active"),
+            "created_at": payload.get("created_at", now),
+            "updated_at": payload.get("updated_at", now),
+        }
+        document["slug"] = payload.get("slug") or unique_slug(
+            self.organizations,
+            document["name"] or "organization",
+            max_length=120,
+            current_id=current_id,
+        )
+        return document
 
     def build_rating_document(self, payload: dict[str, Any], *, current_id: int | None = None) -> dict[str, Any]:
         now = timezone.now()

@@ -148,6 +148,27 @@ export type AccessGrant = {
   updated_at?: string | null;
 };
 
+export type Organization = {
+  id: number;
+  name: string;
+  slug: string;
+  region: string;
+  status: string;
+  owner_user_id: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type OrganizationCreateInput = {
+  name: string;
+  region: string;
+};
+
+export type OrganizationCreateResponse = {
+  message?: string;
+  organization: Organization;
+};
+
 export type UsageListParams = {
   api?: string | number | null;
   source?: string | null;
@@ -331,6 +352,16 @@ export const accountApi = {
 
   async access(): Promise<PaginatedResponse<AccessGrant>> {
     const { data } = await http.get<PaginatedResponse<AccessGrant>>("/account/access/");
+    return data;
+  },
+
+  async organizations(): Promise<PaginatedResponse<Organization>> {
+    const { data } = await http.get<PaginatedResponse<Organization>>("/account/organizations/");
+    return data;
+  },
+
+  async createOrganization(input: OrganizationCreateInput): Promise<OrganizationCreateResponse> {
+    const { data } = await http.post<OrganizationCreateResponse>("/account/organizations/", input);
     return data;
   },
 

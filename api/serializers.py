@@ -311,6 +311,19 @@ def serialize_access_grant(
     }
 
 
+def serialize_organization(organization: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(organization["_id"]),
+        "name": organization.get("name", ""),
+        "slug": organization.get("slug", ""),
+        "region": organization.get("region", "ir-tehran-1"),
+        "status": organization.get("status", "active"),
+        "owner_user_id": int(organization.get("owner_user_id")),
+        "created_at": organization.get("created_at"),
+        "updated_at": organization.get("updated_at"),
+    }
+
+
 def serialize_usage_item(
     usage: dict[str, Any],
     *,
@@ -499,6 +512,20 @@ class APIReleaseSerializer(serializers.Serializer):
 
 class SubscriptionCheckoutSerializer(serializers.Serializer):
     plan_id = serializers.IntegerField(min_value=1)
+
+
+class OrganizationCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+    region = serializers.ChoiceField(
+        choices=["ir-tehran-1", "ir-mashhad-1", "eu-frankfurt-1"],
+        default="ir-tehran-1",
+    )
+
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Organization name is required.")
+        return value
 
 
 class UserUpdateSerializer(serializers.Serializer):
