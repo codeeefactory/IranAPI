@@ -112,7 +112,10 @@ export default function DashboardPage() {
                 <div className="py-3 text-muted-foreground" data-ltr>// no access grants yet</div>
               )}
             </div>
-            <button className="cta-grad mt-3 w-full !py-2 text-xs">
+            <Link to="/release" className="cta-grad mt-3 w-full !py-2 text-xs justify-center">
+              ./release_api
+            </Link>
+            <button className="btn-ghost mt-2 w-full !py-2 text-xs">
               {t("dash.generate")}
             </button>
           </div>

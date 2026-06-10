@@ -234,6 +234,21 @@ export type ApiRatingResponse = {
   created: boolean;
 };
 
+export type ApiReleaseInput = {
+  name: string;
+  base_url: string;
+  documentation_url?: string;
+  auth_scheme: "api-key" | "api_key" | "bearer" | "oauth2" | "basic" | "none";
+  category?: string;
+  tags?: string[];
+  description: string;
+};
+
+export type ApiReleaseResponse = {
+  message?: string;
+  api: CatalogApiDetail;
+};
+
 export type ApiListParams = {
   category?: string | null;
   featured?: boolean;
@@ -316,6 +331,11 @@ export const catalogApi = {
     const { data } = await http.post<ApiRatingResponse>(`/catalog/apis/${encodeURIComponent(slug)}/ratings/`, {
       rating,
     });
+    return data;
+  },
+
+  async releaseApi(input: ApiReleaseInput): Promise<ApiReleaseResponse> {
+    const { data } = await http.post<ApiReleaseResponse>("/catalog/apis/", input);
     return data;
   },
 

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { catalogApi, type ApiListParams, type DocumentationListParams } from "@/lib/api-client";
+import { catalogApi, type ApiListParams, type ApiReleaseInput, type DocumentationListParams } from "@/lib/api-client";
 import { buildCatalogStats, toApiItem } from "@/lib/catalog-adapter";
 import { APIS, CATEGORIES, MOCK_CATALOG_APIS, STATS } from "@/data/mock";
 
@@ -90,6 +90,16 @@ export function useRateApi(slug?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (rating: number) => catalogApi.rateApi(slug as string, rating),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    },
+  });
+}
+
+export function useReleaseApi() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ApiReleaseInput) => catalogApi.releaseApi(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: catalogKeys.all });
     },
