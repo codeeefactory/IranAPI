@@ -212,6 +212,10 @@ def build_openapi_schema() -> dict:
             "/api/v1/account/caller/": {
                 "post": {"tags": ["Account"], "summary": "Execute a catalog API sample call and record usage", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
             },
+            "/api/v1/account/studio/flows/": {
+                "get": {"tags": ["Account"], "summary": "List deployed Studio flows", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Deploy a Studio flow and record usage", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+            },
         },
         "components": {
             "securitySchemes": {

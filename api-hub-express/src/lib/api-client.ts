@@ -193,6 +193,40 @@ export type CallerExecuteResponse = {
   usage: UsageItem;
 };
 
+export type StudioFlowNode = {
+  type: string;
+  label: string;
+  order?: number;
+};
+
+export type StudioFlow = {
+  id: number;
+  name: string;
+  slug: string;
+  status: string;
+  region: string;
+  api_slug: string;
+  api: CatalogApiSummary | null;
+  nodes: StudioFlowNode[];
+  node_count: number;
+  latency_ms: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type StudioFlowDeployInput = {
+  name: string;
+  api_slug: string;
+  region: string;
+  nodes: StudioFlowNode[];
+};
+
+export type StudioFlowDeployResponse = {
+  message?: string;
+  flow: StudioFlow;
+  usage: UsageItem;
+};
+
 export type ApiRatingResponse = {
   rating: string;
   rating_count: number;
@@ -379,6 +413,16 @@ export const accountApi = {
 
   async executeCaller(input: CallerExecuteInput): Promise<CallerExecuteResponse> {
     const { data } = await http.post<CallerExecuteResponse>("/account/caller/", input);
+    return data;
+  },
+
+  async studioFlows(): Promise<PaginatedResponse<StudioFlow>> {
+    const { data } = await http.get<PaginatedResponse<StudioFlow>>("/account/studio/flows/");
+    return data;
+  },
+
+  async deployStudioFlow(input: StudioFlowDeployInput): Promise<StudioFlowDeployResponse> {
+    const { data } = await http.post<StudioFlowDeployResponse>("/account/studio/flows/", input);
     return data;
   },
 

@@ -472,6 +472,51 @@ class MongoApiTests(APISimpleTestCase):
         self.assertEqual(usage_response.data["count"], 1)
         self.assertEqual(usage_response.data["results"][0]["path"], "/speech/transcriptions")
 
+    def test_studio_flow_deploy_lists_and_records_usage(self):
+        self.authenticate_with_token(self.user)
+
+        response = self.client.post(
+            "/api/v1/account/studio/flows/",
+            {
+                "name": "payment confirm",
+                "api_slug": self.api["slug"],
+                "region": "ir-tehran-1",
+                "nodes": [
+                    {"type": "trigger", "label": "POST /webhook"},
+                    {"type": "api_call", "label": "speech-api"},
+                    {"type": "notify", "label": "send sms"},
+                ],
+            },
+            format="json",
+        )
+        listing = self.client.get("/api/v1/account/studio/flows/")
+        usage_response = self.client.get(f"/api/v1/account/usage/?api={self.api['slug']}&source=studio")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["flow"]["status"], "deployed")
+        self.assertEqual(response.data["flow"]["node_count"], 3)
+        self.assertEqual(response.data["usage"]["source"], "studio")
+        self.assertEqual(response.data["usage"]["method"], "FLOW")
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(listing.data["count"], 1)
+        self.assertEqual(listing.data["results"][0]["slug"], response.data["flow"]["slug"])
+        self.assertEqual(usage_response.status_code, 200)
+        self.assertEqual(usage_response.data["count"], 1)
+
+    def test_studio_flow_deploy_requires_authentication(self):
+        response = self.client.post(
+            "/api/v1/account/studio/flows/",
+            {
+                "name": "no auth flow",
+                "api_slug": self.api["slug"],
+                "nodes": [{"type": "trigger", "label": "POST /webhook"}],
+            },
+            format="json",
+        )
+
+        self.assertIn(response.status_code, {401, 403})
+        self.assertEqual(self.repository.studio_flows.count_documents({}), 0)
+
     def test_account_user_and_profile_patch_crud_operations(self):
         self.authenticate_with_token(self.user)
 
@@ -749,6 +794,7 @@ class MongoApiTests(APISimpleTestCase):
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/confirm/", response.data["paths"])
         self.assertIn("/api/v1/account/organizations/", response.data["paths"])
         self.assertIn("/api/v1/account/caller/", response.data["paths"])
+        self.assertIn("/api/v1/account/studio/flows/", response.data["paths"])
         docs_params = response.data["paths"]["/api/v1/catalog/documentations/"]["get"]["parameters"]
         self.assertIn("search", {param["name"] for param in docs_params})
 

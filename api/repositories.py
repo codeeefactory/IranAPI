@@ -119,6 +119,7 @@ class MongoRepository:
         self.sessions = self.db["sessions"]
         self.legacy_tokens = self.db["legacy_tokens"]
         self.organizations = self.db["organizations"]
+        self.studio_flows = self.db["studio_flows"]
 
     def build_mongo_user(self, user_doc: dict[str, Any]) -> MongoUser:
         return MongoUser(
@@ -860,6 +861,33 @@ class MongoRepository:
         self.organizations.insert_one(document)
         return document
 
+    def list_studio_flows(self, user_id: int) -> list[dict[str, Any]]:
+        return list(self.studio_flows.find({"user_id": int(user_id)}).sort([("updated_at", DESCENDING)]))
+
+    def deploy_studio_flow(
+        self,
+        *,
+        user_id: int,
+        name: str,
+        api_doc: dict[str, Any],
+        nodes: list[dict[str, Any]],
+        region: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        flow = self.build_studio_flow_document(
+            {
+                "user_id": int(user_id),
+                "api_id": int(api_doc["_id"]),
+                "api_slug": api_doc["slug"],
+                "name": name,
+                "nodes": nodes,
+                "region": region,
+                "status": "deployed",
+            }
+        )
+        self.studio_flows.insert_one(flow)
+        usage = self.record_studio_flow_usage(user_id=user_id, api_doc=api_doc, flow_doc=flow)
+        return flow, usage
+
     def get_access_grants_by_ids(self, grant_ids: list[int]) -> dict[int, dict[str, Any]]:
         if not grant_ids:
             return {}
@@ -913,6 +941,30 @@ class MongoRepository:
                 "status_code": int(status_code),
                 "latency_ms": int(latency_ms),
                 "response_size": int(response_size),
+            }
+        )
+        self.api_usage.insert_one(usage)
+        return usage
+
+    def record_studio_flow_usage(
+        self,
+        *,
+        user_id: int,
+        api_doc: dict[str, Any],
+        flow_doc: dict[str, Any],
+    ) -> dict[str, Any]:
+        usage = self.build_usage_document(
+            {
+                "user_id": int(user_id),
+                "api_id": int(api_doc["_id"]),
+                "access_grant_id": None,
+                "source": "studio",
+                "requests_count": max(len(flow_doc.get("nodes", [])), 1),
+                "method": "FLOW",
+                "path": f"/studio/flows/{flow_doc['slug']}",
+                "status_code": 200,
+                "latency_ms": int(flow_doc.get("latency_ms", 0)),
+                "response_size": len(str(flow_doc).encode("utf-8")),
             }
         )
         self.api_usage.insert_one(usage)
@@ -1162,6 +1214,30 @@ class MongoRepository:
         document["slug"] = payload.get("slug") or unique_slug(
             self.organizations,
             document["name"] or "organization",
+            max_length=120,
+            current_id=current_id,
+        )
+        return document
+
+    def build_studio_flow_document(self, payload: dict[str, Any], *, current_id: int | None = None) -> dict[str, Any]:
+        now = timezone.now()
+        nodes = payload.get("nodes") or []
+        document = {
+            "_id": current_id or next_id("studio_flows"),
+            "user_id": int(payload.get("user_id")),
+            "api_id": int(payload.get("api_id")),
+            "api_slug": payload.get("api_slug", "").strip(),
+            "name": payload.get("name", "").strip(),
+            "nodes": nodes,
+            "region": payload.get("region", "ir-tehran-1").strip() or "ir-tehran-1",
+            "status": payload.get("status", "draft"),
+            "latency_ms": int(payload.get("latency_ms") or (120 + len(nodes) * 83)),
+            "created_at": payload.get("created_at", now),
+            "updated_at": payload.get("updated_at", now),
+        }
+        document["slug"] = payload.get("slug") or unique_slug(
+            self.studio_flows,
+            document["name"] or "studio-flow",
             max_length=120,
             current_id=current_id,
         )

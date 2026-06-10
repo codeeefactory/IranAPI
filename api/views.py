@@ -35,6 +35,7 @@ from .serializers import (
     PricingPlanSerializer,
     RatingSerializer,
     RegistrationSerializer,
+    StudioFlowDeploySerializer,
     SubscriptionCheckoutSerializer,
     UserProfileUpdateSerializer,
     UserUpdateSerializer,
@@ -48,6 +49,7 @@ from .serializers import (
     serialize_organization,
     serialize_pricing_plan,
     serialize_profile,
+    serialize_studio_flow,
     serialize_subscription_checkout,
     serialize_subscription_plan,
     serialize_user_subscription,
@@ -340,6 +342,56 @@ class CallerExecuteView(APIView):
                     pricing_from=pricing_from,
                 ),
             }
+        )
+
+
+class StudioFlowListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        repository = get_repository()
+        flows = repository.list_studio_flows(int(request.user.id))
+        api_map = repository.get_apis_by_ids([int(flow["api_id"]) for flow in flows if flow.get("api_id")])
+        payload = [
+            serialize_studio_flow(
+                flow,
+                api_doc=api_map.get(int(flow["api_id"])) if flow.get("api_id") else None,
+            )
+            for flow in flows
+        ]
+        return Response(paginate(request, payload))
+
+    def post(self, request):
+        serializer = StudioFlowDeploySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        repository = get_repository()
+
+        api_doc = repository.get_api_by_slug(data["api_slug"])
+        if not api_doc:
+            raise NotFound("API was not found.")
+
+        flow, usage = repository.deploy_studio_flow(
+            user_id=int(request.user.id),
+            name=data["name"],
+            api_doc=api_doc,
+            nodes=data["nodes"],
+            region=data["region"],
+        )
+        return Response(
+            {
+                "message": "Studio flow deployed successfully.",
+                "flow": serialize_studio_flow(flow, api_doc=api_doc),
+                "usage": serialize_usage_item(
+                    usage,
+                    api_doc=api_doc,
+                    access_grant=None,
+                    pricing_plan=None,
+                    category=None,
+                    pricing_from=None,
+                ),
+            },
+            status=status.HTTP_201_CREATED,
         )
 
 

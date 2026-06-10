@@ -324,6 +324,23 @@ def serialize_organization(organization: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def serialize_studio_flow(flow: dict[str, Any], *, api_doc: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "id": int(flow["_id"]),
+        "name": flow.get("name", ""),
+        "slug": flow.get("slug", ""),
+        "status": flow.get("status", "draft"),
+        "region": flow.get("region", "ir-tehran-1"),
+        "api_slug": flow.get("api_slug", ""),
+        "api": serialize_api_list(api_doc, category=None, pricing_from=None) if api_doc else None,
+        "nodes": flow.get("nodes", []),
+        "node_count": len(flow.get("nodes", [])),
+        "latency_ms": int(flow.get("latency_ms", 0)),
+        "created_at": flow.get("created_at"),
+        "updated_at": flow.get("updated_at"),
+    }
+
+
 def serialize_usage_item(
     usage: dict[str, Any],
     *,
@@ -526,6 +543,32 @@ class OrganizationCreateSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("Organization name is required.")
         return value
+
+
+class StudioFlowDeploySerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+    api_slug = serializers.SlugField(max_length=160)
+    region = serializers.ChoiceField(
+        choices=["ir-tehran-1", "ir-mashhad-1", "eu-frankfurt-1"],
+        default="ir-tehran-1",
+    )
+    nodes = serializers.ListField(child=serializers.DictField(), min_length=1, max_length=12)
+
+    def validate_name(self, value):
+        value = value.strip()
+        if len(value) < 3:
+            raise serializers.ValidationError("Flow name must be at least 3 characters.")
+        return value
+
+    def validate_nodes(self, value):
+        cleaned = []
+        for index, node in enumerate(value, start=1):
+            node_type = str(node.get("type") or "").strip()
+            label = str(node.get("label") or node_type or f"node-{index}").strip()
+            if not node_type:
+                raise serializers.ValidationError("Each node requires a type.")
+            cleaned.append({"type": node_type[:80], "label": label[:120], "order": int(node.get("order") or index)})
+        return cleaned
 
 
 class UserUpdateSerializer(serializers.Serializer):
