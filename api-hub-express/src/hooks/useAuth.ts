@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   accountApi,
   authApi,
+  type AccountProfileUpdateInput,
   type LoginInput,
   type OrganizationCreateInput,
   type RegisterInput,
@@ -95,6 +96,36 @@ export function useAccountDashboard(enabled: boolean) {
   });
 
   return { profile, access, usageStats, subscription };
+}
+
+export function useUpdateAccountProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AccountProfileUpdateInput) => {
+      const [userResponse, profileResponse] = await Promise.all([
+        accountApi.updateUser({
+          email: input.email,
+          first_name: input.first_name,
+          last_name: input.last_name,
+        }),
+        accountApi.updateProfile({
+          phone: input.phone,
+          company: input.company,
+          bio: input.bio,
+          avatar: input.avatar,
+        }),
+      ]);
+      return { user: userResponse.user, profile: profileResponse.profile };
+    },
+    onSuccess: ({ user, profile }) => {
+      queryClient.setQueryData<SessionPayload | undefined>(authKeys.session, (current) =>
+        current ? { ...current, user, profile, authenticated: true } : current,
+      );
+      queryClient.setQueryData(authKeys.profile, profile);
+      queryClient.invalidateQueries({ queryKey: authKeys.session });
+      queryClient.invalidateQueries({ queryKey: authKeys.profile });
+    },
+  });
 }
 
 export function useOrganizations(enabled: boolean) {

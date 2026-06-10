@@ -45,6 +45,29 @@ export type RegisterInput = {
   last_name?: string;
 };
 
+export type UserUpdateInput = {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+};
+
+export type UserProfileUpdateInput = {
+  phone?: string;
+  company?: string;
+  bio?: string;
+  avatar?: string | null;
+};
+
+export type AccountProfileUpdateInput = UserUpdateInput & UserProfileUpdateInput;
+
+export type UserUpdateResponse = {
+  user: CurrentUser;
+};
+
+export type UserProfileUpdateResponse = {
+  profile: UserProfile;
+};
+
 export type SocialProvider = "google" | "github" | "gitlab";
 
 export type SocialProviderInfo = {
@@ -401,6 +424,16 @@ export const accountApi = {
 
   async profile(): Promise<UserProfile> {
     const { data } = await http.get<UserProfile>("/account/profile/");
+    return data;
+  },
+
+  async updateUser(input: UserUpdateInput): Promise<UserUpdateResponse> {
+    const { data } = await http.patch<UserUpdateResponse>("/account/user/", input);
+    return data;
+  },
+
+  async updateProfile(input: UserProfileUpdateInput): Promise<UserProfileUpdateResponse> {
+    const { data } = await http.patch<UserProfileUpdateResponse>("/account/profile/", input);
     return data;
   },
 

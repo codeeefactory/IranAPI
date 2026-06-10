@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Tag, Prompt } from "@/components/site/Terminal";
-import { Activity, Key, Server, TrendingUp, Copy, Check } from "lucide-react";
+import { Activity, Key, Server, TrendingUp, Copy, Check, Loader2, Save } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useAccountDashboard, useSession } from "@/hooks/useAuth";
+import { useAccountDashboard, useSession, useUpdateAccountProfile } from "@/hooks/useAuth";
 import { useUsageHistory } from "@/hooks/useUsage";
+import { ApiClientError } from "@/lib/api-client";
 
 export default function DashboardPage() {
   const { t } = useI18n();
@@ -17,6 +18,45 @@ export default function DashboardPage() {
   const accessGrants = account.access.data?.results ?? [];
   const accessCount = account.access.data?.count ?? 0;
   const subscription = account.subscription.data?.subscription;
+  const updateProfile = useUpdateAccountProfile();
+  const [profileForm, setProfileForm] = useState({
+    email: "",
+    first_name: "",
+    last_name: "",
+    company: "",
+    phone: "",
+    bio: "",
+    avatar: "",
+  });
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileError, setProfileError] = useState("");
+
+  useEffect(() => {
+    setProfileForm({
+      email: user?.email ?? "",
+      first_name: user?.first_name ?? "",
+      last_name: user?.last_name ?? "",
+      company: profile?.company ?? "",
+      phone: profile?.phone ?? "",
+      bio: profile?.bio ?? "",
+      avatar: profile?.avatar ?? "",
+    });
+  }, [profile, user]);
+
+  async function submitProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileMessage("");
+    setProfileError("");
+    try {
+      await updateProfile.mutateAsync({
+        ...profileForm,
+        avatar: profileForm.avatar || null,
+      });
+      setProfileMessage("profile updated");
+    } catch (err) {
+      setProfileError(err instanceof ApiClientError ? err.message : "Profile update failed.");
+    }
+  }
 
   if (!isLoading && !isAuthenticated) {
     return (
@@ -51,15 +91,37 @@ export default function DashboardPage() {
         subtitle={"// " + (user?.email || t("dash.sub"))}
       />
 
-      <div className="mb-6 grid gap-3 md:grid-cols-3">
-        <label className="block">
-          <span className="mb-1 block text-xs text-muted-foreground" data-ltr>--email</span>
-          <input id="email" className="field" value={user?.email ?? ""} readOnly dir="ltr" />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs text-muted-foreground" data-ltr>--company</span>
-          <input id="company" className="field" value={profile?.company ?? ""} readOnly />
-        </label>
+      <div className="mb-6 grid gap-3 md:grid-cols-[1fr,1fr,220px]">
+        <form onSubmit={submitProfile} className="terminal-border rounded-sm bg-card/50 p-4 md:col-span-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ProfileField label="--email" value={profileForm.email} type="email" dir="ltr" onChange={(email) => setProfileForm((v) => ({ ...v, email }))} />
+            <ProfileField label="--first-name" value={profileForm.first_name} onChange={(first_name) => setProfileForm((v) => ({ ...v, first_name }))} />
+            <ProfileField label="--last-name" value={profileForm.last_name} onChange={(last_name) => setProfileForm((v) => ({ ...v, last_name }))} />
+            <ProfileField label="--company" value={profileForm.company} onChange={(company) => setProfileForm((v) => ({ ...v, company }))} />
+            <ProfileField label="--phone" value={profileForm.phone} dir="ltr" onChange={(phone) => setProfileForm((v) => ({ ...v, phone }))} />
+            <ProfileField label="--avatar-url" value={profileForm.avatar} type="url" dir="ltr" onChange={(avatar) => setProfileForm((v) => ({ ...v, avatar }))} />
+          </div>
+          <label className="mt-3 block text-xs text-muted-foreground">
+            --bio
+            <textarea
+              className="field mt-1 min-h-20 resize-y"
+              value={profileForm.bio}
+              onChange={(event) => setProfileForm((v) => ({ ...v, bio: event.target.value }))}
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={updateProfile.isPending}
+              className="btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {updateProfile.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              ./save_profile
+            </button>
+            {profileMessage ? <span className="text-xs text-primary" role="status">{"// "}{profileMessage}</span> : null}
+            {profileError ? <span className="text-xs text-destructive" role="alert">{"// "}{profileError}</span> : null}
+          </div>
+        </form>
         <div className="terminal-border rounded-sm bg-card/60 p-3">
           <div className="text-xs text-muted-foreground">{"// "}{t("dash.subscription")}</div>
           <div className="mt-1 font-black text-primary" data-ltr>
@@ -156,6 +218,33 @@ export default function DashboardPage() {
         </div>
       </div>
     </PageShell>
+  );
+}
+
+function ProfileField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  dir,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  dir?: "ltr" | "rtl";
+}) {
+  return (
+    <label className="block text-xs text-muted-foreground">
+      {label}
+      <input
+        className="field mt-1"
+        value={value}
+        type={type}
+        dir={dir}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
   );
 }
 
