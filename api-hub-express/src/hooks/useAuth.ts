@@ -128,6 +128,21 @@ export function useUpdateAccountProfile() {
   });
 }
 
+export function useRotateApiKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: accountApi.rotateApiKey,
+    onSuccess: ({ profile }) => {
+      queryClient.setQueryData<SessionPayload | undefined>(authKeys.session, (current) =>
+        current ? { ...current, profile, user: profile.user, authenticated: true } : current,
+      );
+      queryClient.setQueryData(authKeys.profile, profile);
+      queryClient.invalidateQueries({ queryKey: authKeys.session });
+      queryClient.invalidateQueries({ queryKey: authKeys.profile });
+    },
+  });
+}
+
 export function useOrganizations(enabled: boolean) {
   return useQuery({
     queryKey: authKeys.organizations,

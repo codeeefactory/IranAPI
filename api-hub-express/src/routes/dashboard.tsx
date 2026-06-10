@@ -2,9 +2,9 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Tag, Prompt } from "@/components/site/Terminal";
-import { Activity, Key, Server, TrendingUp, Copy, Check, Loader2, Save } from "lucide-react";
+import { Activity, Key, Server, TrendingUp, Copy, Check, Loader2, Save, RotateCw } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useAccountDashboard, useSession, useUpdateAccountProfile } from "@/hooks/useAuth";
+import { useAccountDashboard, useRotateApiKey, useSession, useUpdateAccountProfile } from "@/hooks/useAuth";
 import { useUsageHistory } from "@/hooks/useUsage";
 import { ApiClientError } from "@/lib/api-client";
 
@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const accessCount = account.access.data?.count ?? 0;
   const subscription = account.subscription.data?.subscription;
   const updateProfile = useUpdateAccountProfile();
+  const rotateApiKey = useRotateApiKey();
   const [profileForm, setProfileForm] = useState({
     email: "",
     first_name: "",
@@ -30,6 +31,8 @@ export default function DashboardPage() {
   });
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
+  const [apiKeyMessage, setApiKeyMessage] = useState("");
+  const [apiKeyError, setApiKeyError] = useState("");
 
   useEffect(() => {
     setProfileForm({
@@ -55,6 +58,17 @@ export default function DashboardPage() {
       setProfileMessage("profile updated");
     } catch (err) {
       setProfileError(err instanceof ApiClientError ? err.message : "Profile update failed.");
+    }
+  }
+
+  async function rotateKey() {
+    setApiKeyMessage("");
+    setApiKeyError("");
+    try {
+      await rotateApiKey.mutateAsync();
+      setApiKeyMessage("api key rotated");
+    } catch (err) {
+      setApiKeyError(err instanceof ApiClientError ? err.message : "API key rotation failed.");
     }
   }
 
@@ -159,6 +173,17 @@ export default function DashboardPage() {
         <TerminalWindow title="~/iranapi/keys">
           <div className="space-y-2 text-sm">
             <Prompt>iran keys list</Prompt>
+            <div className="terminal-border rounded-sm bg-background/40 p-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-muted-foreground">// account key</span>
+                <Tag color={profile?.has_api_key ? "primary" : "amber"}>{profile?.has_api_key ? "active" : "missing"}</Tag>
+              </div>
+              <code className="mt-2 block truncate text-amber" data-ltr>
+                {profile?.api_key_preview ?? profile?.api_key ?? "not generated"}
+              </code>
+              {apiKeyMessage ? <div className="mt-2 text-primary" role="status">{"// "}{apiKeyMessage}</div> : null}
+              {apiKeyError ? <div className="mt-2 text-destructive" role="alert">{"// "}{apiKeyError}</div> : null}
+            </div>
             <div className="mt-2 divide-y divide-border text-xs">
               {accessGrants.length ? (
                 accessGrants.slice(0, 4).map((grant) => (
@@ -177,7 +202,13 @@ export default function DashboardPage() {
             <Link to="/release" className="cta-grad mt-3 w-full !py-2 text-xs justify-center">
               ./release_api
             </Link>
-            <button className="btn-ghost mt-2 w-full !py-2 text-xs">
+            <button
+              type="button"
+              onClick={rotateKey}
+              disabled={rotateApiKey.isPending}
+              className="btn-ghost mt-2 w-full !py-2 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {rotateApiKey.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCw className="h-3.5 w-3.5" />}
               {t("dash.generate")}
             </button>
           </div>

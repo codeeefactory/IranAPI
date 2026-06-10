@@ -770,6 +770,27 @@ class MongoApiTests(APISimpleTestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data["error"]["code"], "permission_denied")
 
+    def test_rotate_api_key_updates_profile_and_masks_response(self):
+        self.authenticate_with_token(self.user)
+
+        response = self.client.post("/api/v1/account/api-key/rotate/", format="json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["message"], "API key rotated.")
+        self.assertTrue(response.data["profile"]["has_api_key"])
+        self.assertTrue(response.data["profile"]["api_key_preview"].startswith("iapi_"))
+
+        user_doc = self.repository.get_user_by_id(int(self.user["_id"]))
+        raw_key = user_doc["profile"]["api_key"]
+        self.assertTrue(raw_key.startswith("iapi_"))
+        self.assertNotEqual(response.data["profile"]["api_key"], raw_key)
+        self.assertNotIn(raw_key, str(response.data))
+
+    def test_rotate_api_key_requires_authentication(self):
+        response = self.client.post("/api/v1/account/api-key/rotate/", format="json")
+
+        self.assertIn(response.status_code, {401, 403})
+
     def test_profile_masks_stored_api_key(self):
         user_doc = self.repository.rotate_api_key(int(self.user["_id"]))
         raw_key = user_doc["profile"]["api_key"]
@@ -793,6 +814,7 @@ class MongoApiTests(APISimpleTestCase):
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/", response.data["paths"])
         self.assertIn("/api/v1/account/subscription/checkout/{checkout_id}/confirm/", response.data["paths"])
         self.assertIn("/api/v1/account/organizations/", response.data["paths"])
+        self.assertIn("/api/v1/account/api-key/rotate/", response.data["paths"])
         self.assertIn("/api/v1/account/caller/", response.data["paths"])
         self.assertIn("/api/v1/account/studio/flows/", response.data["paths"])
         docs_params = response.data["paths"]["/api/v1/catalog/documentations/"]["get"]["parameters"]

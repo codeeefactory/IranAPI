@@ -185,6 +185,9 @@ def build_openapi_schema() -> dict:
                 "get": {"tags": ["Account"], "summary": "Fetch profile", "description": "Returns masked API key preview only.", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
                 "patch": {"tags": ["Account"], "summary": "Update profile", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
             },
+            "/api/v1/account/api-key/rotate/": {
+                "post": {"tags": ["Account"], "summary": "Rotate API key", "description": "Returns the updated profile with a masked API key preview.", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+            },
             "/api/v1/account/access/": {
                 "get": {"tags": ["Account"], "summary": "List access grants", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
             },

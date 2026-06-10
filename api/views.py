@@ -169,6 +169,22 @@ class ProfileView(APIView):
         return Response({"profile": serialize_profile(user_doc)})
 
 
+class ApiKeyRotationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_doc = get_repository().rotate_api_key(int(request.user.id))
+        response = Response(
+            {
+                "message": "API key rotated.",
+                "profile": serialize_profile(user_doc),
+            }
+        )
+        response["Cache-Control"] = "no-store, max-age=0"
+        response["Pragma"] = "no-cache"
+        return response
+
+
 class AccessGrantListView(APIView):
     permission_classes = [IsAuthenticated]
 

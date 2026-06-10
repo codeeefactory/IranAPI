@@ -68,6 +68,11 @@ export type UserProfileUpdateResponse = {
   profile: UserProfile;
 };
 
+export type ApiKeyRotationResponse = {
+  message?: string;
+  profile: UserProfile;
+};
+
 export type SocialProvider = "google" | "github" | "gitlab";
 
 export type SocialProviderInfo = {
@@ -434,6 +439,11 @@ export const accountApi = {
 
   async updateProfile(input: UserProfileUpdateInput): Promise<UserProfileUpdateResponse> {
     const { data } = await http.patch<UserProfileUpdateResponse>("/account/profile/", input);
+    return data;
+  },
+
+  async rotateApiKey(): Promise<ApiKeyRotationResponse> {
+    const { data } = await http.post<ApiKeyRotationResponse>("/account/api-key/rotate/");
     return data;
   },
 
