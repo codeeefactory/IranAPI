@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from django.conf import settings
 from django.shortcuts import redirect
 from django.utils.text import slugify
@@ -1006,20 +1008,18 @@ class SocialAuthStartView(APIView):
         auth_url = str(social_provider.get("auth_url") or "")
         if not social_provider.get("enabled") or not auth_url:
             return Response(
-                {'error': 'امتیاز باید بین 1 تا 5 باشد'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": {"code": "social_provider_disabled", "message": "Social login provider is not configured."}},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
-        # Update rating (simplified - in production, use a separate Rating model)
-        current_rating = api.rating or 0
-        current_count = api.rating_count or 0
-        new_rating = ((current_rating * current_count) + float(rating)) / (current_count + 1)
-        
-        api.rating = round(new_rating, 2)
-        api.rating_count = current_count + 1
-        api.save()
-        
-        return Response({'rating': api.rating, 'rating_count': api.rating_count})
+
+        next_url = request.query_params.get("next")
+        if next_url:
+            parts = urlsplit(auth_url)
+            query = dict(parse_qsl(parts.query, keep_blank_values=True))
+            query.setdefault("state", next_url)
+            auth_url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+        return redirect(auth_url)
 
 
 class PricingPlanViewSet(viewsets.ModelViewSet):

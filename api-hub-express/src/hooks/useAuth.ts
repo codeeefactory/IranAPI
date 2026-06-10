@@ -7,6 +7,7 @@ import {
   type OrganizationCreateInput,
   type RegisterInput,
   type SessionPayload,
+  type SocialProvider,
 } from "@/lib/api-client";
 
 export const authKeys = {
@@ -16,6 +17,7 @@ export const authKeys = {
   organizations: ["account", "organizations"] as const,
   usageStats: ["account", "usageStats"] as const,
   subscription: ["account", "subscription"] as const,
+  socialProviders: ["auth", "socialProviders"] as const,
 };
 
 const anonymousSession: SessionPayload = {
@@ -69,6 +71,23 @@ export function useLogout() {
     onSuccess: (session) => {
       queryClient.setQueryData(authKeys.session, session);
       queryClient.removeQueries({ queryKey: ["account"] });
+    },
+  });
+}
+
+export function useSocialProviders() {
+  return useQuery({
+    queryKey: authKeys.socialProviders,
+    queryFn: authApi.socialProviders,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function useStartSocialLogin() {
+  return useMutation({
+    mutationFn: ({ provider, next }: { provider: SocialProvider; next?: string }) => {
+      authApi.startSocialLogin(provider, next);
+      return Promise.resolve({ provider });
     },
   });
 }

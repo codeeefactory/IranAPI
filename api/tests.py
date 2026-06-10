@@ -346,6 +346,35 @@ class MongoApiTests(APISimpleTestCase):
         self.assertIn("google", provider_slugs)
         self.assertIn("github", provider_slugs)
 
+    def test_social_auth_start_rejects_disabled_provider(self):
+        response = self.client.get("/api/v1/auth/social/google/start/")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["error"]["code"], "social_provider_disabled")
+
+    def test_social_auth_start_rejects_unknown_provider(self):
+        response = self.client.get("/api/v1/auth/social/missing/start/")
+
+        self.assertEqual(response.status_code, 404)
+
+    @override_settings(
+        SOCIAL_AUTH_PROVIDERS={
+            "github": {
+                "label": "GitHub",
+                "enabled": True,
+                "auth_url": "https://github.com/login/oauth/authorize?client_id=abc",
+            }
+        }
+    )
+    def test_social_auth_start_redirects_enabled_provider(self):
+        response = self.client.get("/api/v1/auth/social/github/start/?next=/dashboard")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response["Location"],
+            "https://github.com/login/oauth/authorize?client_id=abc&state=%2Fdashboard",
+        )
+
     def test_legacy_login_returns_token(self):
         response = self.client.post(
             "/api/auth/login/",
