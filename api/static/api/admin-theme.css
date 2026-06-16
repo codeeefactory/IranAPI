@@ -1,0 +1,179 @@
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --iranapi-bg: #0b1418;
+  --iranapi-panel: #101e24;
+  --iranapi-panel-2: #14262d;
+  --iranapi-green: #6ef28b;
+  --iranapi-cyan: #65d8ff;
+  --iranapi-amber: #f4c766;
+  --iranapi-text: #e8ffef;
+  --iranapi-muted: #9fc9c4;
+  --iranapi-border: rgba(110, 242, 139, 0.24);
+}
+
+html[dir="rtl"] body,
+body {
+  font-family: "Vazirmatn", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(110, 242, 139, 0.12), transparent 34rem),
+    radial-gradient(circle at 88% 85%, rgba(101, 216, 255, 0.1), transparent 32rem),
+    var(--iranapi-bg);
+  color: var(--iranapi-text);
+}
+
+.main-header,
+.main-sidebar,
+.brand-link,
+.content-wrapper,
+.card,
+.login-card-body,
+.register-card-body,
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple,
+input,
+select,
+textarea {
+  border-color: var(--iranapi-border) !important;
+}
+
+.main-sidebar,
+.brand-link,
+.content-wrapper,
+.card,
+.login-card-body,
+.register-card-body {
+  background-color: var(--iranapi-panel) !important;
+}
+
+.main-header {
+  background: linear-gradient(90deg, #13262c, #0f1b20) !important;
+  border-bottom: 1px solid var(--iranapi-border);
+}
+
+.brand-link {
+  border-bottom: 1px solid var(--iranapi-border) !important;
+  color: var(--iranapi-green) !important;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.brand-link .brand-text,
+.content-header h1,
+.login-logo a {
+  color: var(--iranapi-green) !important;
+  text-shadow: 0 0 14px rgba(110, 242, 139, 0.38);
+}
+
+.nav-sidebar .nav-link.active,
+.nav-sidebar .nav-link:hover,
+.dropdown-item:hover {
+  background: rgba(110, 242, 139, 0.12) !important;
+  color: var(--iranapi-green) !important;
+}
+
+.nav-sidebar .nav-link,
+.breadcrumb-item,
+.breadcrumb-item a,
+.table,
+.table td,
+.table th,
+.form-control,
+.select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  color: var(--iranapi-text) !important;
+}
+
+.card {
+  border: 1px solid var(--iranapi-border);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28) inset, 0 18px 46px -32px rgba(110, 242, 139, 0.4);
+}
+
+.card-header,
+.table thead th {
+  background-color: var(--iranapi-panel-2) !important;
+  border-color: var(--iranapi-border) !important;
+  color: var(--iranapi-cyan) !important;
+}
+
+.form-control,
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+  background-color: #0b171b !important;
+  color: var(--iranapi-text) !important;
+  border-radius: 3px;
+}
+
+.form-control:focus {
+  border-color: var(--iranapi-green) !important;
+  box-shadow: 0 0 0 0.12rem rgba(110, 242, 139, 0.2) !important;
+}
+
+.btn,
+.form-control,
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+  border-radius: 3px !important;
+}
+
+.btn-outline-success,
+.btn-success,
+.object-tools .btn {
+  color: #06120b !important;
+  background: var(--iranapi-green) !important;
+  border-color: var(--iranapi-green) !important;
+}
+
+.btn-outline-info,
+.badge-info {
+  color: #071318 !important;
+  background: var(--iranapi-cyan) !important;
+  border-color: var(--iranapi-cyan) !important;
+}
+
+.btn-outline-warning,
+.badge-warning {
+  color: #181205 !important;
+  background: var(--iranapi-amber) !important;
+  border-color: var(--iranapi-amber) !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd),
+.table-hover tbody tr:hover {
+  background-color: rgba(110, 242, 139, 0.055) !important;
+}
+
+.pagination .page-link {
+  background-color: var(--iranapi-panel-2);
+  border-color: var(--iranapi-border);
+  color: var(--iranapi-green);
+}
+
+.pagination .active .page-link {
+  background-color: var(--iranapi-green);
+  border-color: var(--iranapi-green);
+  color: #06120b;
+}
+
+code,
+pre,
+.field-api_key,
+.field-base_url,
+.field-documentation_url {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}

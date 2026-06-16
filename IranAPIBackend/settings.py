@@ -64,9 +64,60 @@ SOCIAL_AUTH_PROVIDERS = {
     "github": {"label": "GitHub", "enabled": False, "auth_url": ""},
 }
 
+JAZZMIN_SETTINGS = {
+    "site_title": "IranAPI Backend",
+    "site_header": "IranAPI",
+    "site_brand": "IranAPI",
+    "welcome_sign": "IranAPI control console",
+    "copyright": "IranAPI",
+    "search_model": ["api.API", "api.Category", "auth.User"],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "order_with_respect_to": ["api", "auth"],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.User": "fas fa-user-shield",
+        "auth.Group": "fas fa-layer-group",
+        "api.Category": "fas fa-folder-tree",
+        "api.API": "fas fa-plug",
+        "api.PricingPlan": "fas fa-tags",
+        "api.Documentation": "fas fa-book-open",
+        "api.UserProfile": "fas fa-id-badge",
+        "api.APIUsage": "fas fa-chart-line",
+    },
+    "topmenu_links": [
+        {"name": "Site", "url": "/", "permissions": ["auth.view_user"]},
+        {"app": "api"},
+    ],
+    "custom_css": "api/admin-theme.css",
+    "show_ui_builder": False,
+    "related_modal_active": True,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "darkly",
+    "default_theme_mode": "dark",
+    "navbar": "navbar-dark",
+    "accent": "accent-success",
+    "sidebar": "sidebar-dark-success",
+    "brand_colour": "navbar-success",
+    "button_classes": {
+        "primary": "btn-outline-success",
+        "secondary": "btn-outline-info",
+        "info": "btn-outline-info",
+        "warning": "btn-outline-warning",
+        "danger": "btn-outline-danger",
+        "success": "btn-outline-success",
+    },
+    "actions_sticky_top": True,
+}
+
 
 INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -79,6 +130,7 @@ INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
