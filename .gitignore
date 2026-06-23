@@ -7,6 +7,7 @@ __pycache__/
 env/
 venv/
 ENV/
+/bin/
 build/
 develop-eggs/
 dist/
@@ -15,6 +16,7 @@ eggs/
 .eggs/
 lib/
 lib64/
+/lib64
 !api-hub-express/src/lib/
 !api-hub-express/src/lib/**
 parts/
@@ -24,6 +26,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+/pyvenv.cfg
 
 # Django
 *.log
@@ -47,6 +50,11 @@ dist-ssr/
 .env
 .env.local
 .env.*.local
+
+# Local run artifacts
+/.tmp*.err
+/api-hub-express/.tmp*.err
+/api-hub-express/*.zip
 
 # IDE
 .vscode/
