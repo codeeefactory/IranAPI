@@ -176,9 +176,11 @@ class ApiKeyRotationView(APIView):
 
     def post(self, request):
         user_doc = get_repository().rotate_api_key(int(request.user.id))
+        api_key = user_doc.pop("_api_key_secret", None)
         response = Response(
             {
                 "message": "API key rotated.",
+                "api_key": api_key,
                 "profile": serialize_profile(user_doc),
             }
         )

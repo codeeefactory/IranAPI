@@ -201,6 +201,8 @@ class MongoRepository:
                 "bio": "",
                 "avatar": None,
                 "api_key": None,
+                "api_key_hash": None,
+                "api_key_preview": None,
                 "created_at": now,
                 "updated_at": now,
             },
@@ -282,19 +284,24 @@ class MongoRepository:
     def rotate_api_key(self, user_id: int) -> dict[str, Any]:
         for _ in range(10):
             candidate = f"iapi_{secrets.token_hex(20)}"
+            preview = f"{candidate[:6]}...{candidate[-4:]}"
             try:
                 self.users.update_one(
                     {"_id": user_id},
                     {
                         "$set": {
-                            "profile.api_key": candidate,
+                            "profile.api_key": None,
+                            "profile.api_key_hash": make_password(candidate),
+                            "profile.api_key_preview": preview,
                             "profile.updated_at": timezone.now(),
                             "updated_at": timezone.now(),
-                        }
+                        },
+                        "$unset": {"profile.api_key_plaintext": ""},
                     },
                 )
                 user_doc = self.get_user_by_id(user_id)
                 if user_doc:
+                    user_doc["_api_key_secret"] = candidate
                     return user_doc
             except DuplicateKeyError:
                 continue

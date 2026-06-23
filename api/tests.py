@@ -817,14 +817,17 @@ class MongoApiTests(APISimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["message"], "API key rotated.")
+        self.assertTrue(response.data["api_key"].startswith("iapi_"))
         self.assertTrue(response.data["profile"]["has_api_key"])
         self.assertTrue(response.data["profile"]["api_key_preview"].startswith("iapi_"))
 
         user_doc = self.repository.get_user_by_id(int(self.user["_id"]))
-        raw_key = user_doc["profile"]["api_key"]
-        self.assertTrue(raw_key.startswith("iapi_"))
-        self.assertNotEqual(response.data["profile"]["api_key"], raw_key)
-        self.assertNotIn(raw_key, str(response.data))
+        profile = user_doc["profile"]
+        self.assertIsNone(profile.get("api_key"))
+        self.assertTrue(profile["api_key_hash"].startswith("pbkdf2_"))
+        self.assertEqual(profile["api_key_preview"], response.data["profile"]["api_key_preview"])
+        self.assertNotEqual(profile["api_key_hash"], response.data["api_key"])
+        self.assertNotIn(response.data["api_key"], str(response.data["profile"]))
 
     def test_rotate_api_key_requires_authentication(self):
         response = self.client.post("/api/v1/account/api-key/rotate/", format="json")
@@ -833,7 +836,7 @@ class MongoApiTests(APISimpleTestCase):
 
     def test_profile_masks_stored_api_key(self):
         user_doc = self.repository.rotate_api_key(int(self.user["_id"]))
-        raw_key = user_doc["profile"]["api_key"]
+        raw_key = user_doc["_api_key_secret"]
         self.authenticate_with_token(user_doc)
 
         response = self.client.get("/api/v1/account/profile/")

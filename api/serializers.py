@@ -271,6 +271,7 @@ def serialize_profile(user_doc: dict[str, Any] | MongoUser | None) -> dict[str, 
         return None
 
     profile = user_doc.get("profile", {})
+    api_key_preview = profile.get("api_key_preview") or mask_secret(profile.get("api_key"))
     return {
         "id": int(user_doc["_id"]),
         "user": serialize_user(user_doc),
@@ -278,9 +279,9 @@ def serialize_profile(user_doc: dict[str, Any] | MongoUser | None) -> dict[str, 
         "company": profile.get("company", ""),
         "bio": profile.get("bio", ""),
         "avatar": profile.get("avatar"),
-        "api_key": mask_secret(profile.get("api_key")),
-        "api_key_preview": mask_secret(profile.get("api_key")),
-        "has_api_key": bool(profile.get("api_key")),
+        "api_key": api_key_preview,
+        "api_key_preview": api_key_preview,
+        "has_api_key": bool(profile.get("api_key_hash") or profile.get("api_key")),
         "created_at": profile.get("created_at"),
         "updated_at": profile.get("updated_at"),
     }

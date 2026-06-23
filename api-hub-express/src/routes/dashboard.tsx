@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [profileError, setProfileError] = useState("");
   const [apiKeyMessage, setApiKeyMessage] = useState("");
   const [apiKeyError, setApiKeyError] = useState("");
+  const [oneTimeApiKey, setOneTimeApiKey] = useState("");
 
   useEffect(() => {
     setProfileForm({
@@ -64,9 +65,11 @@ export default function DashboardPage() {
   async function rotateKey() {
     setApiKeyMessage("");
     setApiKeyError("");
+    setOneTimeApiKey("");
     try {
-      await rotateApiKey.mutateAsync();
-      setApiKeyMessage("api key rotated");
+      const result = await rotateApiKey.mutateAsync();
+      setOneTimeApiKey(result.api_key ?? "");
+      setApiKeyMessage(result.api_key ? "api key rotated; copy now" : "api key rotated");
     } catch (err) {
       setApiKeyError(err instanceof ApiClientError ? err.message : "API key rotation failed.");
     }
@@ -179,8 +182,9 @@ export default function DashboardPage() {
                 <Tag color={profile?.has_api_key ? "primary" : "amber"}>{profile?.has_api_key ? "active" : "missing"}</Tag>
               </div>
               <code className="mt-2 block truncate text-amber" data-ltr>
-                {profile?.api_key_preview ?? profile?.api_key ?? "not generated"}
+                {oneTimeApiKey || profile?.api_key_preview || profile?.api_key || "not generated"}
               </code>
+              {oneTimeApiKey ? <div className="mt-1 text-[11px] text-muted-foreground" data-ltr>// shown once; stored as hash only</div> : null}
               {apiKeyMessage ? <div className="mt-2 text-primary" role="status">{"// "}{apiKeyMessage}</div> : null}
               {apiKeyError ? <div className="mt-2 text-destructive" role="alert">{"// "}{apiKeyError}</div> : null}
             </div>
@@ -279,7 +283,9 @@ function ProfileField({
   );
 }
 
-function KeyRow({ k, env, color, t }: { k: string; env: string; color: any; t: (s: string, v?: any) => string }) {
+type TagColor = "primary" | "amber" | "cyan" | "magenta" | "muted";
+
+function KeyRow({ k, env, color, t }: { k: string; env: string; color: TagColor; t: (s: string, v?: Record<string, string>) => string }) {
   const [done, setDone] = useState(false);
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">

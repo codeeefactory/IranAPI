@@ -70,6 +70,7 @@ export type UserProfileUpdateResponse = {
 
 export type ApiKeyRotationResponse = {
   message?: string;
+  api_key?: string | null;
   profile: UserProfile;
 };
 
