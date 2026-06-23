@@ -2,6 +2,7 @@ import importlib
 from datetime import timedelta
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APISimpleTestCase
@@ -72,6 +73,16 @@ class SecurityRedactionTests(SimpleTestCase):
         self.assertNotIn("StrongPass123!", str(redacted))
         self.assertNotIn("iapi_0123456789abcdef0123456789abcdef01234567", str(redacted))
         self.assertNotIn("abcdefghijklmnopqrstuvwxyz123456", str(redacted))
+
+
+class InstalledAppsTests(SimpleTestCase):
+    def test_admin_theme_apps_keep_required_order_and_unique_entries(self):
+        apps = list(settings.INSTALLED_APPS)
+
+        self.assertEqual(len(apps), len(set(apps)))
+        self.assertIn("whitenoise.runserver_nostatic", apps)
+        self.assertIn("rest_framework.authtoken", apps)
+        self.assertLess(apps.index("jazzmin"), apps.index("django.contrib.admin"))
 
 
 class MongoApiTests(APISimpleTestCase):

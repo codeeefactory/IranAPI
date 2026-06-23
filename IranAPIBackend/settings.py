@@ -126,21 +126,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework.authtoken",
     "api",
-]
-
-INSTALLED_APPS = [
-    'jazzmin',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'corsheaders',
-    'api',
 ]
 
 MIDDLEWARE = [
