@@ -8,6 +8,29 @@ import { ApiClientError } from "@/lib/api-client";
 import { useRegister } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
+type SignUpFormState = {
+  first_name: string;
+  last_name: string;
+  username: string;
+  email: string;
+  pw: string;
+  pw2: string;
+};
+
+type FieldProps = {
+  id: string;
+  name: string;
+  label: string;
+  v: string;
+  k: keyof SignUpFormState;
+  set: React.Dispatch<React.SetStateAction<SignUpFormState>>;
+  state: SignUpFormState;
+  type?: React.HTMLInputTypeAttribute;
+  placeholder?: string;
+  autoComplete?: string;
+  error?: string;
+};
+
 export default function SignUpPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -96,7 +119,7 @@ export default function SignUpPage() {
   );
 }
 
-function Field({ id, name, label, v, k, set, state, type = "text", placeholder, autoComplete, error }: any) {
+function Field({ id, name, label, v, k, set, state, type = "text", placeholder, autoComplete, error }: FieldProps) {
   return (
     <div>
       <label htmlFor={id} className="block text-xs text-muted-foreground mb-1" data-ltr>--{label}</label>

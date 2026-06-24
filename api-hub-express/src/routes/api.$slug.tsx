@@ -1,10 +1,17 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useState } from "react";
-import { ArrowLeft, Activity, Code2, LoaderCircle, Shield, Star, Zap } from "lucide-react";
+import { ArrowLeft, Activity, Code2, LoaderCircle, Shield, Star, Zap, type LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/site/Layout";
 import { CodeBlock, Prompt, Tag, TerminalWindow } from "@/components/site/Terminal";
 import { useSession } from "@/hooks/useAuth";
 import { useCatalogApi, useRateApi, useSimilarApis } from "@/hooks/useCatalog";
+
+type EndpointPreview = {
+  id?: string | number;
+  method?: string;
+  path?: string;
+  summary?: string;
+};
 
 export default function ApiDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -66,7 +73,7 @@ ${api.slug.toUpperCase().replace(/-/g, "_")}_REGION=tehran-1`}</pre>
           <div className="terminal-border rounded-sm bg-card/50 p-6">
             <div className="text-xs uppercase tracking-widest text-primary">// endpoints</div>
             <ul className="mt-3 divide-y divide-border text-sm">
-              {(api.apiEndpoints.length ? api.apiEndpoints : Array.from({ length: Math.min(api.endpoints, 6) })).map((endpoint: any, i) => (
+              {(api.apiEndpoints.length ? api.apiEndpoints : Array.from<EndpointPreview>({ length: Math.min(api.endpoints, 6) })).map((endpoint: EndpointPreview, i) => (
                 <li key={endpoint?.id ?? i} className="grid gap-2 py-3 sm:grid-cols-[1fr,auto] sm:items-center">
                   <div className="flex min-w-0 items-center gap-3">
                     <Tag color={endpoint?.method === "POST" ? "amber" : "primary"}>{endpoint?.method ?? (i % 2 ? "POST" : "GET")}</Tag>
@@ -194,7 +201,7 @@ ${api.slug.toUpperCase().replace(/-/g, "_")}_REGION=tehran-1`}</pre>
   );
 }
 
-function Vital({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function Vital({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
       <span className="flex items-center gap-2 text-muted-foreground">

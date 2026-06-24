@@ -945,7 +945,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       if (saved && dicts[saved]) { setLangState(saved); return; }
       const nav = (typeof navigator !== "undefined" && navigator.language?.slice(0, 2)) as Lang | undefined;
       if (nav && dicts[nav]) setLangState(nav);
-    } catch {}
+    } catch {
+      // Ignore unavailable storage (private mode, SSR-like shells).
+    }
   }, []);
 
   useEffect(() => {
@@ -956,7 +958,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem("iranapi.lang", l); } catch {}
+    try { localStorage.setItem("iranapi.lang", l); } catch {
+      // Language switch still works for current session without persistence.
+    }
   }, []);
 
   const t = useCallback(
