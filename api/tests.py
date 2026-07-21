@@ -3,16 +3,19 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.conf import settings
-from django.test import SimpleTestCase, override_settings
+from django.core.exceptions import ValidationError
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APISimpleTestCase
 
 from .apps import ApiConfig
 from . import mongo
+from .models import API, Category, PricingPlan
 from .mongo import reset_database
-from .repositories import MongoRepository
+from .repositories import MongoRepository, format_decimal, normalize_tags
 from .security import redact_secrets
 from .seed import seed_sample_data
+from .serializers import mask_secret, serialize_profile
 
 
 class _FakeCollection:
@@ -73,6 +76,86 @@ class SecurityRedactionTests(SimpleTestCase):
         self.assertNotIn("StrongPass123!", str(redacted))
         self.assertNotIn("iapi_0123456789abcdef0123456789abcdef01234567", str(redacted))
         self.assertNotIn("abcdefghijklmnopqrstuvwxyz123456", str(redacted))
+
+
+class SerializationUtilityTests(SimpleTestCase):
+    def test_mask_secret_handles_empty_short_and_long_values(self):
+        self.assertIsNone(mask_secret(None))
+        self.assertEqual(mask_secret("short"), "*****")
+        self.assertEqual(mask_secret("iapi_0123456789abcdef"), "iapi_0...cdef")
+
+    def test_serialize_profile_prefers_api_key_preview_and_never_raw_secret(self):
+        user_doc = {
+            "_id": 7,
+            "username": "demo",
+            "email": "demo@example.com",
+            "profile": {
+                "phone": "",
+                "company": "IranAPI",
+                "bio": "",
+                "avatar": None,
+                "api_key": "iapi_0123456789abcdef",
+                "api_key_hash": "pbkdf2_sha256$hash",
+                "api_key_preview": "iapi_0...cdef",
+            },
+        }
+
+        serialized = serialize_profile(user_doc)
+
+        self.assertEqual(serialized["api_key"], "iapi_0...cdef")
+        self.assertTrue(serialized["has_api_key"])
+        self.assertNotIn("0123456789abcdef", str(serialized))
+
+
+class RepositoryUtilityTests(SimpleTestCase):
+    def test_normalize_tags_trims_deduplicates_and_preserves_display_text(self):
+        display_tags, normalized_tags = normalize_tags([" Speech ", "speech", "", "Text", "TEXT "])
+
+        self.assertEqual(display_tags, ["Speech", "Text"])
+        self.assertEqual(normalized_tags, ["speech", "text"])
+
+    def test_format_decimal_rounds_half_up_for_money_strings(self):
+        self.assertEqual(format_decimal("12.345"), "12.35")
+        self.assertEqual(format_decimal(None), "0.00")
+
+
+class ModelFieldTests(TestCase):
+    def test_unicode_slug_generation_keeps_persian_names_unique(self):
+        first = Category.objects.create(name="پرداخت")
+        second = Category.objects.create(name="پرداخت")
+
+        self.assertEqual(first.slug, "پرداخت")
+        self.assertEqual(second.slug, "پرداخت-2")
+        first.full_clean()
+
+    def test_category_color_requires_full_hex_value(self):
+        category = Category(name="Payments", color="green")
+
+        with self.assertRaises(ValidationError):
+            category.full_clean()
+
+    def test_api_rating_must_stay_in_range(self):
+        api = API(name="Gateway", description="Payment API", base_url="https://api.example.com", rating=6)
+
+        with self.assertRaises(ValidationError):
+            api.full_clean()
+
+    def test_pricing_request_limits_cannot_be_negative(self):
+        api = API.objects.create(name="Gateway", description="Payment API", base_url="https://api.example.com")
+        plan = PricingPlan(api=api, name="Starter", requests_per_day=-1)
+
+        with self.assertRaises(ValidationError):
+            plan.full_clean()
+
+    def test_pricing_price_and_currency_are_validated(self):
+        api = API.objects.create(name="Gateway", description="Payment API", base_url="https://api.example.com")
+        negative_price = PricingPlan(api=api, name="Starter", price=-1)
+        bad_currency = PricingPlan(api=api, name="Starter", currency="irr")
+
+        with self.assertRaises(ValidationError):
+            negative_price.full_clean()
+        with self.assertRaises(ValidationError):
+            bad_currency.full_clean()
 
 
 class InstalledAppsTests(SimpleTestCase):
@@ -403,6 +486,16 @@ class MongoApiTests(APISimpleTestCase):
         self.assertEqual(response["X-API-Deprecated"], "true")
         self.assertEqual(response.data["meta"]["deprecated"]["canonical_path"], "/api/v1/catalog/apis/")
 
+    def test_owned_catalog_requires_auth_and_limits_results_to_current_user(self):
+        anonymous = self.client.get("/api/v1/catalog/apis/?owned=true")
+        self.authenticate_with_token(self.user)
+        owned = self.client.get("/api/v1/catalog/apis/?owned=true")
+
+        self.assertIn(anonymous.status_code, {401, 403})
+        self.assertEqual(owned.status_code, 200)
+        self.assertEqual(owned.data["count"], 1)
+        self.assertEqual(owned.data["results"][0]["slug"], self.api["slug"])
+
     def test_api_detail_increments_views(self):
         response = self.client.get(f"/api/v1/catalog/apis/{self.api['slug']}/")
         self.assertEqual(response.status_code, 200)
@@ -512,6 +605,18 @@ class MongoApiTests(APISimpleTestCase):
         self.assertEqual(usage_response.data["count"], 1)
         self.assertEqual(usage_response.data["results"][0]["path"], "/speech/transcriptions")
 
+    def test_caller_execute_rejects_missing_endpoint_without_recording_usage(self):
+        self.authenticate_with_token(self.user)
+
+        response = self.client.post(
+            "/api/v1/account/caller/",
+            {"api_slug": self.api["slug"], "endpoint_id": 9999, "method": "GET"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self.repository.api_usage.count_documents({"source": "caller"}), 0)
+
     def test_studio_flow_deploy_lists_and_records_usage(self):
         self.authenticate_with_token(self.user)
 
@@ -556,6 +661,62 @@ class MongoApiTests(APISimpleTestCase):
 
         self.assertIn(response.status_code, {401, 403})
         self.assertEqual(self.repository.studio_flows.count_documents({}), 0)
+
+    def test_project_init_lists_backend_languages_and_generates_files(self):
+        self.authenticate_with_token(self.user)
+
+        catalog = self.client.get("/api/v1/account/projects/init/")
+        response = self.client.post(
+            "/api/v1/account/projects/init/",
+            {
+                "project_name": "Speech Starter",
+                "package_name": "speech-starter",
+                "language": "python",
+                "api_slug": self.api["slug"],
+                "include_docker": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(catalog.status_code, 200)
+        self.assertIn("python", {language["slug"] for language in catalog.data["supported_languages"]})
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["project"]["language"], "python")
+        self.assertEqual(response.data["project"]["api_slug"], self.api["slug"])
+        paths = {file["path"] for file in response.data["project"]["files"]}
+        self.assertIn("main.py", paths)
+        self.assertIn("Dockerfile", paths)
+        self.assertIn("README.md", paths)
+        self.assertEqual(self.repository.api_projects.count_documents({"user_id": int(self.user["_id"])}), 1)
+
+    def test_project_init_accepts_unknown_language_as_custom_template(self):
+        self.authenticate_with_token(self.user)
+
+        response = self.client.post(
+            "/api/v1/account/projects/init/",
+            {
+                "project_name": "Nim Starter",
+                "language": "nim",
+                "include_docker": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["project"]["language"], "custom")
+        paths = {file["path"] for file in response.data["project"]["files"]}
+        self.assertIn("HTTP.md", paths)
+        self.assertNotIn("Dockerfile", paths)
+
+    def test_project_init_requires_authentication(self):
+        response = self.client.post(
+            "/api/v1/account/projects/init/",
+            {"project_name": "No Auth Starter", "language": "node"},
+            format="json",
+        )
+
+        self.assertIn(response.status_code, {401, 403})
+        self.assertEqual(self.repository.api_projects.count_documents({}), 0)
 
     def test_account_user_and_profile_patch_crud_operations(self):
         self.authenticate_with_token(self.user)
@@ -860,6 +1021,7 @@ class MongoApiTests(APISimpleTestCase):
         self.assertIn("/api/v1/account/api-key/rotate/", response.data["paths"])
         self.assertIn("/api/v1/account/caller/", response.data["paths"])
         self.assertIn("/api/v1/account/studio/flows/", response.data["paths"])
+        self.assertIn("/api/v1/account/projects/init/", response.data["paths"])
         docs_params = response.data["paths"]["/api/v1/catalog/documentations/"]["get"]["parameters"]
         self.assertIn("search", {param["name"] for param in docs_params})
 
@@ -918,6 +1080,26 @@ class MongoApiTests(APISimpleTestCase):
         self.assertEqual(search.data["count"], 1)
         self.assertEqual(search.data["results"][0]["slug"], release.data["api"]["slug"])
         self.assertEqual(search.data["results"][0]["category"]["name"], "Weather")
+
+    def test_release_api_normalizes_auth_scheme_tags_and_default_category(self):
+        self.authenticate_with_token(self.user)
+
+        response = self.client.post(
+            "/api/v1/catalog/apis/",
+            {
+                "name": "SMS Gateway",
+                "base_url": "https://sms.example.dev/v1",
+                "auth_scheme": "api-key",
+                "tags": [" sms ", "delivery"],
+                "description": "Reliable SMS notifications.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["api"]["rapidapi"]["public_auth_scheme"], "api_key")
+        self.assertEqual(response.data["api"]["category"]["slug"], "community")
+        self.assertEqual(response.data["api"]["tags"], ["sms", "delivery"])
 
     def test_anonymous_user_cannot_release_api(self):
         response = self.client.post(

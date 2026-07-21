@@ -26,19 +26,19 @@ export function TerminalWindow({
         <span className="h-2.5 w-2.5 rounded-full bg-primary/80" />
         <span className="ml-3 text-xs text-muted-foreground">{title}</span>
       </div>
-      <div className="p-4 sm:p-6">{children}</div>
+      <div className="overflow-x-auto p-4 sm:p-6">{children}</div>
     </div>
   );
 }
 
 export function Prompt({ children, user = "guest", host = "iranapi" }: { children: ReactNode; user?: string; host?: string }) {
   return (
-    <div dir="ltr" className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-sm font-mono">
+    <div dir="ltr" className="flex min-w-max items-baseline gap-x-1 gap-y-0.5 whitespace-nowrap text-sm font-mono">
       <span className="text-amber">{user}</span>
       <span className="text-muted-foreground">@</span>
       <span className="text-cyan">{host}</span>
       <span className="text-muted-foreground">:~$</span>
-      <span className="text-foreground ms-1 break-all">{children}</span>
+      <span className="text-foreground ms-1">{children}</span>
     </div>
   );
 }

@@ -7,6 +7,7 @@ export function CyberCursor() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let tx = 0, ty = 0, rx = 0, ry = 0;
     let raf = 0;

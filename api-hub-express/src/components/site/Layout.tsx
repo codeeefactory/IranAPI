@@ -17,6 +17,7 @@ function useNav() {
     { to: "/pricing", label: t("nav.pricing") },
     { to: "/dashboard", label: t("nav.dashboard") },
     { to: "/studio", label: t("nav.studio") },
+    { to: "/init", label: "init" },
     { to: "/caller", label: t("nav.caller") },
     { to: "/release", label: "release" },
     { to: "/cli", label: t("nav.cli") },
@@ -180,7 +181,7 @@ export function SiteFooter() {
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{t("footer.tag")}</p>
           </div>
           <FooterCol title="// catalog" links={[["/browse", t("nav.browse")], ["/documentation", t("nav.docs")], ["/pricing", t("nav.pricing")]]} />
-          <FooterCol title="// build" links={[["/dashboard", t("nav.dashboard")], ["/studio", t("nav.studio")], ["/caller", t("nav.caller")], ["/release", "release"]]} />
+          <FooterCol title="// build" links={[["/dashboard", t("nav.dashboard")], ["/studio", t("nav.studio")], ["/init", "init"], ["/caller", t("nav.caller")], ["/release", "release"]]} />
           <FooterCol title="// legal" links={[["/terms", t("terms.title")], ["/privacy", t("privacy.title")]]} />
         </div>
         <div className="ascii-divider mt-8" />

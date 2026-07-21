@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Prompt, CodeBlock } from "@/components/site/Terminal";
 import { Check, Copy } from "lucide-react";
@@ -129,17 +129,26 @@ function Doc({ id, n, title, children }: { id: string; n: string; title: string;
 function Copyable({ code }: { code: string }) {
   const { t } = useI18n();
   const [done, setDone] = useState(false);
+  const timeoutRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+  }, []);
+
+  async function copy() {
+    if (!navigator.clipboard) return;
+    const copied = await navigator.clipboard.writeText(code).then(() => true).catch(() => false);
+    if (!copied) return;
+    setDone(true);
+    timeoutRef.current = window.setTimeout(() => setDone(false), 1500);
+  }
+
   return (
     <div className="relative group">
       <CodeBlock>{code}</CodeBlock>
       <button
         type="button"
-        onClick={() => {
-          navigator.clipboard.writeText(code).then(() => {
-            setDone(true);
-            setTimeout(() => setDone(false), 1500);
-          });
-        }}
+        onClick={() => void copy()}
         aria-label={t("docs.copy")}
         className="absolute top-2 end-2 inline-flex items-center gap-1 rounded-sm border border-border bg-background/80 px-2 py-1 text-[10px] text-muted-foreground hover:text-primary hover:border-primary transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
       >

@@ -1,0 +1,81 @@
+\chapter{معماری و طراحی}
+
+این فصل معماری سامانه را با زبان ساده توضیح می‌دهد. مسیر کلی چنین است: کاربر از رابط \lr{React} شروع می‌کند، درخواست به بک‌اند \lr{Django REST Framework} می‌رسد، داده اعتبارسنجی می‌شود و در نهایت لایه داده نتیجه را آماده می‌کند.
+
+\section{نمای کلی}
+معماری پروژه سه لایه اصلی دارد: رابط کاربری \lr{React}، بک‌اند \lr{Django REST Framework} و لایه داده. این مدل با الگوی رایج وب‌اپلیکیشن‌های مدرن هماهنگ است؛ فرانت‌اند تجربه کاربر را می‌سازد، بک‌اند قرارداد \lr{API} را مدیریت می‌کند و لایه داده مسئول نگهداری اطلاعات محصول است \cite{react,drf,mongodb}.
+
+این طراحی باعث می‌شود کاربر نهایی بیشتر با یک برنامه تک‌صفحه‌ای روبه‌رو باشد، در حالی که عملیات داده از طریق \lr{API} نسخه‌دار انجام می‌شود. نسخه‌دار بودن مسیرها برای نگهداری آینده مهم است، زیرا امکان تغییر یا اضافه‌کردن قراردادهای جدید را بدون شکستن \lr{Client}های قدیمی فراهم می‌کند. همچنین نمایش پوسته \lr{SPA} برای مسیرهای ناشناخته فرانت‌اند، با الگوی مسیریابی سمت \lr{Client} سازگار است.
+
+\section{نمودار معماری}
+\begin{figure}[htbp]
+  \centering
+  \begin{latin}
+  \begin{tikzpicture}[
+    scale=0.92,
+    transform shape,
+    node distance=0.65cm and 0.85cm,
+    every node/.style={font=\sffamily\fontsize{10.5}{13}\selectfont, align=center},
+    layer/.style={draw=damghanNavy, very thick, rounded corners=2pt, fill=tablehead, minimum width=4.6cm, minimum height=0.85cm},
+    service/.style={draw=damghanTeal, thick, rounded corners=2pt, fill=white, minimum width=3.6cm, minimum height=0.75cm},
+    store/.style={draw=damghanGold, very thick, rounded corners=2pt, fill=white, minimum width=4.8cm, minimum height=0.85cm},
+    flow/.style={-{Latex[length=2.3mm]}, thick, color=damghanNavy}
+  ]
+    \node[layer] (spa) {React / Vite SPA\\routes, pages, api-client};
+    \node[layer, below=of spa] (api) {Django URL routing + DRF views\\validation, auth, response shaping};
+    \node[service, below left=of api] (auth) {Session auth\\legacy token support};
+    \node[service, below=of api] (serializers) {Serializers\\public/private JSON};
+    \node[service, below right=of api] (schemas) {OpenAPI + metadata\\robots, sitemap};
+    \node[store, below=1.05cm of serializers] (repo) {MongoRepository\\catalog, account, usage, studio};
+    \node[layer, below=of repo] (data) {documents\\users, sessions, apis, plans, docs, usage};
+
+    \draw[flow] (spa) -- node[right, font=\sffamily\fontsize{9}{11}\selectfont] {HTTP JSON} (api);
+    \draw[flow] (api) -- (auth);
+    \draw[flow] (api) -- (serializers);
+    \draw[flow] (api) -- (schemas);
+    \draw[flow] (auth) -- (repo);
+    \draw[flow] (serializers) -- (repo);
+    \draw[flow] (schemas) -- (repo);
+    \draw[flow] (repo) -- node[right, font=\sffamily\fontsize{9}{11}\selectfont] {repository calls} (data);
+  \end{tikzpicture}
+  \end{latin}
+  \caption{معماری سطح بالای پروژه}
+  \label{fig:architecture}
+\end{figure}
+
+مطابق شکل \ref{fig:architecture}، فرانت‌اند درخواست‌ها را به \lr{API} بک‌اند می‌فرستد. بک‌اند، ورودی را اعتبارسنجی می‌کند، پاسخ را به قالب \lr{JSON} درمی‌آورد و کار با داده را به لایه \lr{Repository} می‌سپارد.
+
+در این معماری، هر لایه کار خودش را انجام می‌دهد. فرانت‌اند مسئول نمایش، فرم‌ها و حرکت کاربر بین صفحه‌هاست. بک‌اند مسئول احراز هویت، اعتبارسنجی و شکل پاسخ است. \lr{Repository} هم جزئیات ذخیره‌سازی و بازیابی داده را پنهان می‌کند. همین جداسازی باعث می‌شود تغییر در ظاهر کاربر، کل منطق داده را به‌هم نریزد.
+
+\section{مدل داده}
+مدل داده پروژه حول چند گروه اصلی می‌چرخد: هویت کاربر، کاتالوگ \lr{API}، دسترسی و مصرف، فضای کاری توسعه‌دهنده و اشتراک. این تقسیم‌بندی با مدل سندی \lr{MongoDB} سازگار است، چون هر گروه می‌تواند ساختار و جزئیات خودش را داشته باشد \cite{mongodb}.
+
+\begin{longtable}{p{4cm} p{8cm}}
+\caption{گروه‌های داده اصلی}\label{tab:data-model}\\
+\toprule
+\rowcolor{tablehead}\textbf{گروه} & \textbf{مجموعه‌ها و مسئولیت} \\
+\midrule
+\endfirsthead
+\toprule
+\rowcolor{tablehead}\textbf{گروه} & \textbf{مجموعه‌ها و مسئولیت} \\
+\midrule
+\endhead
+\ModernTableStart
+هویت & \lr{users}، \lr{sessions} و \lr{legacy\_tokens} برای کاربر، نشست و توکن سازگار \\
+کاتالوگ & \lr{categories}، \lr{apis}، \lr{pricing\_plans}، \lr{documentations}، \lr{api\_endpoints} و \lr{api\_ratings} \\
+مصرف & \lr{access\_grants} و \lr{api\_usage} برای مجوز دسترسی و رخدادهای مصرف \\
+فضای کاری & \lr{organizations} و \lr{studio\_flows} برای امکانات توسعه‌دهنده \\
+اشتراک & \lr{subscription\_plans}، \lr{user\_subscriptions} و \lr{subscription\_checkouts} \\
+\ModernTableStop
+\bottomrule
+\end{longtable}
+
+گروه هویت پایه دسترسی کاربر را می‌سازد و به نشست‌ها و توکن‌های سازگار قدیمی متصل است. گروه کاتالوگ محتوای عمومی بازارچه را نگه می‌دارد؛ یعنی دسته‌ها، خود \lr{API}ها، پلن قیمت‌گذاری، مستندات، نقاط انتهایی و امتیازها. گروه مصرف و اشتراک داده‌هایی را ثبت می‌کند که برای داشبورد، کنترل دسترسی و گزارش استفاده لازم‌اند. گروه فضای کاری نیز قابلیت‌های مخصوص توسعه‌دهنده مانند سازمان و جریان \lr{Studio} را پشتیبانی می‌کند.
+
+\section{مرزهای خارجی}
+مرزهای خارجی پروژه شامل ارائه‌دهندگان ورود اجتماعی، سرویس مقصد \lr{API} و بازارهای بیرونی مانند \lr{RapidAPI} است \cite{rapidapi}. این مرزها باید روشن باشند، چون هر کدام سطحی از ریسک و وابستگی بیرونی وارد سامانه می‌کنند.
+
+شناخت مرز خارجی برای تحلیل ریسک مهم است. ورود اجتماعی به پیکربندی ارائه‌دهنده وابسته است و در صورت نبود \lr{auth\_url} نمی‌تواند کامل اجرا شود. \lr{Caller} و \lr{Studio} نیز از نظر محصول به ارتباط با سرویس‌های بیرونی نزدیک هستند، اما در وضعیت فعلی بیشتر برای نمایش جریان و ثبت مصرف استفاده می‌شوند. بنابراین گزارش بین قابلیت پیاده‌سازی‌شده و اتصال تولیدی واقعی تفاوت می‌گذارد.
+
+\section{جمع‌بندی فصل}
+معماری پروژه یک \lr{SPA} متصل به \lr{API} بک‌اند است. این طراحی برای نمونه محصول مناسب است و فضای پروژه را به یک پلتفرم واقعی \lr{API} نزدیک می‌کند. برای استفاده تولیدی، تصمیم نهایی درباره پایگاه داده، مدیریت رازها و اتصال‌های بیرونی باید دقیق‌تر شود.

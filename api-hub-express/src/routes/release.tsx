@@ -64,9 +64,10 @@ export default function ReleasePage() {
         <form onSubmit={submit} className="terminal-border rounded-sm bg-card/50 p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="--name" value={form.name} onChange={(name) => setForm((v) => ({ ...v, name }))} required />
-            <label className="block text-xs text-muted-foreground">
+            <label className="block text-xs text-muted-foreground" htmlFor="release-auth">
               --auth
               <select
+                id="release-auth"
                 className="field mt-1"
                 value={form.auth_scheme}
                 onChange={(event) => setForm((v) => ({ ...v, auth_scheme: event.target.value as ApiReleaseInput["auth_scheme"] }))}
@@ -76,9 +77,10 @@ export default function ReleasePage() {
             </label>
             <Field label="--base-url" value={form.base_url} onChange={(base_url) => setForm((v) => ({ ...v, base_url }))} required />
             <Field label="--docs-url" value={form.documentation_url} onChange={(documentation_url) => setForm((v) => ({ ...v, documentation_url }))} />
-            <label className="block text-xs text-muted-foreground">
+            <label className="block text-xs text-muted-foreground" htmlFor="release-category">
               --category
               <input
+                id="release-category"
                 className="field mt-1"
                 value={form.category}
                 list="release-categories"
@@ -91,9 +93,10 @@ export default function ReleasePage() {
             <Field label="--tags" value={form.tags} onChange={(tags) => setForm((v) => ({ ...v, tags }))} />
           </div>
 
-          <label className="mt-4 block text-xs text-muted-foreground">
+          <label className="mt-4 block text-xs text-muted-foreground" htmlFor="release-description">
             --description
             <textarea
+              id="release-description"
               className="field mt-1 min-h-32 resize-y"
               value={form.description}
               onChange={(event) => setForm((v) => ({ ...v, description: event.target.value }))}
@@ -157,10 +160,11 @@ export default function ReleasePage() {
 }
 
 function Field({ label, value, onChange, required = false }: { label: string; value: string; onChange: (value: string) => void; required?: boolean }) {
+  const id = `release-${label.replace(/^--/, "").replace(/[^a-z0-9]+/gi, "-")}`;
   return (
-    <label className="block text-xs text-muted-foreground">
+    <label className="block text-xs text-muted-foreground" htmlFor={id}>
       {label}
-      <input className="field mt-1" value={value} onChange={(event) => onChange(event.target.value)} required={required} />
+      <input id={id} className="field mt-1" value={value} onChange={(event) => onChange(event.target.value)} required={required} />
     </label>
   );
 }

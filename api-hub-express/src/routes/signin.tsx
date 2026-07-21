@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageShell } from "@/components/site/Layout";
 import { TerminalWindow, Prompt, Cursor } from "@/components/site/Terminal";
 import { SocialAuth } from "@/components/site/SocialAuth";
@@ -16,6 +16,11 @@ export default function SignInPage() {
   const [pw, setPw] = useState("");
   const [errors, setErrors] = useState<{ username?: string; pw?: string; form?: string }>({});
   const [success, setSuccess] = useState<string | null>(null);
+  const redirectTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => {
+    if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
+  }, []);
 
   function validate() {
     const e: typeof errors = {};
@@ -33,7 +38,7 @@ export default function SignInPage() {
     try {
       await login.mutateAsync({ username, password: pw });
       setSuccess(t("auth.success.signin"));
-      setTimeout(() => navigate("/dashboard"), 600);
+      redirectTimerRef.current = window.setTimeout(() => navigate("/dashboard"), 600);
     } catch (err) {
       const e = err as ApiClientError;
       const msg = e.status && [400, 401, 403].includes(e.status)

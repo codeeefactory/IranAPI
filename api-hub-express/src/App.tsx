@@ -14,6 +14,7 @@ const Payment = lazy(() => import("@/routes/payment"));
 const Documentation = lazy(() => import("@/routes/documentation"));
 const Dashboard = lazy(() => import("@/routes/dashboard"));
 const Studio = lazy(() => import("@/routes/studio"));
+const Init = lazy(() => import("@/routes/init"));
 const ApiCaller = lazy(() => import("@/routes/caller"));
 const Cli = lazy(() => import("@/routes/cli"));
 const Orgs = lazy(() => import("@/routes/org.organizations.create"));
@@ -29,7 +30,9 @@ const queryClient = new QueryClient({
 
 function ScrollToTop() {
   const location = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [location.pathname, location.search]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname, location.search]);
   return null;
 }
 
@@ -53,6 +56,7 @@ function AppRoutes() {
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/studio" element={<Studio />} />
+          <Route path="/init" element={<Init />} />
           <Route path="/caller" element={<ApiCaller />} />
           <Route path="/cli" element={<Cli />} />
           <Route path="/org/organizations/create" element={<Orgs />} />

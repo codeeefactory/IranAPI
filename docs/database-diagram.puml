@@ -1,0 +1,175 @@
+@startuml
+hide methods
+hide stereotypes
+skinparam shadowing false
+skinparam linetype ortho
+
+entity users {
+  * _id : int <<PK>>
+  --
+  username : string
+  email : string
+  password_hash : string
+  is_active : boolean
+  profile : embedded object
+}
+
+entity sessions {
+  * _id : string <<PK>>
+  --
+  user_id : int <<REF>>
+  expires_at : datetime
+}
+
+entity legacy_tokens {
+  * _id : string <<PK>>
+  --
+  user_id : int <<REF>>
+}
+
+entity categories {
+  * _id : int <<PK>>
+  --
+  slug : string
+  name : string
+}
+
+entity apis {
+  * _id : int <<PK>>
+  --
+  category_id : int <<REF>>
+  created_by_user_id : int <<REF>>
+  slug : string
+  base_url : string
+  status : string
+  publication_status : string
+}
+
+entity pricing_plans {
+  * _id : int <<PK>>
+  --
+  api_id : int <<REF>>
+  plan_type : string
+  price : number
+  currency : string
+}
+
+entity documentations {
+  * _id : int <<PK>>
+  --
+  api_id : int <<REF>>
+  slug : string
+  title : string
+}
+
+entity api_endpoints {
+  * _id : int <<PK>>
+  --
+  api_id : int <<REF>>
+  method : string
+  path : string
+  request_schema : object
+  response_schema : object
+}
+
+entity api_ratings {
+  * _id : int <<PK>>
+  --
+  user_id : int <<REF>>
+  api_id : int <<REF>>
+  value : int
+}
+
+entity access_grants {
+  * _id : int <<PK>>
+  --
+  user_id : int <<REF>>
+  api_id : int <<REF>>
+  pricing_plan_id : int <<REF>>
+  status : string
+}
+
+entity api_usage {
+  * _id : int <<PK>>
+  --
+  user_id : int <<REF>>
+  api_id : int <<REF>>
+  access_grant_id : int <<REF>>
+  source : string
+  requests_count : int
+}
+
+entity organizations {
+  * _id : int <<PK>>
+  --
+  owner_user_id : int <<REF>>
+  slug : string
+  region : string
+}
+
+entity studio_flows {
+  * _id : int <<PK>>
+  --
+  user_id : int <<REF>>
+  api_id : int <<REF>>
+  slug : string
+  nodes : array
+}
+
+entity subscription_plans {
+  * _id : int <<PK>>
+  --
+  slug : string
+  price : number
+  interval : string
+}
+
+entity user_subscriptions {
+  * _id : int <<PK>>
+  --
+  user_id : int <<REF>>
+  subscription_plan_id : int <<REF>>
+  status : string
+}
+
+entity subscription_checkouts {
+  * _id : int <<PK>>
+  --
+  user_id : int <<REF>>
+  subscription_plan_id : int <<REF>>
+  subscription_id : int <<REF>>
+  status : string
+  gateway : string
+}
+
+users ||--o{ sessions
+users ||--o{ legacy_tokens
+users ||--o{ apis
+users ||--o{ api_ratings
+users ||--o{ access_grants
+users ||--o{ api_usage
+users ||--o{ organizations
+users ||--o{ studio_flows
+users ||--o{ user_subscriptions
+users ||--o{ subscription_checkouts
+
+categories ||--o{ apis
+apis ||--o{ pricing_plans
+apis ||--o{ documentations
+apis ||--o{ api_endpoints
+apis ||--o{ api_ratings
+apis ||--o{ access_grants
+apis ||--o{ api_usage
+apis ||--o{ studio_flows
+
+pricing_plans ||--o{ access_grants
+access_grants ||--o{ api_usage
+subscription_plans ||--o{ user_subscriptions
+subscription_plans ||--o{ subscription_checkouts
+user_subscriptions |o--o{ subscription_checkouts
+
+note right of users
+profile is embedded in user document.
+MongoDB references are application-enforced.
+end note
+@enduml

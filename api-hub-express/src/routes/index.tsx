@@ -66,10 +66,11 @@ export default function IndexPage() {
           </Reveal>
 
           <TerminalWindow title="~/iranapi/quickstart.sh" glow>
-            <div data-terminal className="space-y-2 text-sm">
-              <Prompt>curl https://api.iranapi.dev/v1/zarinpal/pay \</Prompt>
-              <div className="ps-6 text-foreground/90 break-all">  -H <span className="text-amber">"x-iran-key: $IRAN_KEY"</span> \</div>
-              <div className="ps-6 text-foreground/90 break-all">  -d <span className="text-amber">{`'{"amount":50000,"callback":"/ok"}'`}</span></div>
+            <div data-terminal className="min-w-max space-y-2 text-sm">
+              <Prompt>curl \</Prompt>
+              <div className="whitespace-nowrap ps-6 text-foreground/90">https://api.iranapi.dev/v1/zarinpal/pay \</div>
+              <div className="whitespace-nowrap ps-6 text-foreground/90">-H <span className="text-amber">"x-iran-key: $IRAN_KEY"</span> \</div>
+              <div className="whitespace-nowrap ps-6 text-foreground/90">-d <span className="text-amber">{`'{"amount":50000,"callback":"/ok"}'`}</span></div>
               <div className="pt-3 text-xs text-muted-foreground">{"// HTTP/2 200  // 142ms  // signed:0xa1f9c2e"}</div>
               <pre dir="ltr" className="mt-2 text-xs text-primary/90 bg-background/60 rounded-sm border border-border p-3 overflow-x-auto">{`{
   "ok": true,

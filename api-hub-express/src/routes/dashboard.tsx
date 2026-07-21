@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Tag, Prompt } from "@/components/site/Terminal";
@@ -29,6 +29,7 @@ export default function DashboardPage() {
     bio: "",
     avatar: "",
   });
+  const [profileDirty, setProfileDirty] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
   const [apiKeyMessage, setApiKeyMessage] = useState("");
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   const [oneTimeApiKey, setOneTimeApiKey] = useState("");
 
   useEffect(() => {
+    if (profileDirty) return;
     setProfileForm({
       email: user?.email ?? "",
       first_name: user?.first_name ?? "",
@@ -45,17 +47,29 @@ export default function DashboardPage() {
       bio: profile?.bio ?? "",
       avatar: profile?.avatar ?? "",
     });
-  }, [profile, user]);
+  }, [profile, profileDirty, user]);
 
   async function submitProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileMessage("");
     setProfileError("");
+    const formData = new FormData(event.currentTarget);
+    const submittedProfile = {
+      email: String(formData.get("email") ?? ""),
+      first_name: String(formData.get("first_name") ?? ""),
+      last_name: String(formData.get("last_name") ?? ""),
+      company: String(formData.get("company") ?? ""),
+      phone: String(formData.get("phone") ?? ""),
+      bio: String(formData.get("bio") ?? ""),
+      avatar: String(formData.get("avatar") ?? ""),
+    };
+    setProfileForm(submittedProfile);
     try {
       await updateProfile.mutateAsync({
-        ...profileForm,
-        avatar: profileForm.avatar || null,
+        ...submittedProfile,
+        avatar: submittedProfile.avatar || null,
       });
+      setProfileDirty(false);
       setProfileMessage("profile updated");
     } catch (err) {
       setProfileError(err instanceof ApiClientError ? err.message : "Profile update failed.");
@@ -111,19 +125,23 @@ export default function DashboardPage() {
       <div className="mb-6 grid gap-3 md:grid-cols-[1fr,1fr,220px]">
         <form onSubmit={submitProfile} className="terminal-border rounded-sm bg-card/50 p-4 md:col-span-2">
           <div className="grid gap-3 sm:grid-cols-2">
-            <ProfileField label="--email" value={profileForm.email} type="email" dir="ltr" onChange={(email) => setProfileForm((v) => ({ ...v, email }))} />
-            <ProfileField label="--first-name" value={profileForm.first_name} onChange={(first_name) => setProfileForm((v) => ({ ...v, first_name }))} />
-            <ProfileField label="--last-name" value={profileForm.last_name} onChange={(last_name) => setProfileForm((v) => ({ ...v, last_name }))} />
-            <ProfileField label="--company" value={profileForm.company} onChange={(company) => setProfileForm((v) => ({ ...v, company }))} />
-            <ProfileField label="--phone" value={profileForm.phone} dir="ltr" onChange={(phone) => setProfileForm((v) => ({ ...v, phone }))} />
-            <ProfileField label="--avatar-url" value={profileForm.avatar} type="url" dir="ltr" onChange={(avatar) => setProfileForm((v) => ({ ...v, avatar }))} />
+            <ProfileField label="--email" name="email" value={profileForm.email} type="email" dir="ltr" onChange={(email) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, email })); }} />
+            <ProfileField label="--first-name" name="first_name" value={profileForm.first_name} onChange={(first_name) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, first_name })); }} />
+            <ProfileField label="--last-name" name="last_name" value={profileForm.last_name} onChange={(last_name) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, last_name })); }} />
+            <ProfileField label="--company" name="company" value={profileForm.company} onChange={(company) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, company })); }} />
+            <ProfileField label="--phone" name="phone" value={profileForm.phone} dir="ltr" onChange={(phone) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, phone })); }} />
+            <ProfileField label="--avatar-url" name="avatar" value={profileForm.avatar} type="url" dir="ltr" onChange={(avatar) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, avatar })); }} />
           </div>
           <label className="mt-3 block text-xs text-muted-foreground">
             --bio
             <textarea
               className="field mt-1 min-h-20 resize-y"
+              name="bio"
               value={profileForm.bio}
-              onChange={(event) => setProfileForm((v) => ({ ...v, bio: event.target.value }))}
+              onChange={(event) => {
+                setProfileDirty(true);
+                setProfileForm((v) => ({ ...v, bio: event.target.value }));
+              }}
             />
           </label>
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -258,12 +276,14 @@ export default function DashboardPage() {
 
 function ProfileField({
   label,
+  name,
   value,
   onChange,
   type = "text",
   dir,
 }: {
   label: string;
+  name: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
@@ -274,6 +294,7 @@ function ProfileField({
       {label}
       <input
         className="field mt-1"
+        name={name}
         value={value}
         type={type}
         dir={dir}
@@ -287,6 +308,20 @@ type TagColor = "primary" | "amber" | "cyan" | "magenta" | "muted";
 
 function KeyRow({ k, env, color, t }: { k: string; env: string; color: TagColor; t: (s: string, v?: Record<string, string>) => string }) {
   const [done, setDone] = useState(false);
+  const timeoutRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+  }, []);
+
+  async function copyKey() {
+    if (!navigator.clipboard) return;
+    const copied = await navigator.clipboard.writeText(k).then(() => true).catch(() => false);
+    if (!copied) return;
+    setDone(true);
+    timeoutRef.current = window.setTimeout(() => setDone(false), 1200);
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
       <div className="flex items-center gap-2 min-w-0" data-ltr>
@@ -297,7 +332,7 @@ function KeyRow({ k, env, color, t }: { k: string; env: string; color: TagColor;
         <span>{t("dash.usedAgo", { t: "live" })}</span>
         <button
           type="button"
-          onClick={() => { navigator.clipboard.writeText(k); setDone(true); setTimeout(() => setDone(false), 1200); }}
+          onClick={() => void copyKey()}
           aria-label={t("common.copy")}
           className="inline-flex items-center rounded-sm border border-border p-1 hover:text-primary hover:border-primary"
         >

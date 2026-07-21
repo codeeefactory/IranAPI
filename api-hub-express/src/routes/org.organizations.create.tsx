@@ -40,9 +40,10 @@ export default function OrgCreate() {
         <TerminalWindow title="~/iranapi/orgs/create" glow>
           <form onSubmit={submit} className="space-y-3 text-sm">
             <Prompt>iran org create</Prompt>
-            <label className="block">
+            <label className="block" htmlFor="org-name">
               <div className="text-xs text-muted-foreground mb-1">--name</div>
               <input
+                id="org-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="acme-payments"
@@ -50,9 +51,10 @@ export default function OrgCreate() {
                 className="w-full rounded-sm border border-border bg-background/60 px-3 py-2 outline-none focus:border-primary"
               />
             </label>
-            <label className="block">
+            <label className="block" htmlFor="org-region">
               <div className="text-xs text-muted-foreground mb-1">--region</div>
               <select
+                id="org-region"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 className="w-full rounded-sm border border-border bg-background/60 px-3 py-2 outline-none focus:border-primary text-primary"
@@ -65,6 +67,7 @@ export default function OrgCreate() {
             {error ? <div className="text-xs text-destructive" role="alert">{"// "}{error}</div> : null}
             {createdSlug ? <div className="text-xs text-primary text-glow" role="status">{"// provisioned "}{createdSlug}</div> : null}
             <button
+              type="submit"
               disabled={createOrganization.isPending}
               className="w-full rounded-sm border border-primary bg-primary px-4 py-2 font-bold text-primary-foreground hover:shadow-glow disabled:opacity-60"
             >

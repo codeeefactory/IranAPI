@@ -15,6 +15,7 @@ from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 
 from .mongo import get_database, next_id
+from .project_templates import build_project_files, normalize_language
 
 
 def normalize_username(value: str) -> str:
@@ -120,6 +121,7 @@ class MongoRepository:
         self.legacy_tokens = self.db["legacy_tokens"]
         self.organizations = self.db["organizations"]
         self.studio_flows = self.db["studio_flows"]
+        self.api_projects = self.db["api_projects"]
 
     def build_mongo_user(self, user_doc: dict[str, Any]) -> MongoUser:
         return MongoUser(
@@ -871,6 +873,39 @@ class MongoRepository:
     def list_studio_flows(self, user_id: int) -> list[dict[str, Any]]:
         return list(self.studio_flows.find({"user_id": int(user_id)}).sort([("updated_at", DESCENDING)]))
 
+    def list_api_projects(self, user_id: int) -> list[dict[str, Any]]:
+        return list(self.api_projects.find({"user_id": int(user_id)}).sort([("updated_at", DESCENDING)]))
+
+    def initialize_api_project(
+        self,
+        *,
+        user_id: int,
+        project_name: str,
+        language: str,
+        api_slug: str = "",
+        package_name: str = "",
+        include_docker: bool = True,
+    ) -> dict[str, Any]:
+        api_doc = self.get_api_by_slug(api_slug) if api_slug else None
+        if api_slug and not api_doc:
+            raise LookupError("API was not found.")
+
+        document = self.build_api_project_document(
+            {
+                "user_id": int(user_id),
+                "project_name": project_name,
+                "language": language,
+                "api_id": int(api_doc["_id"]) if api_doc else None,
+                "api_slug": api_doc["slug"] if api_doc else "",
+                "base_url": api_doc.get("base_url", "") if api_doc else "",
+                "package_name": package_name,
+                "include_docker": include_docker,
+            }
+        )
+        document["files"] = build_project_files(document)
+        self.api_projects.insert_one(document)
+        return document
+
     def deploy_studio_flow(
         self,
         *,
@@ -1249,6 +1284,35 @@ class MongoRepository:
             current_id=current_id,
         )
         return document
+
+    def build_api_project_document(self, payload: dict[str, Any], *, current_id: int | None = None) -> dict[str, Any]:
+        now = timezone.now()
+        project_name = payload.get("project_name", "").strip()
+        package_name = payload.get("package_name", "").strip() or slugify(project_name, allow_unicode=False).strip("-")
+        if not package_name:
+            package_name = "iranapi-starter"
+        language = normalize_language(payload.get("language", "custom"))
+        return {
+            "_id": current_id or next_id("api_projects"),
+            "user_id": int(payload.get("user_id")),
+            "project_name": project_name,
+            "slug": unique_slug(
+                self.api_projects,
+                project_name or package_name,
+                max_length=120,
+                current_id=current_id,
+            ),
+            "language": language,
+            "package_name": package_name,
+            "api_id": payload.get("api_id"),
+            "api_slug": payload.get("api_slug", ""),
+            "base_url": payload.get("base_url", "") or "https://api.example.dev/v1",
+            "auth_header": payload.get("auth_header", "X-API-Key") or "X-API-Key",
+            "include_docker": bool(payload.get("include_docker", True)),
+            "files": payload.get("files") or [],
+            "created_at": payload.get("created_at", now),
+            "updated_at": payload.get("updated_at", now),
+        }
 
     def build_rating_document(self, payload: dict[str, Any], *, current_id: int | None = None) -> dict[str, Any]:
         now = timezone.now()

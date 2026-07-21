@@ -47,7 +47,7 @@ export default function BrowsePage() {
               className="h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
             {q && (
-              <button onClick={() => setQ("")} aria-label="clear search" className="text-muted-foreground hover:text-primary">
+              <button type="button" onClick={() => setQ("")} aria-label="clear search" className="text-muted-foreground hover:text-primary">
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
@@ -65,6 +65,7 @@ export default function BrowsePage() {
             <ul className="mt-3 space-y-1 text-sm">
               <li>
                 <button
+                  type="button"
                   onClick={() => setCat(null)}
                   className={`w-full text-start rounded-sm px-2 py-1 transition-colors ${cat === null ? "bg-primary/10 text-primary" : "text-foreground/80 hover:text-primary"}`}
                 >
@@ -77,6 +78,7 @@ export default function BrowsePage() {
                 return (
                   <li key={c.slug}>
                     <button
+                      type="button"
                       onClick={() => setCat(c.slug)}
                       className={`w-full text-start rounded-sm px-2 py-1 transition-colors ${cat === c.slug ? "bg-primary/10 text-primary" : "text-foreground/80 hover:text-primary"}`}
                     >
@@ -95,6 +97,7 @@ export default function BrowsePage() {
               {[null, "free", "freemium", "paid"].map((p) => (
                 <li key={String(p)}>
                   <button
+                    type="button"
                     onClick={() => setPrice(p)}
                     className={`w-full text-start rounded-sm px-2 py-1 transition-colors ${price === p ? "bg-primary/10 text-primary" : "text-foreground/80 hover:text-primary"}`}
                   >
@@ -144,7 +147,7 @@ export default function BrowsePage() {
                 <div className="state-title">{"// "}{t("browse.empty.title")}</div>
                 <div className="state-sub">{t("browse.empty.sub")}</div>
                 {hasFilters && (
-                  <button onClick={clearAll} className="btn-ghost mt-3 text-xs">
+                  <button type="button" onClick={clearAll} className="btn-ghost mt-3 text-xs">
                     {t("browse.empty.clear")}
                   </button>
                 )}

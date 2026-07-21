@@ -1,9 +1,15 @@
+import logging
+
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from typing import Any
 from .models import Category, API, PricingPlan, Documentation, UserProfile, APIUsage
 from .repositories import MongoUser, format_decimal
+from .project_templates import SUPPORTED_LANGUAGE_SLUGS, normalize_language
+
+
+logger = logging.getLogger(__name__)
 
 
 def mask_secret(value: str | None) -> str | None:
@@ -342,6 +348,24 @@ def serialize_studio_flow(flow: dict[str, Any], *, api_doc: dict[str, Any] | Non
     }
 
 
+def serialize_api_project(project: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(project["_id"]),
+        "project_name": project.get("project_name", ""),
+        "slug": project.get("slug", ""),
+        "language": project.get("language", "custom"),
+        "package_name": project.get("package_name", ""),
+        "api_slug": project.get("api_slug", ""),
+        "base_url": project.get("base_url", ""),
+        "auth_header": project.get("auth_header", "X-API-Key"),
+        "include_docker": bool(project.get("include_docker", True)),
+        "files": project.get("files", []),
+        "file_count": len(project.get("files", [])),
+        "created_at": project.get("created_at"),
+        "updated_at": project.get("updated_at"),
+    }
+
+
 def serialize_usage_item(
     usage: dict[str, Any],
     *,
@@ -448,11 +472,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 first_name=first_name,
                 last_name=last_name,
             )
-        except Exception as e:
-            # Log the error for debugging
-            import sys
-            print(f"Error creating user: {e}", file=sys.stderr)
-            print(f"Data: username={validated_data['username']}, email={email}", file=sys.stderr)
+        except Exception:
+            logger.exception(
+                "Failed to create user during registration",
+                extra={"username": validated_data["username"], "email": email},
+            )
             raise
         # Create profile with default values (all fields allow blank=True)
         UserProfile.objects.create(
@@ -570,6 +594,24 @@ class StudioFlowDeploySerializer(serializers.Serializer):
                 raise serializers.ValidationError("Each node requires a type.")
             cleaned.append({"type": node_type[:80], "label": label[:120], "order": int(node.get("order") or index)})
         return cleaned
+
+
+class APIProjectInitSerializer(serializers.Serializer):
+    project_name = serializers.CharField(max_length=120)
+    language = serializers.CharField(max_length=80)
+    api_slug = serializers.SlugField(max_length=160, required=False, allow_blank=True)
+    package_name = serializers.SlugField(max_length=120, required=False, allow_blank=True)
+    include_docker = serializers.BooleanField(default=True)
+
+    def validate_project_name(self, value):
+        value = value.strip()
+        if len(value) < 3:
+            raise serializers.ValidationError("Project name must be at least 3 characters.")
+        return value
+
+    def validate_language(self, value):
+        language = normalize_language(value)
+        return language if language in SUPPORTED_LANGUAGE_SLUGS else "custom"
 
 
 class UserUpdateSerializer(serializers.Serializer):

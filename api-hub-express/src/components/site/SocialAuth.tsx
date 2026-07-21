@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { Loader2, AlertTriangle, CheckCircle2, RotateCw, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import type { SocialProvider, SocialProviderInfo } from "@/lib/api-client";
@@ -42,10 +42,15 @@ type Status =
 export function SocialAuth({ next }: { next?: string }) {
   const { t } = useI18n();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const redirectHintRef = useRef<number | undefined>(undefined);
   const providers = useSocialProviders();
   const startLogin = useStartSocialLogin();
 
   const providerRows = providers.data?.providers?.length ? providers.data.providers : [];
+
+  useEffect(() => () => {
+    if (redirectHintRef.current) window.clearTimeout(redirectHintRef.current);
+  }, []);
 
   async function handle(provider: SocialProviderInfo) {
     const p = provider.slug;
@@ -57,7 +62,7 @@ export function SocialAuth({ next }: { next?: string }) {
     try {
       await startLogin.mutateAsync({ provider: p, next });
       // If the browser does not navigate within 6s, surface a hint.
-      window.setTimeout(() => {
+      redirectHintRef.current = window.setTimeout(() => {
         setStatus((s) =>
           s.kind === "loading" && s.provider === p
             ? { kind: "error", provider: p, message: t("auth.social.err.slow") }
@@ -142,7 +147,12 @@ function StatusPanel({
 }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<number | undefined>(undefined);
   const canRetry = status.kind === "error" && providers.some((provider) => provider.slug === status.provider);
+
+  useEffect(() => () => {
+    if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
+  }, []);
 
   const copyDetails = useCallback(() => {
     if (status.kind !== "error") return;
@@ -157,8 +167,8 @@ function StatusPanel({
       navigator.clipboard.writeText(payload).then(() => {
         setCopied(true);
         toast.success(t("auth.social.err.copied"));
-        setTimeout(() => setCopied(false), 1500);
-      });
+        copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
+      }).catch(() => undefined);
     }
   }, [status, t]);
 

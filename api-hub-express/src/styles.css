@@ -166,6 +166,8 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
       radial-gradient(circle at 80% 90%, oklch(0.86 0.17 75 / 0.09) 0%, transparent 45%),
       radial-gradient(circle at 50% 50%, oklch(0.85 0.14 200 / 0.05) 0%, transparent 60%);
     background-attachment: fixed;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
   body::before {
     content: "";
@@ -196,7 +198,15 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
     background: var(--primary);
     color: var(--primary-foreground);
   }
-  h1, h2, h3, h4 { font-family: var(--font-mono); letter-spacing: -0.01em; }
+  h1, h2, h3, h4 { font-family: var(--font-mono); letter-spacing: 0; text-wrap: balance; }
+  p, li { text-wrap: pretty; }
+  img, svg, video, canvas { max-width: 100%; }
+  button, input, textarea, select { font: inherit; }
+  :focus-visible { outline: 1px solid var(--ring); outline-offset: 2px; }
+
+  @media (max-width: 768px) {
+    body { background-attachment: scroll; }
+  }
 }
 
 @layer utilities {
@@ -255,6 +265,8 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
   /* Premium primary button */
   .btn-primary {
     display: inline-flex; align-items: center; gap: 0.5rem;
+    justify-content: center;
+    min-height: 2.5rem;
     padding: 0.65rem 1.25rem;
     font-weight: 700; font-size: 0.875rem;
     color: var(--primary-foreground);
@@ -269,6 +281,8 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
 
   .btn-ghost {
     display: inline-flex; align-items: center; gap: 0.5rem;
+    justify-content: center;
+    min-height: 2.5rem;
     padding: 0.6rem 1.1rem;
     font-size: 0.875rem;
     color: var(--foreground);
@@ -284,6 +298,7 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
   .cta-grad {
     position: relative;
     display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    min-height: 2.5rem;
     padding: 0.65rem 1.25rem;
     font-weight: 700; font-size: 0.875rem;
     color: var(--foreground);
@@ -309,6 +324,7 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
   /* Form primitives: inputs, selects, textareas, checkboxes */
   .field {
     display: block; width: 100%;
+    min-height: 2.5rem;
     background: color-mix(in oklab, var(--card) 70%, transparent);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
@@ -346,6 +362,8 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
     box-shadow: var(--shadow-elev-1);
   }
   .table-elev th, .table-elev td { padding: 0.65rem 0.85rem; text-align: left; font-size: 0.85rem; }
+  html[dir="rtl"] .table-elev th,
+  html[dir="rtl"] .table-elev td { text-align: right; }
   .table-elev thead th {
     background: color-mix(in oklab, var(--primary) 6%, transparent);
     color: var(--primary);
@@ -487,5 +505,26 @@ html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
     pointer-events: none;
     z-index: 10000;
     box-shadow: 0 0 8px var(--primary);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.001ms !important;
+    }
+
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+
+    .cyber-cursor-ring,
+    .cyber-cursor-dot {
+      display: none !important;
+    }
   }
 }

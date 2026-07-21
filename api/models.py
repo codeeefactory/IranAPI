@@ -1,17 +1,47 @@
-from django.db import models
 from django.contrib.auth.models import User
-from django.utils.text import slugify
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
+from django.db import models
 from django.urls import reverse
+from django.utils.text import slugify
+
+
+hex_color_validator = RegexValidator(
+    regex=r"^#[0-9A-Fa-f]{6}$",
+    message="Color must be a valid 6-digit hex value.",
+)
+
+
+def build_unique_slug(instance, source_value: str, *, fallback: str = "item") -> str:
+    field = instance._meta.get_field("slug")
+    max_length = getattr(field, "max_length", 50)
+    base = slugify(source_value, allow_unicode=True).strip("-")[:max_length] or fallback
+    slug = base
+    index = 2
+    queryset = instance.__class__.objects.all()
+    if instance.pk:
+        queryset = queryset.exclude(pk=instance.pk)
+
+    while queryset.filter(slug=slug).exists():
+        suffix = f"-{index}"
+        slug = f"{base[: max_length - len(suffix)]}{suffix}"
+        index += 1
+    return slug
+
+
+def build_slug(instance, source_value: str, *, fallback: str = "item") -> str:
+    field = instance._meta.get_field("slug")
+    max_length = getattr(field, "max_length", 50)
+    return slugify(source_value, allow_unicode=True).strip("-")[:max_length] or fallback
 
 
 class Category(models.Model):
     """API Categories"""
     name = models.CharField(max_length=100, verbose_name="نام")
     name_en = models.CharField(max_length=100, blank=True, verbose_name="نام انگلیسی")
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(unique=True, blank=True, allow_unicode=True)
     description = models.TextField(blank=True, verbose_name="توضیحات")
     icon = models.CharField(max_length=50, blank=True, verbose_name="آیکون")
-    color = models.CharField(max_length=7, default="#3b82f6", verbose_name="رنگ")
+    color = models.CharField(max_length=7, default="#3b82f6", validators=[hex_color_validator], verbose_name="رنگ")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -22,7 +52,7 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name_en or self.name)
+            self.slug = build_unique_slug(self, self.name_en or self.name, fallback="category")
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -40,7 +70,7 @@ class API(models.Model):
 
     name = models.CharField(max_length=200, verbose_name="نام")
     name_en = models.CharField(max_length=200, blank=True, verbose_name="نام انگلیسی")
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(unique=True, blank=True, allow_unicode=True)
     description = models.TextField(verbose_name="توضیحات")
     short_description = models.CharField(max_length=300, blank=True, verbose_name="توضیحات کوتاه")
     
@@ -57,9 +87,15 @@ class API(models.Model):
     is_featured = models.BooleanField(default=False, verbose_name="ویژه")
     is_popular = models.BooleanField(default=False, verbose_name="محبوب")
     
-    views_count = models.IntegerField(default=0, verbose_name="تعداد بازدید")
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0, verbose_name="امتیاز")
-    rating_count = models.IntegerField(default=0, verbose_name="تعداد امتیاز")
+    views_count = models.PositiveIntegerField(default=0, verbose_name="تعداد بازدید")
+    rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.0,
+        validators=[MinValueValidator(0), MaxValueValidator(5)],
+        verbose_name="امتیاز",
+    )
+    rating_count = models.PositiveIntegerField(default=0, verbose_name="تعداد امتیاز")
     
     tags = models.JSONField(default=list, blank=True, verbose_name="تگ‌ها")
     
@@ -74,7 +110,7 @@ class API(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name_en or self.name)
+            self.slug = build_unique_slug(self, self.name_en or self.name, fallback="api")
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -97,11 +133,22 @@ class PricingPlan(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام")
     plan_type = models.CharField(max_length=20, choices=PLAN_TYPES, default='basic', verbose_name="نوع پلن")
     
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="قیمت")
-    currency = models.CharField(max_length=3, default='IRR', verbose_name="ارز")
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0)],
+        verbose_name="قیمت",
+    )
+    currency = models.CharField(
+        max_length=3,
+        default='IRR',
+        validators=[RegexValidator(regex=r"^[A-Z]{3}$", message="Currency must be a 3-letter ISO code.")],
+        verbose_name="ارز",
+    )
     
-    requests_per_month = models.IntegerField(null=True, blank=True, verbose_name="درخواست در ماه")
-    requests_per_day = models.IntegerField(null=True, blank=True, verbose_name="درخواست در روز")
+    requests_per_month = models.PositiveIntegerField(null=True, blank=True, verbose_name="درخواست در ماه")
+    requests_per_day = models.PositiveIntegerField(null=True, blank=True, verbose_name="درخواست در روز")
     
     features = models.JSONField(default=list, blank=True, verbose_name="ویژگی‌ها")
     
@@ -124,9 +171,9 @@ class Documentation(models.Model):
     """API Documentation"""
     api = models.ForeignKey(API, on_delete=models.CASCADE, related_name='documentations', verbose_name="API")
     title = models.CharField(max_length=200, verbose_name="عنوان")
-    slug = models.SlugField(blank=True)
+    slug = models.SlugField(blank=True, allow_unicode=True)
     content = models.TextField(verbose_name="محتوای")
-    order = models.IntegerField(default=0, verbose_name="ترتیب")
+    order = models.PositiveIntegerField(default=0, verbose_name="ترتیب")
     is_active = models.BooleanField(default=True, verbose_name="فعال")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -138,7 +185,7 @@ class Documentation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            self.slug = build_slug(self, self.title, fallback="doc")
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -168,7 +215,7 @@ class APIUsage(models.Model):
     """Track API Usage"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='api_usage', verbose_name="کاربر")
     api = models.ForeignKey(API, on_delete=models.CASCADE, related_name='usage_stats', verbose_name="API")
-    requests_count = models.IntegerField(default=0, verbose_name="تعداد درخواست")
+    requests_count = models.PositiveIntegerField(default=0, verbose_name="تعداد درخواست")
     last_used = models.DateTimeField(auto_now=True, verbose_name="آخرین استفاده")
     created_at = models.DateTimeField(auto_now_add=True)
 

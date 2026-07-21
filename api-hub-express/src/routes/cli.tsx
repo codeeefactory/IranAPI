@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Prompt, CodeBlock, Tag } from "@/components/site/Terminal";
 import { Copy, Check, Download, Terminal as TerminalIcon, KeyRound, Cog, AlertTriangle, LifeBuoy, Stethoscope } from "lucide-react";
 import { useCatalogApis } from "@/hooks/useCatalog";
 import { useI18n } from "@/lib/i18n";
+
+const CLI_BASE_URL = "https://iranapi.dev";
+const CLI_API_URL = `${CLI_BASE_URL}/api`;
 
 const INSTALL: { id: string; label: string; cmd: string }[] = [
   { id: "npm", label: "npm // cross-platform", cmd: "npm i -g @iranapi/cli" },
@@ -15,18 +18,28 @@ const INSTALL: { id: string; label: string; cmd: string }[] = [
 
 function Copyable({ children, lang }: { children: string; lang?: string }) {
   const [done, setDone] = useState(false);
+  const timeoutRef = useRef<number | undefined>(undefined);
   const { t } = useI18n();
+
+  useEffect(() => () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+  }, []);
+
+  async function copy() {
+    if (!navigator.clipboard) return;
+    const copied = await navigator.clipboard.writeText(children).then(() => true).catch(() => false);
+    if (!copied) return;
+    setDone(true);
+    toast.success(t("cli.copied"));
+    timeoutRef.current = window.setTimeout(() => setDone(false), 1200);
+  }
+
   return (
     <div className="relative">
       <CodeBlock>{children}</CodeBlock>
       <button
         type="button"
-        onClick={() => {
-          navigator.clipboard.writeText(children);
-          setDone(true);
-          toast.success(t("cli.copied"));
-          setTimeout(() => setDone(false), 1200);
-        }}
+        onClick={() => void copy()}
         className="absolute end-2 top-2 inline-flex h-7 items-center gap-1 rounded-sm border border-border bg-background/80 px-2 text-[10px] text-muted-foreground hover:text-primary hover:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
         aria-label="copy"
         data-lang={lang}
@@ -91,7 +104,7 @@ iran login --token iak_live_xxxxxxxxxxxx
 iran whoami`}</Copyable>
               <div className="text-[11px] text-muted-foreground">{"// "}example output</div>
               <CodeBlock>{`> iran login
-  open: https://happy-ui-refresh.lovable.app/cli/device
+  open: ${CLI_BASE_URL}/cli/device
   code: WXKT-9F4Q
 
 waiting for approval....
@@ -99,7 +112,7 @@ waiting for approval....
 
               <div className="text-[11px] text-muted-foreground pt-2">{"// "}env vars</div>
               <CodeBlock>{`IRANAPI_TOKEN=iak_live_xxxxxxxxxxxx     # bearer token, overrides config
-IRANAPI_API_URL=https://happy-ui-refresh.lovable.app/api
+IRANAPI_API_URL=${CLI_API_URL}
 IRANAPI_PROFILE=default                   # named credential profile`}</CodeBlock>
 
               <div className="text-[11px] text-muted-foreground pt-2 flex items-center gap-2">
@@ -182,7 +195,7 @@ iran doctor            # alias`}</Copyable>
               <CodeBlock>{`> iran diagnose
 
   ✓ node runtime           — node 20.11.1
-  ✓ IRANAPI_API_URL        — https://happy-ui-refresh.lovable.app/api
+  ✓ IRANAPI_API_URL        — ${CLI_API_URL}
   × IRANAPI_TOKEN / session — no token configured
     → iran login    # or: export IRANAPI_TOKEN=iak_live_xxxxxxxxxxxx
   ✓ config file            — ~/.iranapi/default.json (profile: default)
@@ -227,7 +240,7 @@ debug:    diagnose (alias: doctor)
 
 flags:    --json  --quiet  --api-url <url>  --profile <name>
 env:      IRANAPI_TOKEN, IRANAPI_API_URL, IRANAPI_PROFILE
-docs:     https://happy-ui-refresh.lovable.app/cli`}</CodeBlock>
+docs:     ${CLI_BASE_URL}/cli`}</CodeBlock>
           </div>
         </TerminalWindow>
 
@@ -283,13 +296,13 @@ iran whoami`}
               <TroubleCard
                 title="× device-code expired (exit 2)"
                 hint="login window was not approved in time"
-                fix={`iran login --api-url https://happy-ui-refresh.lovable.app/api`}
+                fix={`iran login --api-url ${CLI_API_URL}`}
               />
               <TroubleCard
                 title="× ENOTFOUND / ECONNREFUSED"
                 hint="wrong API URL or offline"
                 fix={`echo $IRANAPI_API_URL
-export IRANAPI_API_URL=https://happy-ui-refresh.lovable.app/api
+export IRANAPI_API_URL=${CLI_API_URL}
 iran apis list --json | head`}
               />
               <TroubleCard
@@ -314,7 +327,7 @@ chmod 700 ~/.iranapi && chmod 600 ~/.iranapi/*.json`}
               </div>
               <Copyable lang="bash">{`# minimal working environment
 export IRANAPI_TOKEN=iak_live_xxxxxxxxxxxx
-export IRANAPI_API_URL=https://happy-ui-refresh.lovable.app/api
+export IRANAPI_API_URL=${CLI_API_URL}
 export IRANAPI_PROFILE=default
 # verify:
 iran whoami && iran apis list --json | jq '. | length'`}</Copyable>

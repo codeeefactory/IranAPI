@@ -55,6 +55,7 @@ export default function PaymentPage() {
               </Link>
             ) : (
               <button
+                type="button"
                 className="btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!selectedPlan || isBusy}
                 onClick={handlePay}

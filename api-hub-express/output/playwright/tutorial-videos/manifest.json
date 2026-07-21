@@ -1,0 +1,189 @@
+﻿{
+    "created_at":  "2026-07-21T16:49:03.522Z",
+    "base_url":  "http://127.0.0.1:4173",
+    "tutorial_user":  "tutorial-1784652445618",
+    "videos":  [
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\01-auth-signup-session.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\02-dashboard-profile-key.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\03-backend-api-tour.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\04-release-publish-api.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\05-caller-execute-usage.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\06-studio-deploy-flow.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\07-project-init.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\08-org-and-billing.webm",
+                   "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\09-signout.webm"
+               ],
+    "operations":  [
+                       {
+                           "label":  "health",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/system/health/"
+                       },
+                       {
+                           "label":  "openapi schema",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/schema/openapi.json"
+                       },
+                       {
+                           "label":  "session",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/auth/session/"
+                       },
+                       {
+                           "label":  "social providers",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/auth/social/providers/"
+                       },
+                       {
+                           "label":  "categories list",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/categories/?page_size=20"
+                       },
+                       {
+                           "label":  "apis list",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/apis/?page_size=20"
+                       },
+                       {
+                           "label":  "category detail",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/categories/fintech/"
+                       },
+                       {
+                           "label":  "category apis",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/categories/fintech/apis/"
+                       },
+                       {
+                           "label":  "api detail",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/apis/speech-gateway/"
+                       },
+                       {
+                           "label":  "similar apis",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/apis/speech-gateway/similar/"
+                       },
+                       {
+                           "label":  "rate api",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/apis/speech-gateway/ratings/"
+                       },
+                       {
+                           "label":  "api plans",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/apis/speech-gateway/plans/"
+                       },
+                       {
+                           "label":  "api docs",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/apis/speech-gateway/docs/"
+                       },
+                       {
+                           "label":  "api endpoints",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/apis/speech-gateway/endpoints/"
+                       },
+                       {
+                           "label":  "subscription plans",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/subscription-plans/"
+                       },
+                       {
+                           "label":  "pricing plans",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/pricing-plans/"
+                       },
+                       {
+                           "label":  "documentation list",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/catalog/documentations/"
+                       },
+                       {
+                           "label":  "current user",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/user/"
+                       },
+                       {
+                           "label":  "update user",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/user/"
+                       },
+                       {
+                           "label":  "profile",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/profile/"
+                       },
+                       {
+                           "label":  "update profile",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/profile/"
+                       },
+                       {
+                           "label":  "access grants",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/access/"
+                       },
+                       {
+                           "label":  "organizations list",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/organizations/"
+                       },
+                       {
+                           "label":  "create organization",
+                           "status":  201,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/organizations/"
+                       },
+                       {
+                           "label":  "usage list",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/usage/"
+                       },
+                       {
+                           "label":  "usage stats",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/usage/stats/"
+                       },
+                       {
+                           "label":  "create checkout",
+                           "status":  201,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/subscription/"
+                       },
+                       {
+                           "label":  "get checkout",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/subscription/checkout/1/"
+                       },
+                       {
+                           "label":  "cancel checkout",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/subscription/checkout/1/"
+                       },
+                       {
+                           "label":  "create checkout for confirm",
+                           "status":  201,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/subscription/"
+                       },
+                       {
+                           "label":  "confirm checkout",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/account/subscription/checkout/2/confirm/"
+                       },
+                       {
+                           "label":  "logout",
+                           "status":  200,
+                           "url":  "http://127.0.0.1:4173/api/v1/auth/logout/"
+                       }
+                   ],
+    "mp4_videos":  [
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\01-auth-signup-session.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\02-dashboard-profile-key.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\03-backend-api-tour.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\04-release-publish-api.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\05-caller-execute-usage.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\06-studio-deploy-flow.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\07-project-init.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\08-org-and-billing.mp4",
+                       "C:\\Users\\Sadjad Rgz\\Documents\\IranAPI\\api-hub-express\\output\\playwright\\tutorial-videos\\09-signout.mp4"
+                   ]
+}

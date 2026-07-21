@@ -1,0 +1,315 @@
+{
+  "created_at": "2026-07-20T22:38:15.163Z",
+  "products": [
+    {
+      "id": 1,
+      "name": "Tehran Transit Routing API",
+      "name_en": "Tehran Transit Routing API",
+      "slug": "tehran-transit-routing-api",
+      "short_description": "Route planning, station lookup, and estimated arrival data for Tehran public transit apps.",
+      "category": {
+        "id": 1,
+        "name": "Mobility",
+        "name_en": "Mobility",
+        "slug": "mobility",
+        "description": "Mobility APIs",
+        "icon": "",
+        "color": "#2563eb",
+        "apis_count": 0,
+        "created_at": "2026-07-20T22:38:07.631284Z",
+        "updated_at": "2026-07-20T22:38:07.631284Z"
+      },
+      "logo": "",
+      "status": "active",
+      "is_featured": false,
+      "is_popular": false,
+      "rating": "0.00",
+      "rating_count": 0,
+      "views_count": 0,
+      "tags": [
+        "routing",
+        "metro",
+        "traffic"
+      ],
+      "pricing_from": null,
+      "rapidapi": {
+        "canonical_version": "v1",
+        "listing_url": "",
+        "package_slug": "",
+        "public_auth_scheme": "api_key",
+        "support_url": "",
+        "publication_status": "published"
+      },
+      "created_at": "2026-07-20T22:38:07.631284Z",
+      "updated_at": "2026-07-20T22:38:07.631284Z",
+      "description": "Route planning, station lookup, and estimated arrival data for Tehran public transit apps.",
+      "base_url": "https://api.iranapi.dev/v1/tehran-transit-routing",
+      "documentation_url": "https://docs.iranapi.dev/tehran-transit-routing",
+      "banner": "",
+      "pricing_plans": [],
+      "documentations": [
+        {
+          "id": 1,
+          "api_slug": "tehran-transit-routing-api",
+          "title": "Overview",
+          "slug": "overview",
+          "content": "Route planning, station lookup, and estimated arrival data for Tehran public transit apps.",
+          "order": 1,
+          "is_active": true,
+          "created_at": "2026-07-20T22:38:07.631284Z",
+          "updated_at": "2026-07-20T22:38:07.631284Z"
+        }
+      ],
+      "endpoints": [],
+      "created_by_username": "api-seeder-1784587080682"
+    },
+    {
+      "id": 2,
+      "name": "Persian OCR Documents API",
+      "name_en": "Persian OCR Documents API",
+      "slug": "persian-ocr-documents-api",
+      "short_description": "Persian and English OCR extraction for invoices, IDs, receipts, and scanned business documents.",
+      "category": {
+        "id": 2,
+        "name": "AI",
+        "name_en": "AI",
+        "slug": "ai",
+        "description": "AI APIs",
+        "icon": "",
+        "color": "#2563eb",
+        "apis_count": 0,
+        "created_at": "2026-07-20T22:38:08.271415Z",
+        "updated_at": "2026-07-20T22:38:08.271415Z"
+      },
+      "logo": "",
+      "status": "active",
+      "is_featured": false,
+      "is_popular": false,
+      "rating": "0.00",
+      "rating_count": 0,
+      "views_count": 0,
+      "tags": [
+        "ocr",
+        "persian",
+        "documents"
+      ],
+      "pricing_from": null,
+      "rapidapi": {
+        "canonical_version": "v1",
+        "listing_url": "",
+        "package_slug": "",
+        "public_auth_scheme": "bearer",
+        "support_url": "",
+        "publication_status": "published"
+      },
+      "created_at": "2026-07-20T22:38:08.271415Z",
+      "updated_at": "2026-07-20T22:38:08.271415Z",
+      "description": "Persian and English OCR extraction for invoices, IDs, receipts, and scanned business documents.",
+      "base_url": "https://api.iranapi.dev/v1/persian-ocr-documents",
+      "documentation_url": "https://docs.iranapi.dev/persian-ocr-documents",
+      "banner": "",
+      "pricing_plans": [],
+      "documentations": [
+        {
+          "id": 2,
+          "api_slug": "persian-ocr-documents-api",
+          "title": "Overview",
+          "slug": "overview-2",
+          "content": "Persian and English OCR extraction for invoices, IDs, receipts, and scanned business documents.",
+          "order": 1,
+          "is_active": true,
+          "created_at": "2026-07-20T22:38:08.271415Z",
+          "updated_at": "2026-07-20T22:38:08.271415Z"
+        }
+      ],
+      "endpoints": [],
+      "created_by_username": "api-seeder-1784587080682"
+    },
+    {
+      "id": 3,
+      "name": "Shetab Fraud Score API",
+      "name_en": "Shetab Fraud Score API",
+      "slug": "shetab-fraud-score-api",
+      "short_description": "Risk scoring signals for card-not-present payments, suspicious velocity, and merchant controls.",
+      "category": {
+        "id": 3,
+        "name": "Fintech",
+        "name_en": "Fintech",
+        "slug": "fintech",
+        "description": "Fintech APIs",
+        "icon": "",
+        "color": "#2563eb",
+        "apis_count": 0,
+        "created_at": "2026-07-20T22:38:08.917457Z",
+        "updated_at": "2026-07-20T22:38:08.917457Z"
+      },
+      "logo": "",
+      "status": "active",
+      "is_featured": false,
+      "is_popular": false,
+      "rating": "0.00",
+      "rating_count": 0,
+      "views_count": 0,
+      "tags": [
+        "fraud",
+        "payments",
+        "risk"
+      ],
+      "pricing_from": null,
+      "rapidapi": {
+        "canonical_version": "v1",
+        "listing_url": "",
+        "package_slug": "",
+        "public_auth_scheme": "api_key",
+        "support_url": "",
+        "publication_status": "published"
+      },
+      "created_at": "2026-07-20T22:38:08.917457Z",
+      "updated_at": "2026-07-20T22:38:08.917457Z",
+      "description": "Risk scoring signals for card-not-present payments, suspicious velocity, and merchant controls.",
+      "base_url": "https://api.iranapi.dev/v1/shetab-fraud-score",
+      "documentation_url": "https://docs.iranapi.dev/shetab-fraud-score",
+      "banner": "",
+      "pricing_plans": [],
+      "documentations": [
+        {
+          "id": 3,
+          "api_slug": "shetab-fraud-score-api",
+          "title": "Overview",
+          "slug": "overview-3",
+          "content": "Risk scoring signals for card-not-present payments, suspicious velocity, and merchant controls.",
+          "order": 1,
+          "is_active": true,
+          "created_at": "2026-07-20T22:38:08.917457Z",
+          "updated_at": "2026-07-20T22:38:08.917457Z"
+        }
+      ],
+      "endpoints": [],
+      "created_by_username": "api-seeder-1784587080682"
+    },
+    {
+      "id": 4,
+      "name": "Zarinpal Ledger Sync API",
+      "name_en": "Zarinpal Ledger Sync API",
+      "slug": "zarinpal-ledger-sync-api",
+      "short_description": "Automated reconciliation for payment ledgers, payout batches, refunds, and settlement reports.",
+      "category": {
+        "id": 4,
+        "name": "Finance",
+        "name_en": "Finance",
+        "slug": "finance",
+        "description": "Finance APIs",
+        "icon": "",
+        "color": "#2563eb",
+        "apis_count": 0,
+        "created_at": "2026-07-20T22:38:09.555535Z",
+        "updated_at": "2026-07-20T22:38:09.555535Z"
+      },
+      "logo": "",
+      "status": "active",
+      "is_featured": false,
+      "is_popular": false,
+      "rating": "0.00",
+      "rating_count": 0,
+      "views_count": 0,
+      "tags": [
+        "ledger",
+        "reconciliation",
+        "payouts"
+      ],
+      "pricing_from": null,
+      "rapidapi": {
+        "canonical_version": "v1",
+        "listing_url": "",
+        "package_slug": "",
+        "public_auth_scheme": "oauth2",
+        "support_url": "",
+        "publication_status": "published"
+      },
+      "created_at": "2026-07-20T22:38:09.555535Z",
+      "updated_at": "2026-07-20T22:38:09.555535Z",
+      "description": "Automated reconciliation for payment ledgers, payout batches, refunds, and settlement reports.",
+      "base_url": "https://api.iranapi.dev/v1/zarinpal-ledger-sync",
+      "documentation_url": "https://docs.iranapi.dev/zarinpal-ledger-sync",
+      "banner": "",
+      "pricing_plans": [],
+      "documentations": [
+        {
+          "id": 4,
+          "api_slug": "zarinpal-ledger-sync-api",
+          "title": "Overview",
+          "slug": "overview-4",
+          "content": "Automated reconciliation for payment ledgers, payout batches, refunds, and settlement reports.",
+          "order": 1,
+          "is_active": true,
+          "created_at": "2026-07-20T22:38:09.555535Z",
+          "updated_at": "2026-07-20T22:38:09.555535Z"
+        }
+      ],
+      "endpoints": [],
+      "created_by_username": "api-seeder-1784587080682"
+    },
+    {
+      "id": 5,
+      "name": "Iran Weather Alerts API",
+      "name_en": "Iran Weather Alerts API",
+      "slug": "iran-weather-alerts-api",
+      "short_description": "Regional forecast, air quality, severe-weather warnings, and city-level alert feeds for Iran.",
+      "category": {
+        "id": 5,
+        "name": "Data",
+        "name_en": "Data",
+        "slug": "data",
+        "description": "Data APIs",
+        "icon": "",
+        "color": "#2563eb",
+        "apis_count": 0,
+        "created_at": "2026-07-20T22:38:10.176336Z",
+        "updated_at": "2026-07-20T22:38:10.176336Z"
+      },
+      "logo": "",
+      "status": "active",
+      "is_featured": false,
+      "is_popular": false,
+      "rating": "0.00",
+      "rating_count": 0,
+      "views_count": 0,
+      "tags": [
+        "weather",
+        "alerts",
+        "forecast"
+      ],
+      "pricing_from": null,
+      "rapidapi": {
+        "canonical_version": "v1",
+        "listing_url": "",
+        "package_slug": "",
+        "public_auth_scheme": "none",
+        "support_url": "",
+        "publication_status": "published"
+      },
+      "created_at": "2026-07-20T22:38:10.176336Z",
+      "updated_at": "2026-07-20T22:38:10.176336Z",
+      "description": "Regional forecast, air quality, severe-weather warnings, and city-level alert feeds for Iran.",
+      "base_url": "https://api.iranapi.dev/v1/iran-weather-alerts",
+      "documentation_url": "https://docs.iranapi.dev/iran-weather-alerts",
+      "banner": "",
+      "pricing_plans": [],
+      "documentations": [
+        {
+          "id": 5,
+          "api_slug": "iran-weather-alerts-api",
+          "title": "Overview",
+          "slug": "overview-5",
+          "content": "Regional forecast, air quality, severe-weather warnings, and city-level alert feeds for Iran.",
+          "order": 1,
+          "is_active": true,
+          "created_at": "2026-07-20T22:38:10.176336Z",
+          "updated_at": "2026-07-20T22:38:10.176336Z"
+        }
+      ],
+      "endpoints": [],
+      "created_by_username": "api-seeder-1784587080682"
+    }
+  ]
+}

@@ -134,6 +134,15 @@ test("authenticated crawler validates register, login, dashboard forms, rating, 
   await expect(page.locator("main")).toContainText("requests");
   await expect(page.locator("main")).toContainText("account subscription");
 
+  await gotoApp(page, "/init");
+  await expect(page.locator("main#main")).toContainText("bootstrap any api stack");
+  await page.locator("#init-project-name").fill(`QA Starter ${uniqueSuffix}`);
+  await page.locator("#init-package").fill(`qa-starter-${uniqueSuffix}`);
+  await page.locator("#init-language").selectOption("node");
+  await page.getByRole("button", { name: "./init_project" }).click();
+  await expect(page.locator("main#main")).toContainText("initialized qa-starter");
+  await expect(page.getByRole("button", { name: "package.json" })).toBeVisible();
+
   await gotoApp(page, "/payment?subscription=growth");
   await expect(page).toHaveURL(/\/payment\?subscription=growth$/);
   await expect(page.getByRole("button", { name: "./confirm_and_pay" })).toBeVisible();

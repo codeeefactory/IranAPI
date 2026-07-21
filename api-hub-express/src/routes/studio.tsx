@@ -104,9 +104,9 @@ export default function StudioPage() {
 
           <div className="ascii-divider mt-8" />
           <div className="mt-4 grid gap-3 md:grid-cols-[1fr,auto] md:items-end">
-            <label className="block text-xs text-muted-foreground">
+            <label className="block text-xs text-muted-foreground" htmlFor="studio-flow">
               --flow
-              <input value={flowName} onChange={(e) => setFlowName(e.target.value)} className="field mt-1 font-mono text-primary" />
+              <input id="studio-flow" value={flowName} onChange={(e) => setFlowName(e.target.value)} className="field mt-1 font-mono text-primary" />
             </label>
             <button
               type="button"

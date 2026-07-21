@@ -1,0 +1,42 @@
+\chapter{راهنمای اجرا و شواهد تکمیلی}
+\thispagestyle{empty}
+
+\section{اجرای محلی}
+اجرای محلی پروژه با \lr{Docker Compose} انجام می‌شود:
+\begin{latin}
+\begin{lstlisting}
+docker compose up --build
+\end{lstlisting}
+\end{latin}
+
+در این پیکربندی، فرانت‌اند روی \lr{http://localhost:5173} و بک‌اند روی \lr{http://localhost:8000/api} منتشر می‌شود.
+
+این روش برای بررسی سریع کل سامانه مناسب است، زیرا هر دو بخش اصلی را هم‌زمان بالا می‌آورد. پس از اجرا، کاربر می‌تواند ابتدا مسیر سلامت بک‌اند را بررسی کند و سپس از طریق فرانت‌اند وارد جریان مرور کاتالوگ، ورود، داشبورد و ابزارهای توسعه‌دهنده شود. اگر یکی از سرویس‌ها اجرا نشود، باید لاگ همان سرویس در \lr{Docker Compose} بررسی شود.
+
+\section{اجرای آزمون بک‌اند}
+دستور اجراشده در این گزارش:
+\begin{latin}
+\begin{lstlisting}
+python manage.py test api
+\end{lstlisting}
+\end{latin}
+خروجی خلاصه: \lr{Ran 49 tests} و \lr{OK}.
+
+این دستور فقط آزمون‌های برنامه \lr{api} را اجرا می‌کند و برای تکرار نتیجه فصل آزمون کافی است. در صورت تغییر کد بک‌اند، اجرای دوباره این دستور باید نخستین کنترل کیفی باشد. برای تغییرات فرانت‌اند، اجرای آزمون‌های مرورگر و ساخت نسخه فرانت‌اند نیز باید به این کنترل اضافه شود.
+
+\section{مسیرهای مهم}
+\begin{longtable}{p{6cm} p{6cm}}
+\caption{مسیرهای مهم برای بررسی دستی سامانه}\label{tab:runbook-routes}\\
+\toprule
+\rowcolor{tablehead}\textbf{مسیر} & \textbf{کاربرد} \\
+\midrule
+\ModernTableStart
+\lr{/api/v1/system/health/} & سلامت سامانه \\
+\lr{/api/v1/schema/openapi.json} & طرح \lr{OpenAPI} \\
+\lr{/api/v1/auth/login/} & ورود نشست‌محور \\
+\lr{/api/v1/catalog/apis/} & فهرست و انتشار \lr{API} \\
+\lr{/api/v1/account/usage/} & تاریخچه مصرف \\
+\lr{/api/v1/account/studio/flows/} & جریان‌های \lr{Studio} \\
+\ModernTableStop
+\bottomrule
+\end{longtable}

@@ -12,6 +12,7 @@ const routes = [
   "/privacy",
   "/dashboard",
   "/studio",
+  "/init",
   "/org/organizations/create",
   "/missing-route",
 ];

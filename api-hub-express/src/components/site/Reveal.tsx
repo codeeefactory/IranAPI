@@ -16,11 +16,17 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShown(true);
+      return;
+    }
+
+    let timeoutId: number | undefined;
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting) {
-            setTimeout(() => setShown(true), delay);
+            timeoutId = window.setTimeout(() => setShown(true), delay);
             io.disconnect();
           }
         }
@@ -28,7 +34,10 @@ export function Reveal({
       { threshold: 0.12 },
     );
     io.observe(el);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
   }, [delay]);
 
   return (

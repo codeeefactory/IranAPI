@@ -49,7 +49,13 @@ export default function CallerPage() {
       }
     }
     try {
-      const path = new URL(url).pathname.replace(/^\/v\d+\/[^/]+/, "") || "/";
+      let path = "/";
+      try {
+        path = new URL(url, "https://api.iranapi.dev").pathname.replace(/^\/v\d+\/[^/]+/, "") || "/";
+      } catch {
+        setError("Request URL must be a valid URL or path.");
+        return;
+      }
       const result = await caller.mutateAsync({
         api_slug: selectedApi.slug,
         method,

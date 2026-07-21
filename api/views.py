@@ -1,25 +1,25 @@
 from __future__ import annotations
 
+import json
+import logging
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.db.models import Avg, Count, Q, Sum
 from django.shortcuts import redirect
-from django.utils.text import slugify
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+from django.utils.text import slugify
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework import viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.authtoken.models import Token
-from django.contrib.auth.models import User
-from django.db.models import Q, Count, Avg
-from django.utils import timezone
 from datetime import timedelta
 
 from .models import Category, API, PricingPlan, Documentation, UserProfile, APIUsage
@@ -28,6 +28,7 @@ from .schema import build_openapi_schema
 from .serializers import (
     APIUsageSerializer,
     APISummarySerializer,
+    APIProjectInitSerializer,
     CallerRequestSerializer,
     CategorySerializer,
     DocumentationSerializer,
@@ -51,6 +52,7 @@ from .serializers import (
     serialize_organization,
     serialize_pricing_plan,
     serialize_profile,
+    serialize_api_project,
     serialize_studio_flow,
     serialize_subscription_checkout,
     serialize_subscription_plan,
@@ -61,6 +63,10 @@ from .serializers import (
     UserRegistrationSerializer,
     UserSerializer,
 )
+from .project_templates import SUPPORTED_PROJECT_LANGUAGES
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_repository() -> MongoRepository:
@@ -410,6 +416,47 @@ class StudioFlowListCreateView(APIView):
                     category=None,
                     pricing_from=None,
                 ),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class APIProjectInitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        repository = get_repository()
+        projects = [serialize_api_project(project) for project in repository.list_api_projects(int(request.user.id))]
+        return Response(
+            {
+                "supported_languages": SUPPORTED_PROJECT_LANGUAGES,
+                "projects": paginate(request, projects),
+            }
+        )
+
+    def post(self, request):
+        serializer = APIProjectInitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        repository = get_repository()
+
+        try:
+            project = repository.initialize_api_project(
+                user_id=int(request.user.id),
+                project_name=data["project_name"],
+                language=data["language"],
+                api_slug=data.get("api_slug", ""),
+                package_name=data.get("package_name", ""),
+                include_docker=data.get("include_docker", True),
+            )
+        except LookupError as exc:
+            raise NotFound(str(exc)) from exc
+
+        return Response(
+            {
+                "message": "API project initialized.",
+                "project": serialize_api_project(project),
+                "supported_languages": SUPPORTED_PROJECT_LANGUAGES,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -1072,55 +1119,37 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
         """User registration"""
-        import sys
-        import json
-        
         try:
-            # Log request data - use both print and logger
-            print("=" * 50, file=sys.stderr)
-            print("REGISTRATION REQUEST RECEIVED", file=sys.stderr)
-            print(f"Method: {request.method}", file=sys.stderr)
-            print(f"Content-Type: {request.content_type}", file=sys.stderr)
-            print(f"Data type: {type(request.data)}", file=sys.stderr)
-            
-            # Get data
             if hasattr(request, 'data') and request.data:
                 data = dict(request.data) if hasattr(request.data, 'keys') else request.data
             else:
-                import json
                 try:
                     data = json.loads(request.body.decode('utf-8')) if request.body else {}
-                except:
+                except json.JSONDecodeError:
                     data = {}
-            
-            print(f"Request data: {json.dumps(data, default=str, ensure_ascii=False)}", file=sys.stderr)
-            sys.stderr.flush()
-            
+
+            logger.debug(
+                "Registration request received",
+                extra={"content_type": request.content_type, "data_type": type(data).__name__},
+            )
+
             serializer = UserRegistrationSerializer(data=data)
             if serializer.is_valid():
                 user = serializer.save()
                 token, created = Token.objects.get_or_create(user=user)
-                print(f"Registration successful for user: {user.username}", file=sys.stderr)
-                sys.stderr.flush()
+                logger.info("User registered successfully", extra={"username": user.username})
                 return Response({
                     'user': UserSerializer(user).data,
                     'token': token.key
                 }, status=status.HTTP_201_CREATED)
-            
-            # Log validation errors
-            errors = dict(serializer.errors)
-            print("=" * 50, file=sys.stderr)
-            print("SERIALIZER VALIDATION ERRORS", file=sys.stderr)
-            print(json.dumps(errors, default=str, ensure_ascii=False, indent=2), file=sys.stderr)
-            sys.stderr.flush()
+
+            logger.info(
+                "Registration validation failed",
+                extra={"fields": list(serializer.errors.keys())},
+            )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            import traceback
-            print("=" * 50, file=sys.stderr)
-            print("REGISTRATION EXCEPTION", file=sys.stderr)
-            print(f"Error: {str(e)}", file=sys.stderr)
-            print(traceback.format_exc(), file=sys.stderr)
-            sys.stderr.flush()
+            logger.exception("Registration failed")
             return Response(
                 {'detail': f'خطا در ثبت‌نام: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1144,8 +1173,8 @@ class UserViewSet(viewsets.ModelViewSet):
         """User logout"""
         try:
             request.user.auth_token.delete()
-        except:
-            pass
+        except Token.DoesNotExist:
+            logger.debug("Logout requested without an active auth token", extra={"user_id": request.user.id})
         return Response({'message': 'با موفقیت خارج شدید'})
 
 
@@ -1220,7 +1249,7 @@ class APIUsageViewSet(viewsets.ModelViewSet):
     def stats(self, request):
         """Get usage statistics"""
         usage = self.get_queryset()
-        total_requests = usage.aggregate(total=Count('requests_count'))['total'] or 0
+        total_requests = usage.aggregate(total=Sum('requests_count'))['total'] or 0
         recent_usage = usage.filter(last_used__gte=timezone.now() - timedelta(days=30))
         
         return Response({

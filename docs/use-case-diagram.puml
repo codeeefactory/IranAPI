@@ -7,56 +7,98 @@ skinparam actorStyle awesome
 actor Visitor
 actor "Authenticated Developer" as Developer
 actor "Admin / Operator" as Admin
+actor "Social Identity Provider" as Social
+actor "Upstream API Service" as Upstream
 actor "RapidAPI Marketplace" as RapidAPI
 
-rectangle "IranAPI Portal & API Marketplace" {
-  usecase "Browse API catalog" as UC_Catalog
-  usecase "Search and filter APIs" as UC_Search
-  usecase "View API details,\npricing, and docs" as UC_View
-  usecase "Register portal account" as UC_Register
-  usecase "Sign in and sign out" as UC_Auth
-  usecase "Manage account and profile" as UC_Profile
-  usecase "Checkout and activate\nsubscription" as UC_Subscribe
-  usecase "Release API to Explore" as UC_Publish
-  usecase "Rate an API" as UC_Rate
-  usecase "View access grants" as UC_Access
-  usecase "View usage stats and history" as UC_Usage
-  usecase "Access OpenAPI schema" as UC_Schema
-  usecase "Manage categories and APIs" as UC_CatalogAdmin
-  usecase "Manage plans and documentation" as UC_ContentAdmin
-  usecase "Manage publication metadata" as UC_PublishAdmin
-  usecase "Review access grants\nand usage records" as UC_AccessAdmin
+rectangle "IranAPI Portal and API Marketplace" {
+  package "Discovery and identity" {
+    usecase "Browse, search,\nand filter APIs" as UC_Browse
+    usecase "View API details\nand similar APIs" as UC_Detail
+    usecase "Read plans, endpoints,\nand documentation" as UC_Docs
+    usecase "Read OpenAPI schema" as UC_Schema
+    usecase "Register account" as UC_Register
+    usecase "Sign in / sign out" as UC_Auth
+    usecase "Start social sign-in" as UC_Social
+  }
+
+  package "Developer workspace" {
+    usecase "Manage account\nand profile" as UC_Account
+    usecase "Rotate API key" as UC_Key
+    usecase "Manage organizations" as UC_Org
+    usecase "Manage subscription\ncheckout" as UC_Checkout
+    usecase "View current\nsubscription" as UC_Subscription
+    usecase "View access grants" as UC_Access
+    usecase "Rate an API" as UC_Rate
+    usecase "Publish API\nto Explore" as UC_Release
+    usecase "Execute request\nin Caller" as UC_Caller
+    usecase "Create and deploy\nStudio flow" as UC_Studio
+    usecase "View usage history\nand statistics" as UC_Usage
+  }
+
+  package "Operations" {
+    usecase "Manage legacy ORM\ncatalog" as UC_CatalogAdmin
+    usecase "Manage legacy pricing\nand documentation" as UC_ContentAdmin
+    usecase "Manage Django users\nand profiles" as UC_UserAdmin
+    usecase "Review legacy\nusage records" as UC_GrantAdmin
+    usecase "Maintain publication\nmetadata" as UC_Publication
+    usecase "Monitor health\nand schema" as UC_Health
+  }
 }
 
-Visitor --> UC_Catalog
-Visitor --> UC_Search
-Visitor --> UC_View
+Visitor --> UC_Browse
+Visitor --> UC_Detail
+Visitor --> UC_Docs
+Visitor --> UC_Schema
 Visitor --> UC_Register
 Visitor --> UC_Auth
-Visitor --> UC_Schema
+Visitor --> UC_Social
 
-Developer --> UC_Catalog
-Developer --> UC_Search
-Developer --> UC_View
+Developer --> UC_Browse
+Developer --> UC_Detail
+Developer --> UC_Docs
 Developer --> UC_Auth
-Developer --> UC_Profile
-Developer --> UC_Subscribe
-Developer --> UC_Publish
-Developer --> UC_Rate
+Developer --> UC_Account
+Developer --> UC_Key
+Developer --> UC_Org
+Developer --> UC_Checkout
+Developer --> UC_Subscription
 Developer --> UC_Access
+Developer --> UC_Rate
+Developer --> UC_Release
+Developer --> UC_Caller
+Developer --> UC_Studio
 Developer --> UC_Usage
 
-Admin --> UC_Schema
 Admin --> UC_CatalogAdmin
 Admin --> UC_ContentAdmin
-Admin --> UC_PublishAdmin
-Admin --> UC_AccessAdmin
+Admin --> UC_UserAdmin
+Admin --> UC_GrantAdmin
+Admin --> UC_Publication
+Admin --> UC_Health
 
+Social --> UC_Social
+Upstream --> UC_Caller
+RapidAPI --> UC_Publication
 RapidAPI --> UC_Schema
-RapidAPI --> UC_PublishAdmin
+
+UC_Detail ..> UC_Docs : <<include>>
+UC_Checkout ..> UC_Subscription : <<extend>>
+UC_Caller ..> UC_Usage : <<include>>
+UC_Studio ..> UC_Usage : <<include>>
+
+note bottom of UC_Checkout
+Current checkout gateway is manual.
+Confirmation activates local subscription.
+end note
 
 note bottom of RapidAPI
-External marketplace metadata can be mapped,
-but account subscriptions are IranAPI-managed.
+Publication metadata boundary only.
+Live webhook ingestion is not implemented.
+end note
+
+note bottom of Admin
+Django admin manages legacy ORM records.
+Mongo catalog has no dedicated admin UI.
 end note
 @enduml

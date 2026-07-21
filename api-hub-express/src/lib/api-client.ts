@@ -256,6 +256,52 @@ export type StudioFlowDeployResponse = {
   usage: UsageItem;
 };
 
+export type SupportedProjectLanguage = {
+  slug: string;
+  label: string;
+  runtime: string;
+};
+
+export type ApiProjectFile = {
+  path: string;
+  content: string;
+};
+
+export type ApiProject = {
+  id: number;
+  project_name: string;
+  slug: string;
+  language: string;
+  package_name: string;
+  api_slug: string;
+  base_url: string;
+  auth_header: string;
+  include_docker: boolean;
+  files: ApiProjectFile[];
+  file_count: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type ApiProjectInitInput = {
+  project_name: string;
+  language: string;
+  api_slug?: string;
+  package_name?: string;
+  include_docker?: boolean;
+};
+
+export type ApiProjectInitCatalog = {
+  supported_languages: SupportedProjectLanguage[];
+  projects: PaginatedResponse<ApiProject>;
+};
+
+export type ApiProjectInitResponse = {
+  message?: string;
+  project: ApiProject;
+  supported_languages: SupportedProjectLanguage[];
+};
+
 export type ApiRatingResponse = {
   rating: string;
   rating_count: number;
@@ -487,6 +533,16 @@ export const accountApi = {
 
   async deployStudioFlow(input: StudioFlowDeployInput): Promise<StudioFlowDeployResponse> {
     const { data } = await http.post<StudioFlowDeployResponse>("/account/studio/flows/", input);
+    return data;
+  },
+
+  async projectInitCatalog(): Promise<ApiProjectInitCatalog> {
+    const { data } = await http.get<ApiProjectInitCatalog>("/account/projects/init/");
+    return data;
+  },
+
+  async initializeProject(input: ApiProjectInitInput): Promise<ApiProjectInitResponse> {
+    const { data } = await http.post<ApiProjectInitResponse>("/account/projects/init/", input);
     return data;
   },
 

@@ -219,6 +219,10 @@ def build_openapi_schema() -> dict:
                 "get": {"tags": ["Account"], "summary": "List deployed Studio flows", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
                 "post": {"tags": ["Account"], "summary": "Deploy a Studio flow and record usage", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
             },
+            "/api/v1/account/projects/init/": {
+                "get": {"tags": ["Account"], "summary": "List initialized API projects and supported language starters", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Initialize an API project starter in a selected language", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+            },
         },
         "components": {
             "securitySchemes": {

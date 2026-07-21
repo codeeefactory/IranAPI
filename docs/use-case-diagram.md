@@ -1,90 +1,136 @@
-# IranAPI Use Case Diagram
+# IranAPI Project Use-Case Diagrams
 
-This diagram reflects the current implemented scope of the project after the v1/session-auth, API release, and IranAPI subscription pass.
+These diagrams describe implemented behavior exposed by the canonical `/api/v1/`
+API and current React portal.
 
-It intentionally does **not** model:
-
-- live RapidAPI webhook ingestion
-- local quota enforcement driven by external subscriptions
-
-Those flows are still outside the currently implemented product boundary.
-
-## Rendered Diagram
+## 1. Public discovery and identity
 
 ```mermaid
 flowchart LR
-  classDef actor fill:#f8fafc,stroke:#475569,stroke-width:1px,color:#0f172a;
-  classDef usecase fill:#eff6ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
-  classDef external fill:#fff7ed,stroke:#ea580c,stroke-width:1px,color:#7c2d12;
+  classDef actor fill:#f8fafc,stroke:#475569,color:#0f172a
+  classDef usecase fill:#eff6ff,stroke:#2563eb,color:#0f172a
+  classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12
 
   visitor["Visitor<br/>مهمان"]:::actor
-  developer["Authenticated Developer<br/>توسعه دهنده"]:::actor
-  admin["Admin / Operator<br/>ادمین"]:::actor
-  rapidapi["RapidAPI Marketplace<br/>سیستم خارجی"]:::external
+  developer["Developer<br/>توسعه‌دهنده"]:::actor
+  social["Social identity provider<br/>ارائه‌دهنده ورود اجتماعی"]:::external
 
-  subgraph IranAPI["IranAPI Portal & API Marketplace"]
-    uc_catalog(["Browse API catalog<br/>مرور کاتالوگ API"]):::usecase
-    uc_search(["Search and filter APIs<br/>جستجو و فیلتر APIها"]):::usecase
-    uc_view(["View API details, pricing, and docs<br/>مشاهده جزئیات، قیمت و مستندات"]):::usecase
-    uc_register(["Register portal account<br/>ثبت نام در پرتال"]):::usecase
-    uc_auth(["Sign in and sign out<br/>ورود و خروج"]):::usecase
-    uc_profile(["Manage account and profile<br/>مدیریت حساب و پروفایل"]):::usecase
-    uc_subscribe(["Checkout and activate subscription<br/>پرداخت و فعال سازی اشتراک"]):::usecase
-    uc_publish(["Release API to Explore<br/>انتشار API در اکسپلور"]):::usecase
-    uc_rate(["Rate an API<br/>امتیازدهی به API"]):::usecase
-    uc_access(["View access grants<br/>مشاهده دسترسی ها"]):::usecase
-    uc_usage(["View usage stats and history<br/>مشاهده آمار و تاریخچه مصرف"]):::usecase
-    uc_schema(["Access OpenAPI schema<br/>دریافت OpenAPI"]):::usecase
-    uc_catalog_admin(["Manage categories and APIs<br/>مدیریت دسته بندی ها و APIها"]):::usecase
-    uc_content_admin(["Manage plans and documentation<br/>مدیریت پلن ها و مستندات"]):::usecase
-    uc_publish_admin(["Manage publication metadata<br/>مدیریت متادیتای انتشار"]):::usecase
-    uc_access_admin(["Review access grants and usage records<br/>بررسی دسترسی ها و رکوردهای مصرف"]):::usecase
+  subgraph portal["IranAPI portal"]
+    browse(["Browse, search, and filter APIs<br/>مرور، جستجو و فیلتر APIها"]):::usecase
+    details(["View API details and similar APIs<br/>مشاهده جزئیات و APIهای مشابه"]):::usecase
+    docs(["Read plans, endpoints, and docs<br/>مشاهده پلن‌ها، endpointها و مستندات"]):::usecase
+    schema(["Read OpenAPI schema<br/>دریافت OpenAPI"]):::usecase
+    register(["Register account<br/>ثبت‌نام"]):::usecase
+    login(["Sign in<br/>ورود"]):::usecase
+    social_login(["Start social sign-in<br/>شروع ورود اجتماعی"]):::usecase
+    logout(["Sign out<br/>خروج"]):::usecase
   end
 
-  visitor --- uc_catalog
-  visitor --- uc_search
-  visitor --- uc_view
-  visitor --- uc_register
-  visitor --- uc_auth
-  visitor --- uc_schema
+  visitor --- browse
+  visitor --- details
+  visitor --- docs
+  visitor --- schema
+  visitor --- register
+  visitor --- login
+  visitor --- social_login
 
-  developer --- uc_catalog
-  developer --- uc_search
-  developer --- uc_view
-  developer --- uc_auth
-  developer --- uc_profile
-  developer --- uc_subscribe
-  developer --- uc_publish
-  developer --- uc_rate
-  developer --- uc_access
-  developer --- uc_usage
+  developer --- browse
+  developer --- details
+  developer --- docs
+  developer --- logout
 
-  admin --- uc_schema
-  admin --- uc_catalog_admin
-  admin --- uc_content_admin
-  admin --- uc_publish_admin
-  admin --- uc_access_admin
-
-  rapidapi --- uc_schema
-  rapidapi --- uc_publish_admin
+  social --- social_login
+  details -. includes .-> docs
 ```
 
-## Actors
+## 2. Developer workspace and billing
 
-- `Visitor / مهمان`: browses the public catalog, reads documentation, and can create a portal account.
-- `Authenticated Developer / توسعه دهنده`: manages the portal account, checks out subscription plans, publishes APIs, views access and usage, and rates APIs.
-- `Admin / Operator / ادمین`: manages catalog content, pricing plans, documentation, publication metadata, and access records.
-- `RapidAPI Marketplace / سیستم خارجی`: consumes schema/publication-facing metadata and represents the external marketplace boundary.
+```mermaid
+flowchart LR
+  classDef actor fill:#f8fafc,stroke:#475569,color:#0f172a
+  classDef usecase fill:#ecfdf5,stroke:#059669,color:#052e16
+  classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12
 
-## Notes
+  developer["Authenticated developer<br/>توسعه‌دهنده واردشده"]:::actor
+  upstream["Upstream API service<br/>سرویس API مقصد"]:::external
 
-- User subscription plans are implemented inside IranAPI through checkout sessions and confirmation endpoints in the versioned API.
-- Public API access grants can still map external marketplace metadata, but the primary portal subscription state is IranAPI-managed.
-- Legacy token and API-key routes still exist for compatibility, but they are not the primary use-case model anymore.
-- The canonical system contract for this diagram is the versioned `/api/v1/` API surface.
+  subgraph workspace["IranAPI developer workspace"]
+    account(["Manage account and profile<br/>مدیریت حساب و پروفایل"]):::usecase
+    key(["Rotate API key<br/>تعویض کلید API"]):::usecase
+    org(["Create and list organizations<br/>ایجاد و مشاهده سازمان‌ها"]):::usecase
+    subscription(["View current subscription<br/>مشاهده اشتراک فعلی"]):::usecase
+    checkout(["Create, inspect, cancel, or confirm checkout<br/>مدیریت پرداخت اشتراک"]):::usecase
+    access(["View API access grants<br/>مشاهده دسترسی‌های API"]):::usecase
+    rate(["Rate an API<br/>امتیازدهی به API"]):::usecase
+    release(["Publish an API to Explore<br/>انتشار API در Explore"]):::usecase
+    caller(["Execute API request in Caller<br/>اجرای درخواست در Caller"]):::usecase
+    studio(["Create and deploy Studio flow<br/>ساخت و استقرار جریان Studio"]):::usecase
+    usage(["View usage history and stats<br/>مشاهده تاریخچه و آمار مصرف"]):::usecase
+  end
 
-## Editable Source
+  developer --- account
+  developer --- key
+  developer --- org
+  developer --- subscription
+  developer --- checkout
+  developer --- access
+  developer --- rate
+  developer --- release
+  developer --- caller
+  developer --- studio
+  developer --- usage
 
-If you want a proper UML use-case source file for PlantUML, use:
+  caller --- upstream
+  checkout -. activates .-> subscription
+  caller -. records .-> usage
+  studio -. records .-> usage
+```
 
-- [docs/use-case-diagram.puml](/abs/path/will/be/linked/in-chat)
+## 3. Operations and external boundaries
+
+```mermaid
+flowchart LR
+  classDef actor fill:#f8fafc,stroke:#475569,color:#0f172a
+  classDef usecase fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+
+  admin["Admin / operator<br/>مدیر سیستم"]:::actor
+  rapidapi["RapidAPI marketplace<br/>بازار خارجی"]:::external
+
+  subgraph operations["IranAPI operations"]
+    catalog(["Manage legacy ORM catalog<br/>مدیریت کاتالوگ ORM قدیمی"]):::usecase
+    content(["Manage legacy pricing and docs<br/>مدیریت قیمت و مستندات قدیمی"]):::usecase
+    users(["Manage Django users and profiles<br/>مدیریت کاربران و پروفایل‌های Django"]):::usecase
+    grants(["Review legacy usage records<br/>بررسی رکوردهای مصرف قدیمی"]):::usecase
+    publication(["Maintain publication metadata<br/>مدیریت متادیتای انتشار"]):::usecase
+    health(["Monitor health and schema<br/>بررسی سلامت و schema"]):::usecase
+  end
+
+  admin --- catalog
+  admin --- content
+  admin --- users
+  admin --- grants
+  admin --- publication
+  admin --- health
+
+  rapidapi --- publication
+  rapidapi --- health
+```
+
+## Actors and boundaries
+
+- `Visitor`: anonymous catalog and documentation reader.
+- `Authenticated developer`: portal user with account, publishing, billing,
+  caller, Studio, access, and usage features.
+- `Admin / operator`: manages legacy Django ORM/admin records and monitors
+  operational endpoints. Mongo catalog administration has no dedicated admin UI.
+- `Social identity provider`: configured external authentication redirect target.
+- `Upstream API service`: destination called by authenticated Caller requests.
+- `RapidAPI marketplace`: external publication-metadata boundary. Live webhook
+  ingestion and externally driven quota enforcement are not implemented.
+
+## Editable UML source
+
+PlantUML version: [`use-case-diagram.puml`](use-case-diagram.puml)
+
+Database diagram: [`database-diagram.md`](database-diagram.md)

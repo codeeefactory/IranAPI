@@ -1,0 +1,426 @@
+% !TeX program = xelatex
+% قالب پایان‌نامه کارشناسی گروه کامپیوتر دانشگاه دامغان
+% هماهنگ‌شده با PDF راهنمای نگارش؛ PDF مرجع اولویت دارد.
+
+\documentclass[14pt,a4paper,twoside,openany]{extbook}
+
+\usepackage[
+  top=3cm,
+  bottom=3cm,
+  right=3.75cm,
+  left=2.5cm,
+  includefoot
+]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[table]{xcolor}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{etoolbox}
+\usepackage[hidelinks,unicode]{hyperref}
+\usepackage{xepersian}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+
+\newcommand{\UniversityName}{دانشگاه دامغان}
+\newcommand{\FacultyName}{دانشکده فنی و مهندسی}
+\newcommand{\DegreeName}{پایان‌نامه دوره کارشناسی مهندسی کامپیوتر}
+\newcommand{\ThesisTitle}{سایت اشتراک گذاری \lr{API} با پایتون}
+\newcommand{\StudentName}{سجاد رضاقلی زاده}
+\newcommand{\SupervisorName}{دکتر زهره کریمی}
+\newcommand{\ThesisDate}{تیر ۱۴۰۵}
+
+\IfFontExistsTF{B Nazanin}
+  {\settextfont[Script=Arabic]{B Nazanin}}
+  {\settextfont[Script=Arabic]{Amiri}}
+
+\IfFontExistsTF{Times New Roman}
+  {\setlatintextfont[Scale=0.93]{Times New Roman}}
+  {\setlatintextfont[Scale=0.93]{Liberation Serif}}
+
+\IfFontExistsTF{Courier New}
+  {\setmonofont[Scale=0.90]{Courier New}}
+  {\setmonofont[Scale=0.90]{DejaVu Sans Mono}}
+
+\IfFontExistsTF{B Titr}
+  {\newfontfamily\titlefont[Script=Arabic,BoldFont={B Titr}]{B Titr}}
+  {\newfontfamily\titlefont[Script=Arabic]{Noto Naskh Arabic}}
+
+\renewcommand{\contentsname}{فهرست مطالب}
+\renewcommand{\listtablename}{فهرست جدول‌ها}
+\renewcommand{\listfigurename}{فهرست نمودارها، عکس‌ها و نقشه‌ها}
+\renewcommand{\bibname}{منابع}
+\AtBeginDocument{%
+  \renewcommand{\bibname}{منابع}%
+  \renewcommand{\listfigurename}{فهرست نمودارها، عکس‌ها و نقشه‌ها}%
+}
+
+\setstretch{1}
+\setlength{\parindent}{0.75cm}
+\setlength{\parskip}{0pt}
+\setlist{nosep}
+\setlist[itemize]{label=-}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\sloppy
+
+\definecolor{damghanNavy}{HTML}{1F3A5F}
+\definecolor{damghanTeal}{HTML}{1E6F68}
+\definecolor{damghanGold}{HTML}{B7852C}
+\definecolor{damghanInk}{HTML}{202A33}
+\definecolor{damghanMist}{HTML}{EEF4F6}
+\definecolor{tablehead}{HTML}{DCEAF0}
+\definecolor{tablestripe}{HTML}{F6F9FA}
+\definecolor{tableline}{HTML}{8DA9B8}
+\definecolor{codebg}{HTML}{F3F6F7}
+\definecolor{codebar}{HTML}{1E6F68}
+\arrayrulecolor{tableline}
+\setlength{\arrayrulewidth}{0.55pt}
+\renewcommand{\arraystretch}{1.32}
+
+\newcommand{\ModernTableStart}{\rowcolors{2}{white}{tablestripe}}
+\newcommand{\ModernTableStop}{}
+\newcommand{\ChapterRule}{%
+  \par\vspace{0.35\baselineskip}%
+  {\color{damghanGold}\rule{0.34\textwidth}{0.75pt}}%
+  \par\vspace{0.2\baselineskip}%
+}
+\newcommand{\UniversityLogo}{%
+  \IfFileExists{images/university-logo.png}
+    {\includegraphics[width=1.45cm]{images/university-logo.png}}
+    {}%
+}
+\newcommand{\TitlePageFrame}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \draw[damghanNavy,line width=0.7pt]
+      ([xshift=1.35cm,yshift=-1.35cm]current page.north west)
+      rectangle
+      ([xshift=-1.35cm,yshift=1.35cm]current page.south east);
+    \draw[damghanGold,line width=0.45pt]
+      ([xshift=1.55cm,yshift=-1.55cm]current page.north west)
+      rectangle
+      ([xshift=-1.55cm,yshift=1.55cm]current page.south east);
+    \foreach \x/\y in {2.2/4.2,3.6/5.4,5.1/4.7,16.1/22.9,17.4/21.5,15.7/20.8} {
+      \fill[damghanTeal,opacity=0.10] ([xshift=\x cm,yshift=\y cm]current page.south west) circle (2pt);
+    }
+    \draw[damghanTeal,opacity=0.10,line width=0.8pt]
+      ([xshift=2.2cm,yshift=4.2cm]current page.south west) --
+      ([xshift=3.6cm,yshift=5.4cm]current page.south west) --
+      ([xshift=5.1cm,yshift=4.7cm]current page.south west);
+    \draw[damghanTeal,opacity=0.10,line width=0.8pt]
+      ([xshift=16.1cm,yshift=22.9cm]current page.south west) --
+      ([xshift=17.4cm,yshift=21.5cm]current page.south west) --
+      ([xshift=15.7cm,yshift=20.8cm]current page.south west);
+  \end{tikzpicture}%
+}
+
+\makeatletter
+\def\ps@thesis{%
+  \let\@oddhead\@empty
+  \let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}%
+  \let\@evenfoot\@oddfoot
+}
+\let\ps@plain\ps@thesis
+\makeatother
+\pagestyle{thesis}
+
+\newcommand{\UniversityAbjad}[1]{%
+  \ifnum\value{#1}=1 الف\else\abjad{#1}\fi
+}
+
+\titleformat{\chapter}[display]
+  {\titlefont\bfseries\fontsize{14}{20}\selectfont\centering\color{damghanInk}}
+  {{\color{damghanTeal}فصل \thechapter}}
+  {0.5\baselineskip}
+  {\ChapterRule}
+\titlespacing*{\chapter}{0pt}{4\baselineskip}{2\baselineskip}
+
+\titleformat{name=\chapter,numberless}[display]
+  {\titlefont\bfseries\fontsize{14}{20}\selectfont\centering\color{damghanInk}}
+  {}
+  {0pt}
+  {\ChapterRule}
+\titlespacing*{name=\chapter,numberless}{0pt}{2\baselineskip}{1.5\baselineskip}
+
+\titleformat{\section}
+  {\titlefont\bfseries\fontsize{14}{18}\selectfont\color{damghanNavy}}
+  {\color{damghanTeal}\lr{\thesection}}
+  {0.75em}
+  {}
+
+\titleformat{\subsection}
+  {\titlefont\bfseries\fontsize{14}{18}\selectfont\color{damghanNavy}}
+  {\color{damghanTeal}\lr{\thesubsection}}
+  {0.75em}
+  {}
+
+\titleformat{\subsubsection}
+  {\titlefont\bfseries\fontsize{14}{18}\selectfont\color{damghanNavy}}
+  {\color{damghanTeal}\lr{\thesubsubsection}}
+  {0.75em}
+  {}
+
+\renewcommand{\thesection}{\arabic{section}-\thechapter}
+\renewcommand{\thesubsection}{\arabic{subsection}-\arabic{section}-\thechapter}
+\renewcommand{\thesubsubsection}{\arabic{subsubsection}-\arabic{subsection}-\arabic{section}-\thechapter}
+\renewcommand{\thefigure}{\arabic{figure}-\thechapter}
+\renewcommand{\thetable}{\arabic{table}-\thechapter}
+\renewcommand{\theequation}{\arabic{equation}-\thechapter}
+
+\DeclareCaptionFont{universitycaption}{\fontsize{12}{15}\selectfont}
+\DeclareCaptionLabelFormat{rtl-number}{#1~\lr{#2}}
+\DeclareCaptionLabelFormat{appendix-number}{#1~#2}
+\captionsetup{
+  font=universitycaption,
+  labelfont={bf,color=damghanTeal},
+  textfont={color=damghanInk},
+  labelformat=rtl-number,
+  labelsep=space,
+  justification=centering,
+  singlelinecheck=false
+}
+\AtBeginEnvironment{table}{\fontsize{12}{15}\selectfont}
+
+\lstset{
+  basicstyle=\ttfamily\fontsize{12}{15}\selectfont,
+  numbers=left,
+  numberstyle=\tiny\color{damghanNavy},
+  numbersep=0.4cm,
+  xleftmargin=0.6cm,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{damghanNavy}\bfseries,
+  commentstyle=\color{damghanTeal},
+  stringstyle=\color{damghanGold},
+  frame=leftline,
+  framerule=1.1pt,
+  rulecolor=\color{codebar},
+  framesep=5pt,
+  breaklines=true,
+  columns=fullflexible,
+  showstringspaces=false
+}
+
+\newcommand{\FrontPage}[2]{%
+  \clearpage
+  \chapter*{#1}
+  \thispagestyle{empty}
+  #2
+}
+
+\newcommand{\StartAbjadPages}{%
+  \clearpage
+  \pagenumbering{arabic}
+  \renewcommand{\thepage}{\UniversityAbjad{page}}
+  \pagestyle{thesis}
+}
+
+\newcommand{\StartMainPages}{%
+  \clearpage
+  \pagenumbering{arabic}
+  \pagestyle{thesis}
+}
+
+\newcommand{\StartBackMatter}{%
+  \clearpage
+  \pagenumbering{gobble}
+  \pagestyle{empty}
+}
+
+\newcommand{\StartAppendices}{%
+  \clearpage
+  \appendix
+  \renewcommand{\thechapter}{\UniversityAbjad{chapter}}
+  \renewcommand{\thefigure}{\thechapter-\arabic{figure}}
+  \renewcommand{\thetable}{\thechapter-\arabic{table}}
+  \renewcommand{\theequation}{\thechapter-\arabic{equation}}
+  \captionsetup{labelformat=appendix-number}
+  \titleformat{\chapter}[display]
+    {\titlefont\bfseries\fontsize{14}{20}\selectfont\centering\color{damghanInk}}
+    {{\color{damghanTeal}پیوست \thechapter}}
+    {0.5\baselineskip}
+    {\ChapterRule}
+  \titlespacing*{\chapter}{0pt}{4\baselineskip}{2\baselineskip}
+}
+
+\begin{document}
+
+\pagenumbering{gobble}
+\pagestyle{empty}
+
+\begin{titlepage}
+  \thispagestyle{empty}
+  \TitlePageFrame
+  \begin{center}
+    \vspace*{0.45cm}
+
+    \UniversityLogo\\[0.35cm]
+
+    {\fontsize{14}{20}\selectfont
+      \UniversityName\\[0.35cm]
+      \FacultyName\\[1.2cm]
+      \DegreeName
+    }
+
+    \vfill
+
+    {\color{damghanGold}\rule{0.42\textwidth}{0.7pt}}\\[0.55cm]
+
+    {\titlefont\bfseries\fontsize{16}{24}\selectfont
+      \ThesisTitle
+    }
+
+    \par\vspace{0.55cm}
+    {\color{damghanGold}\rule{0.42\textwidth}{0.7pt}}
+
+    \vfill
+
+    {\fontsize{14}{20}\selectfont
+      \StudentName
+    }
+
+    \vfill
+
+    {\fontsize{14}{20}\selectfont استاد راهنما:}\\[0.3cm]
+    {\fontsize{14}{20}\selectfont
+      \SupervisorName
+    }
+
+    \vfill
+
+    {\fontsize{14}{20}\selectfont \ThesisDate}
+    \vspace*{1cm}
+  \end{center}
+\end{titlepage}
+
+\clearpage
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+  {\titlefont\bfseries\fontsize{18}{26}\selectfont بسمه‌تعالی}
+\end{center}
+\vspace*{\fill}
+
+\FrontPage{تشکر و قدردانی}{
+از استاد راهنما و همه افرادی که در مسیر انجام این پروژه راهنمایی و حمایت کردند، سپاسگزاری می‌شود.
+}
+
+\FrontPage{چکیده}{
+این گزارش پروژه \lr{IranAPI Hub} را به عنوان یک پلتفرم فارسی برای اشتراک‌گذاری، جستجو و مصرف \lr{API} بررسی می‌کند. پروژه از بک‌اند \lr{Django REST Framework} و فرانت‌اند \lr{React} استفاده می‌کند و تجربه‌ای شبیه \lr{API Marketplace} ارائه می‌دهد: کاربر می‌تواند کاتالوگ را مرور کند، مستندات را بخواند، وارد حساب خود شود، مصرف و اشتراک را ببیند، \lr{API} منتشر کند و از ابزارهایی مانند \lr{Caller} و \lr{Studio} استفاده کند.
+
+در این گزارش، متن با تمرکز بر تجربه واقعی کاربر، معماری فنی و مسیرهای توسعه آینده نوشته شده است. منابع نظری و فنی از داکیومنت‌های رسمی مانند \lr{Python}، \lr{Django}، \lr{Django REST Framework}، \lr{React}، \lr{Node.js}، \lr{Docker}، \lr{MongoDB}، \lr{OpenAPI} و \lr{RapidAPI} انتخاب شده‌اند. آزمون‌های بک‌اند با دستور \lr{python manage.py test api} اجرا شدند و نتیجه در فصل آزمون آمده است.
+
+\vspace{1cm}
+\noindent\textbf{کلیدواژه‌ها:} پلتفرم اشتراک‌گذاری \lr{API}، \lr{Django REST Framework}، \lr{React}، احراز هویت، \lr{OpenAPI}
+}
+
+\StartAbjadPages
+\tableofcontents
+
+\clearpage
+\chapter*{فهرست علائم و نشانه‌ها}
+\addcontentsline{toc}{chapter}{فهرست علائم و نشانه‌ها}
+\begin{longtable}{>{\raggedleft\arraybackslash}p{3cm} p{9cm}}
+\toprule
+\rowcolor{tablehead}\textbf{نماد} & \textbf{شرح} \\
+\midrule
+\ModernTableStart
+\lr{API} & رابط برنامه‌نویسی کاربردی \\
+\lr{DRF} & \lr{Django REST Framework} \\
+\lr{SPA} & برنامه تک‌صفحه‌ای \\
+\lr{RTL} & راست‌به‌چپ \\
+\lr{ORM} & نگاشت شیء-رابطه \\
+\ModernTableStop
+\bottomrule
+\end{longtable}
+
+\clearpage
+\addcontentsline{toc}{chapter}{فهرست جدول‌ها}
+\listoftables
+
+\clearpage
+\addcontentsline{toc}{chapter}{فهرست نمودارها، عکس‌ها و نقشه‌ها}
+\listoffigures
+
+\StartMainPages
+
+\input{chapters/01-introduction}
+\input{chapters/02-technologies}
+\input{chapters/03-requirements}
+\input{chapters/04-architecture}
+\input{chapters/05-implementation}
+\input{chapters/06-testing}
+\input{chapters/07-results}
+\input{chapters/08-conclusion}
+
+\clearpage
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{منابع}
+
+\bibitem{python}
+\lr{Python Software Foundation}. \lr{Python 3 Documentation}. \url{https://docs.python.org/3/}.
+
+\bibitem{django}
+\lr{Django Software Foundation}. \lr{Django Documentation}. \url{https://docs.djangoproject.com/}.
+
+\bibitem{drf}
+\lr{Django REST Framework}. \lr{Official Documentation}. \url{https://www.django-rest-framework.org/}.
+
+\bibitem{react}
+\lr{Meta Open Source}. \lr{React Documentation}. \url{https://react.dev/}.
+
+\bibitem{typescript}
+\lr{Microsoft}. \lr{TypeScript Handbook}. \url{https://www.typescriptlang.org/docs/}.
+
+\bibitem{vite}
+\lr{Vite}. \lr{Vite Guide}. \url{https://vite.dev/guide/}.
+
+\bibitem{nodejs}
+\lr{OpenJS Foundation}. \lr{Node.js Documentation}. \url{https://nodejs.org/docs/latest/api/}.
+
+\bibitem{docker}
+\lr{Docker}. \lr{Docker Compose Documentation}. \url{https://docs.docker.com/compose/}.
+
+\bibitem{mongodb}
+\lr{MongoDB}. \lr{MongoDB Manual}. \url{https://www.mongodb.com/docs/manual/}.
+
+\bibitem{openapi}
+\lr{OpenAPI Initiative}. \lr{OpenAPI Specification}. \url{https://spec.openapis.org/oas/latest.html}.
+
+\bibitem{rapidapi}
+\lr{RapidAPI}. \lr{RapidAPI Docs}. \url{https://docs.rapidapi.com/}.
+
+\bibitem{playwright}
+\lr{Microsoft}. \lr{Playwright Documentation}. \url{https://playwright.dev/docs/intro}.
+
+\end{thebibliography}
+
+\StartBackMatter
+
+\chapter*{واژه‌نامه}
+\thispagestyle{empty}
+\begin{longtable}{p{4cm} p{8cm}}
+\toprule
+\rowcolor{tablehead}\textbf{واژه فارسی} & \textbf{برابر انگلیسی} \\
+\midrule
+\ModernTableStart
+پلتفرم اشتراک‌گذاری \lr{API} & \lr{API Marketplace} \\
+احراز هویت نشست & \lr{Session Authentication} \\
+\lr{Legacy Token} & \lr{Legacy Token} \\
+\lr{Studio Flow} & \lr{Studio Flow} \\
+مجوز دسترسی & \lr{Access Grant} \\
+\ModernTableStop
+\bottomrule
+\end{longtable}
+
+\StartAppendices
+\input{appendices/a-runbook}
+
+\end{document}

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageShell } from "@/components/site/Layout";
 import { TerminalWindow, Prompt, Cursor } from "@/components/site/Terminal";
 import { SocialAuth } from "@/components/site/SocialAuth";
@@ -38,6 +38,11 @@ export default function SignUpPage() {
   const [v, setV] = useState({ first_name: "", last_name: "", username: "", email: "", pw: "", pw2: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState<string | null>(null);
+  const redirectTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => {
+    if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
+  }, []);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -65,7 +70,7 @@ export default function SignUpPage() {
         last_name: v.last_name,
       });
       setSuccess(t("auth.success.signup"));
-      setTimeout(() => navigate("/dashboard"), 700);
+      redirectTimerRef.current = window.setTimeout(() => navigate("/dashboard"), 700);
     } catch (err) {
       const e = err as ApiClientError;
       const msg = e.status && [400, 401, 403].includes(e.status)

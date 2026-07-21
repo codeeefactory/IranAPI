@@ -1,0 +1,43 @@
+# Build Notes
+
+- Template source: the provided `damghan-thesis-ready/main.tex` template package.
+- PDF priority check: compared against the provided Damghan project-template PDF.
+- Sync decisions: kept margins, fonts, page order, numbering, caption rules, XeLaTeX, Abjad preliminary numbering, and appendix numbering; kept the PDF-sample title-page order; added the university logo extracted from the attached PDF; forced the PDF figure-list title.
+- Full PDF audit on 2026-07-19:
+  - Page 1 rules: preliminary page order checked. Report has title page, Bismillah, acknowledgements, abstract, then lists. The optional dedication page is omitted because no project-specific dedication text was provided. Page numbers are hidden before lists.
+  - Page 1 rules: Abjad numbering checked. Contents, symbols, tables, and figures use Abjad page labels.
+  - Page 1 rules: main numbering checked. Chapter 1 starts at numeric page 1.
+  - Page 1 rules: bottom-center page number checked visually on rendered report pages.
+  - Page 1 rules: margins and typography checked in TeX. Geometry is top/bottom 3cm, left 2.5cm, right 3.75cm; Persian font size is 14pt; Latin font is scaled to about 13pt; code uses monospace.
+  - Page 2 rules: title numbering format checked. Sections, figures, tables, equations use chapter-related numbering; appendices use Abjad numbering.
+  - Page 2 rules: captions checked. Table captions are above tables; figure captions are below figures; caption font is 12pt.
+  - Page 2 rules: references checked. Bibliography is numeric and now ordered by first citation.
+  - Page 4 rules: cover sample checked. Report title page follows the sample order and no longer shows the student ID line, because the attached PDF cover sample does not include it.
+- Metadata sync: title, student name, supervisor, and date are set in `main.tex`; student ID is intentionally not shown because the attached PDF cover sample does not include it. Latest metadata values are `سایت اشتراک گذاری API با پایتون`, `سجاد رضاقلی زاده`, and `دکتر زهره کریمی`.
+- Intended report build command: `xelatex -interaction=nonstopmode -file-line-error main.tex` repeated three times from `report/`.
+- Backend test command: `python manage.py test api`.
+- Backend test status: passed, 49 tests.
+- Compilation status: successful with the user-installed MiKTeX `xelatex.exe`; `main.pdf` was produced after repeated XeLaTeX runs.
+- Modernization pass on 2026-07-19:
+  - Removed all visible missing-information placeholder text from report body.
+  - Added subtle Damghan-compatible color system for captions, table rules, table headers, zebra rows, and code background.
+  - Added TikZ role-flow diagram and replaced the plain text architecture stack with a layered architecture diagram.
+  - Added the project-artifacts table to make implementation evidence clearer.
+  - Rebuilt and visually checked key pages: role diagram, requirements table, architecture diagram, data table, artifact table, code block, and test table.
+- Explanation completion pass on 2026-07-19:
+  - Expanded every main chapter with fuller explanation of context, role, purpose, evidence, limitations, and next-step meaning.
+  - Added implementation-flow table and explanatory paragraphs around requirement, architecture, artifact, testing, result, conclusion, and appendix sections.
+  - Rebuilt `main.pdf`; current output is 38 pages and key rendered pages were visually checked.
+- Styling pass on 2026-07-20:
+  - Added official-looking title-page double frame, university logo, and subtle API/network atmosphere while preserving the required cover field order.
+  - Improved chapter title styling, section color hierarchy, table header/rule contrast, and code block presentation.
+  - Extracted `report/images/university-logo.png` from the attached Damghan PDF instead of using an invented logo.
+  - Rebuilt `main.pdf`; current output is 40 pages and cover, chapter, table, code, and appendix pages were visually checked.
+- Human-language and official-sources pass on 2026-07-21:
+  - Rewrote report prose to be clearer, more natural, and closer to the API-sharing product atmosphere.
+  - Removed visible internal folder/file names such as frontend/backend package paths from the report body and bibliography.
+  - Replaced internal evidence-style bibliography entries with official documentation sources for Python, Django, Django REST Framework, React, TypeScript, Vite, Node.js, Docker Compose, MongoDB, OpenAPI, RapidAPI, and Playwright.
+  - Kept technical terms in English where Persian equivalents would be unclear, such as API, Endpoint, Serializer, Dashboard, Client, OpenAPI, and Docker Compose.
+  - Rebuilt `main.pdf`; current output is 38 pages and cover, chapter, table, content, reference, and appendix pages were visually checked.
+
+Unresolved warnings: MiKTeX reports that updates have not been checked. Some underfull boxes remain from narrow Persian table columns; they do not stop compilation. The final LaTeX log has no unresolved citations, missing references, font warnings, or overfull boxes.
