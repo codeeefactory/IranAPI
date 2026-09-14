@@ -2,7 +2,8 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Tag, Prompt } from "@/components/site/Terminal";
-import { Activity, Key, Server, TrendingUp, Copy, Check, Loader2, Save, RotateCw } from "lucide-react";
+import { Activity, AlignLeft, Building2, Check, Copy, Image, Key, Loader2, Mail, Phone, RotateCw, Save, Server, TrendingUp, UserRound, type LucideIcon } from "lucide-react";
+import { FormStatus, TextAreaField, TextField } from "@/components/ui/form-controls";
 import { useI18n } from "@/lib/i18n";
 import { useAccountDashboard, useRotateApiKey, useSession, useUpdateAccountProfile } from "@/hooks/useAuth";
 import { useUsageHistory } from "@/hooks/useUsage";
@@ -69,7 +70,6 @@ export default function DashboardPage() {
         ...submittedProfile,
         avatar: submittedProfile.avatar || null,
       });
-      setProfileDirty(false);
       setProfileMessage("profile updated");
     } catch (err) {
       setProfileError(err instanceof ApiClientError ? err.message : "Profile update failed.");
@@ -95,7 +95,7 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-lg">
           <TerminalWindow title="~/iranapi/session" glow>
             <div className="space-y-3 text-sm">
-              <Prompt>iran session status</Prompt>
+              <Prompt>iranapi session status</Prompt>
               <div className="text-muted-foreground">{"// not authenticated"}</div>
               <Link to="/signin" className="btn-primary justify-center">./signin</Link>
             </div>
@@ -125,25 +125,17 @@ export default function DashboardPage() {
       <div className="mb-6 grid gap-3 md:grid-cols-[1fr,1fr,220px]">
         <form onSubmit={submitProfile} className="terminal-border rounded-sm bg-card/50 p-4 md:col-span-2">
           <div className="grid gap-3 sm:grid-cols-2">
-            <ProfileField label="--email" name="email" value={profileForm.email} type="email" dir="ltr" onChange={(email) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, email })); }} />
-            <ProfileField label="--first-name" name="first_name" value={profileForm.first_name} onChange={(first_name) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, first_name })); }} />
-            <ProfileField label="--last-name" name="last_name" value={profileForm.last_name} onChange={(last_name) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, last_name })); }} />
-            <ProfileField label="--company" name="company" value={profileForm.company} onChange={(company) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, company })); }} />
-            <ProfileField label="--phone" name="phone" value={profileForm.phone} dir="ltr" onChange={(phone) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, phone })); }} />
-            <ProfileField label="--avatar-url" name="avatar" value={profileForm.avatar} type="url" dir="ltr" onChange={(avatar) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, avatar })); }} />
+            <ProfileField label="--email" name="email" value={profileForm.email} type="email" dir="ltr" icon={Mail} onChange={(email) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, email })); }} />
+            <ProfileField label="--first-name" name="first_name" value={profileForm.first_name} icon={UserRound} onChange={(first_name) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, first_name })); }} />
+            <ProfileField label="--last-name" name="last_name" value={profileForm.last_name} icon={UserRound} onChange={(last_name) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, last_name })); }} />
+            <ProfileField label="--company" name="company" value={profileForm.company} icon={Building2} onChange={(company) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, company })); }} />
+            <ProfileField label="--phone" name="phone" value={profileForm.phone} dir="ltr" icon={Phone} onChange={(phone) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, phone })); }} />
+            <ProfileField label="--avatar-url" name="avatar" value={profileForm.avatar} type="url" dir="ltr" icon={Image} onChange={(avatar) => { setProfileDirty(true); setProfileForm((v) => ({ ...v, avatar })); }} />
           </div>
-          <label className="mt-3 block text-xs text-muted-foreground">
-            --bio
-            <textarea
-              className="field mt-1 min-h-20 resize-y"
-              name="bio"
-              value={profileForm.bio}
-              onChange={(event) => {
-                setProfileDirty(true);
-                setProfileForm((v) => ({ ...v, bio: event.target.value }));
-              }}
-            />
-          </label>
+          <TextAreaField id="profile-bio" fieldClassName="mt-3" label="--bio" name="bio" value={profileForm.bio} icon={AlignLeft} className="min-h-20" onChange={(event) => {
+            setProfileDirty(true);
+            setProfileForm((v) => ({ ...v, bio: event.target.value }));
+          }} />
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               type="submit"
@@ -153,9 +145,9 @@ export default function DashboardPage() {
               {updateProfile.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
               ./save_profile
             </button>
-            {profileMessage ? <span className="text-xs text-primary" role="status">{"// "}{profileMessage}</span> : null}
-            {profileError ? <span className="text-xs text-destructive" role="alert">{"// "}{profileError}</span> : null}
           </div>
+          {profileMessage ? <FormStatus tone="success" className="mt-3">{profileMessage}</FormStatus> : null}
+          {profileError ? <FormStatus tone="error" className="mt-3">{profileError}</FormStatus> : null}
         </form>
         <div className="terminal-border rounded-sm bg-card/60 p-3">
           <div className="text-xs text-muted-foreground">{"// "}{t("dash.subscription")}</div>
@@ -167,16 +159,16 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { i: TrendingUp, l: t("dash.calls24h"), v: recentRequests.toLocaleString(), d: t("dash.requests") },
-          { i: Activity, l: t("dash.p95"), v: p95Latency ? `${p95Latency}ms` : "0ms", d: "recent" },
-          { i: Server, l: t("dash.edge"), v: String(activeApis), d: t("dash.apis") },
-          { i: Key, l: t("dash.keys"), v: String(accessCount), d: t("dash.access") },
+          { i: TrendingUp, l: t("dash.calls24h"), v: recentRequests.toLocaleString() },
+          { i: Activity, l: t("dash.p95"), v: p95Latency ? `${p95Latency}ms` : "0ms" },
+          { i: Server, l: t("dash.edge"), v: String(activeApis) },
+          { i: Key, l: t("dash.keys"), v: profile?.has_api_key ? "1" : "0" },
         ].map((s) => (
           <div key={s.l} className="terminal-border rounded-sm bg-card/60 p-4 sm:p-5">
             <s.i className="h-4 w-4 text-primary" aria-hidden />
             <div className="mt-2 text-xl sm:text-2xl font-black text-foreground" data-ltr>{s.v}</div>
             <div className="text-xs text-muted-foreground">
-              {"// "}{s.l} <span className="text-primary" data-ltr>{s.d}</span>
+              {"// "}{s.l}
             </div>
           </div>
         ))}
@@ -193,7 +185,7 @@ export default function DashboardPage() {
 
         <TerminalWindow title="~/iranapi/keys">
           <div className="space-y-2 text-sm">
-            <Prompt>iran keys list</Prompt>
+            <Prompt>iranapi keys list</Prompt>
             <div className="terminal-border rounded-sm bg-background/40 p-3 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-muted-foreground">// account key</span>
@@ -245,7 +237,7 @@ export default function DashboardPage() {
         <div className="mt-3 overflow-x-auto">
           <table className="table-elev" data-ltr>
             <thead>
-              <tr><th>time</th><th>status</th><th>endpoint</th><th className="text-end">latency</th></tr>
+              <tr><th>time</th><th>status</th><th>endpoint</th><th className="text-end">requests</th><th className="text-end">latency</th></tr>
             </thead>
             <tbody>
               {usageRows.length ? (
@@ -257,13 +249,14 @@ export default function DashboardPage() {
                       <td className="text-muted-foreground tabular-nums w-[80px]">{formatTime(item.last_used ?? item.created_at)}</td>
                       <td className="w-[64px]"><Tag color={status.startsWith("2") || status === "ok" ? "primary" : "magenta"}>{status}</Tag></td>
                       <td className="font-mono text-foreground/90 truncate">{endpoint}</td>
-                      <td className="text-end text-amber tabular-nums w-[80px]">{item.latency_ms ? `${item.latency_ms}ms` : `${item.requests_count} req`}</td>
+                      <td className="text-end text-muted-foreground tabular-nums w-[80px]">{item.requests_count}</td>
+                      <td className="text-end text-amber tabular-nums w-[80px]">{item.latency_ms ? `${item.latency_ms}ms` : "—"}</td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-5 text-center text-muted-foreground">// no usage events yet</td>
+                  <td colSpan={5} className="py-5 text-center text-muted-foreground">// no usage events yet</td>
                 </tr>
               )}
             </tbody>
@@ -281,6 +274,7 @@ function ProfileField({
   onChange,
   type = "text",
   dir,
+  icon,
 }: {
   label: string;
   name: string;
@@ -288,20 +282,9 @@ function ProfileField({
   onChange: (value: string) => void;
   type?: string;
   dir?: "ltr" | "rtl";
+  icon?: LucideIcon;
 }) {
-  return (
-    <label className="block text-xs text-muted-foreground">
-      {label}
-      <input
-        className="field mt-1"
-        name={name}
-        value={value}
-        type={type}
-        dir={dir}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  );
+  return <TextField label={label} name={name} value={value} type={type} dir={dir} icon={icon} onChange={(event) => onChange(event.target.value)} />;
 }
 
 type TagColor = "primary" | "amber" | "cyan" | "magenta" | "muted";
@@ -329,7 +312,7 @@ function KeyRow({ k, env, color, t }: { k: string; env: string; color: TagColor;
         <Tag color={color}>{env}</Tag>
       </div>
       <div className="flex items-center gap-2 text-muted-foreground">
-        <span>{t("dash.usedAgo", { t: "live" })}</span>
+        <span>{t("dash.access")}</span>
         <button
           type="button"
           onClick={() => void copyKey()}

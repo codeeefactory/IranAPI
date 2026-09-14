@@ -4,6 +4,8 @@ import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { TerminalWindow, Prompt, Tag } from "@/components/site/Terminal";
 import { useCreateOrganization, useOrganizations, useSession } from "@/hooks/useAuth";
 import { ApiClientError } from "@/lib/api-client";
+import { FormStatus, SelectField, TextField } from "@/components/ui/form-controls";
+import { Building2, Loader2, MapPin } from "lucide-react";
 
 export default function OrgCreate() {
   const { isAuthenticated } = useSession();
@@ -35,42 +37,25 @@ export default function OrgCreate() {
 
   return (
     <PageShell>
-      <SectionHeader kicker="iran org create" title="provision a new organization" subtitle="// orgs scope billing, keys, members and rbac." />
+      <SectionHeader kicker="iranapi org create" title="provision a new organization" subtitle="// orgs scope billing, keys, members and rbac." />
       <div className="mx-auto grid max-w-4xl gap-4 lg:grid-cols-[1fr,320px]">
         <TerminalWindow title="~/iranapi/orgs/create" glow>
           <form onSubmit={submit} className="space-y-3 text-sm">
-            <Prompt>iran org create</Prompt>
-            <label className="block" htmlFor="org-name">
-              <div className="text-xs text-muted-foreground mb-1">--name</div>
-              <input
-                id="org-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="acme-payments"
-                required
-                className="w-full rounded-sm border border-border bg-background/60 px-3 py-2 outline-none focus:border-primary"
-              />
-            </label>
-            <label className="block" htmlFor="org-region">
-              <div className="text-xs text-muted-foreground mb-1">--region</div>
-              <select
-                id="org-region"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                className="w-full rounded-sm border border-border bg-background/60 px-3 py-2 outline-none focus:border-primary text-primary"
-              >
+            <Prompt>iranapi org create</Prompt>
+            <TextField id="org-name" label="--name" value={name} onChange={(event) => setName(event.target.value)} placeholder="acme-payments" icon={Building2} required />
+            <SelectField id="org-region" label="--region" value={region} onChange={(event) => setRegion(event.target.value)} icon={MapPin}>
                 <option value="ir-tehran-1">ir-tehran-1</option>
                 <option value="ir-mashhad-1">ir-mashhad-1</option>
                 <option value="eu-frankfurt-1">eu-frankfurt-1</option>
-              </select>
-            </label>
-            {error ? <div className="text-xs text-destructive" role="alert">{"// "}{error}</div> : null}
-            {createdSlug ? <div className="text-xs text-primary text-glow" role="status">{"// provisioned "}{createdSlug}</div> : null}
+            </SelectField>
+            {error ? <FormStatus tone="error">{error}</FormStatus> : null}
+            {createdSlug ? <FormStatus tone="success">provisioned {createdSlug}</FormStatus> : null}
             <button
               type="submit"
               disabled={createOrganization.isPending}
-              className="w-full rounded-sm border border-primary bg-primary px-4 py-2 font-bold text-primary-foreground hover:shadow-glow disabled:opacity-60"
+              className="btn-primary w-full justify-center disabled:opacity-60"
             >
+              {createOrganization.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Building2 className="h-3.5 w-3.5" aria-hidden />}
               {createOrganization.isPending ? "./provision --wait" : "./provision"}
             </button>
             {!isAuthenticated ? (
@@ -84,7 +69,7 @@ export default function OrgCreate() {
         </TerminalWindow>
         <TerminalWindow title="~/iranapi/orgs/list">
           <div className="space-y-3 text-sm">
-            <Prompt>iran org list --mine</Prompt>
+            <Prompt>iranapi org list --mine</Prompt>
             {organizations.isLoading && isAuthenticated ? <div className="text-xs text-muted-foreground">// loading orgs...</div> : null}
             {!isAuthenticated ? <div className="text-xs text-muted-foreground">// authenticate to list orgs</div> : null}
             {isAuthenticated && !organizations.data?.results.length && !organizations.isLoading ? (

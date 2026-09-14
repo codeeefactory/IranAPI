@@ -1,0 +1,18 @@
+@startuml
+!include style.puml
+actor Visitor
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-02\nInspect API details" as Main
+  usecase "Read plans and endpoints" as Contract
+  usecase "Read documentation" as Docs
+  usecase "Discover similar APIs" as Similar
+  usecase "Record catalog view" as View
+}
+Visitor --> Main
+Developer --> Main
+Main ..> Contract : <<include>>
+Main ..> Docs : <<include>>
+Main ..> Similar : <<include>>
+Main ..> View : <<include>>
+@enduml

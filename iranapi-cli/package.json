@@ -1,0 +1,44 @@
+{
+  "name": "iranapi-cli",
+  "version": "1.0.0",
+  "description": "Production command-line client for IranAPI catalog, authentication, caller, and project deployment",
+  "type": "module",
+  "bin": {
+    "iranapi": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.js",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [
+    "iranapi",
+    "api",
+    "cli"
+  ],
+  "author": "IranAPI",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iranapi/iranapi.git",
+    "directory": "iranapi-cli"
+  },
+  "dependencies": {
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}

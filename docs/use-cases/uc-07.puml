@@ -1,0 +1,17 @@
+@startuml
+!include style.puml
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-07\nRate API" as Main
+  usecase "Validate rating" as Validate
+  usecase "Create or update own rating" as Upsert
+  usecase "Recalculate aggregate" as Aggregate
+}
+Developer --> Main
+Main ..> Validate : <<include>>
+Main ..> Upsert : <<include>>
+Main ..> Aggregate : <<include>>
+note bottom of Upsert
+One current rating per user and API.
+end note
+@enduml

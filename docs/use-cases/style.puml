@@ -1,0 +1,18 @@
+skinparam dpi 180
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 17
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam ArrowColor #475569
+skinparam ActorBorderColor #0F3A4A
+skinparam ActorFontColor #0F3A4A
+skinparam UsecaseBackgroundColor #F0FDFA
+skinparam UsecaseBorderColor #0F766E
+skinparam UsecaseFontColor #102A43
+skinparam RectangleBorderColor #94A3B8
+skinparam RectangleFontColor #0F3A4A
+skinparam NoteBackgroundColor #FFFBEB
+skinparam NoteBorderColor #D97706
+left to right direction

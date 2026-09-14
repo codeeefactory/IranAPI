@@ -12,3 +12,9 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /api/v1/account/
+Disallow: /api/v1/auth/
+Disallow: /api/account/
+Disallow: /api/auth/
+Sitemap: /sitemap.xml

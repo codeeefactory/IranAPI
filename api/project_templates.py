@@ -5,7 +5,9 @@ from typing import Any
 
 SUPPORTED_PROJECT_LANGUAGES = [
     {"slug": "python", "label": "Python / FastAPI", "runtime": "python"},
-    {"slug": "node", "label": "Node.js / Express", "runtime": "node"},
+    {"slug": "javascript", "label": "JavaScript / Express", "runtime": "node"},
+    {"slug": "typescript", "label": "TypeScript / Express", "runtime": "node"},
+    {"slug": "cpp", "label": "C++ / Crow", "runtime": "cpp"},
     {"slug": "go", "label": "Go / net/http", "runtime": "go"},
     {"slug": "rust", "label": "Rust / Axum", "runtime": "rust"},
     {"slug": "java", "label": "Java / Spring Boot", "runtime": "java"},
@@ -21,14 +23,17 @@ SUPPORTED_LANGUAGE_SLUGS = {language["slug"] for language in SUPPORTED_PROJECT_L
 def normalize_language(value: str) -> str:
     slug = (value or "custom").strip().lower().replace("#", "sharp").replace(".", "")
     aliases = {
-        "js": "node",
-        "javascript": "node",
-        "typescript": "node",
+        "js": "javascript",
+        "node": "javascript",
+        "nodejs": "javascript",
+        "ts": "typescript",
         "py": "python",
         "golang": "go",
         "c#": "csharp",
         "dotnet": "csharp",
         "net": "csharp",
+        "c++": "cpp",
+        "cplusplus": "cpp",
     }
     return aliases.get(slug, slug)
 
@@ -50,7 +55,9 @@ def build_project_files(payload: dict[str, Any]) -> list[dict[str, str]]:
 
     builders = {
         "python": _python_files,
-        "node": _node_files,
+        "javascript": _node_files,
+        "typescript": _typescript_files,
+        "cpp": _cpp_files,
         "go": _go_files,
         "rust": _rust_files,
         "java": _java_files,
@@ -153,6 +160,67 @@ app.listen(process.env.PORT || 3000);
     ]
 
 
+def _typescript_files(package_name: str, _api_slug: str, base_url: str, auth_header: str) -> list[dict[str, str]]:
+    return [
+        project_file(
+            "package.json",
+            f'{{"name":"{package_name}","type":"module","scripts":{{"dev":"tsx src/server.ts","build":"tsc","start":"node dist/server.js"}},"dependencies":{{"dotenv":"^16.4.7","express":"^4.21.2"}},"devDependencies":{{"@types/express":"^5.0.0","tsx":"^4.19.2","typescript":"^5.8.3"}}}}',
+        ),
+        project_file("tsconfig.json", '{"compilerOptions":{"target":"ES2022","module":"NodeNext","moduleResolution":"NodeNext","outDir":"dist","strict":true},"include":["src/**/*.ts"]}'),
+        project_file(
+            "src/server.ts",
+            f'''
+import "dotenv/config";
+import express from "express";
+
+const app = express();
+const baseUrl = process.env.IRANAPI_BASE_URL || "{base_url}";
+const apiKey = process.env.IRANAPI_API_KEY || "";
+const authHeader = process.env.IRANAPI_AUTH_HEADER || "{auth_header}";
+
+app.get("/health", (_request, response) => response.json({{ ok: true, service: "{package_name}" }}));
+app.get("/proxy/ping", async (_request, response) => {{
+  const headers = apiKey ? {{ [authHeader]: apiKey }} : {{}};
+  const upstream = await fetch(`${{baseUrl}}/ping`, {{ headers }});
+  response.status(upstream.status).send(await upstream.text());
+}});
+
+app.listen(Number(process.env.PORT || 3000));
+''',
+        ),
+    ]
+
+
+def _cpp_files(package_name: str, _api_slug: str, base_url: str, auth_header: str) -> list[dict[str, str]]:
+    return [
+        project_file(
+            "CMakeLists.txt",
+            f'''cmake_minimum_required(VERSION 3.20)
+project({package_name} LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+find_package(Crow CONFIG REQUIRED)
+add_executable(server src/main.cpp)
+target_link_libraries(server PRIVATE Crow::Crow)
+''',
+        ),
+        project_file(
+            "src/main.cpp",
+            f'''
+#include <crow.h>
+
+int main() {{
+    crow::SimpleApp app;
+    CROW_ROUTE(app, "/health")([] {{
+        return crow::json::wvalue{{{{"ok", true}}, {{"service", "{package_name}"}}}};
+    }});
+    // Upstream: {base_url}; auth header: {auth_header}
+    app.port(8080).multithreaded().run();
+}}
+''',
+        ),
+    ]
+
+
 def _go_files(package_name: str, _api_slug: str, base_url: str, auth_header: str) -> list[dict[str, str]]:
     return [
         project_file("go.mod", f"module {package_name}\n\ngo 1.22"),
@@ -221,8 +289,38 @@ async fn main() {{
 
 
 def _java_files(package_name: str, _api_slug: str, base_url: str, auth_header: str) -> list[dict[str, str]]:
+    class_name = "IranApiApplication"
     return [
-        project_file("pom.xml", f"<project><modelVersion>4.0.0</modelVersion><groupId>dev.iranapi</groupId><artifactId>{package_name}</artifactId><version>0.1.0</version></project>"),
+        project_file(
+            "pom.xml",
+            f'''<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.4.1</version></parent>
+  <groupId>dev.iranapi</groupId><artifactId>{package_name}</artifactId><version>0.1.0</version>
+  <properties><java.version>21</java.version></properties>
+  <dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies>
+  <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
+</project>''',
+        ),
+        project_file(
+            f"src/main/java/dev/iranapi/{class_name}.java",
+            f'''package dev.iranapi;
+
+import java.util.Map;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@SpringBootApplication
+@RestController
+public class {class_name} {{
+  public static void main(String[] args) {{ SpringApplication.run({class_name}.class, args); }}
+  @GetMapping("/health")
+  public Map<String, Object> health() {{ return Map.of("ok", true, "service", "{package_name}"); }}
+}}
+''',
+        ),
         project_file("src/main/resources/application.properties", f"iranapi.base-url={base_url}\niranapi.auth-header={auth_header}"),
     ]
 
@@ -230,7 +328,7 @@ def _java_files(package_name: str, _api_slug: str, base_url: str, auth_header: s
 def _csharp_files(package_name: str, _api_slug: str, base_url: str, auth_header: str) -> list[dict[str, str]]:
     return [
         project_file(f"{package_name}.csproj", '<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>'),
-        project_file("Program.cs", f'var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.MapGet("/health", () => Results.Ok(new {{ ok = true, service = "{package_name}" }}));\napp.Run();\n// IRANAPI_BASE_URL={base_url}\n// IRANAPI_AUTH_HEADER={auth_header}'),
+        project_file("Program.cs", f'var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.MapGet("/health", () => Results.Ok(new {{ ok = true, service = "{package_name}" }}));\napp.Run($"http://0.0.0.0:{{Environment.GetEnvironmentVariable("PORT") ?? "8080"}}");\n// IRANAPI_BASE_URL={base_url}\n// IRANAPI_AUTH_HEADER={auth_header}'),
     ]
 
 
@@ -275,7 +373,11 @@ GET {base_url}/ping
 def _dockerfile(language: str, package_name: str) -> dict[str, str]:
     dockerfiles = {
         "python": "FROM python:3.12-slim\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install -r requirements.txt\nCOPY . .\nCMD [\"uvicorn\", \"main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]",
-        "node": "FROM node:22-slim\nWORKDIR /app\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nCMD [\"npm\", \"run\", \"dev\"]",
+        "javascript": "FROM node:22-slim\nWORKDIR /app\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nCMD [\"npm\", \"run\", \"dev\"]",
+        "typescript": "FROM node:22-slim\nWORKDIR /app\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nRUN npm run build\nCMD [\"npm\", \"start\"]",
+        "cpp": "FROM gcc:14 AS build\nRUN apt-get update && apt-get install -y --no-install-recommends cmake git libasio-dev && git clone --depth 1 https://github.com/CrowCpp/Crow.git /tmp/crow && cmake -S /tmp/crow -B /tmp/crow/build -DCROW_BUILD_EXAMPLES=OFF -DCROW_BUILD_TESTS=OFF && cmake --install /tmp/crow/build\nWORKDIR /src\nCOPY . .\nRUN cmake -S . -B build && cmake --build build\nFROM debian:bookworm-slim\nCOPY --from=build /src/build/server /server\nCMD [\"/server\"]",
+        "java": "FROM maven:3.9-eclipse-temurin-21 AS build\nWORKDIR /app\nCOPY pom.xml .\nCOPY src src\nRUN mvn -q -DskipTests package\nFROM eclipse-temurin:21-jre\nCOPY --from=build /app/target/*.jar /app.jar\nCMD [\"java\", \"-jar\", \"/app.jar\"]",
+        "csharp": "FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build\nWORKDIR /src\nCOPY . .\nRUN dotnet publish -c Release -o /out\nFROM mcr.microsoft.com/dotnet/aspnet:8.0\nCOPY --from=build /out /app\nWORKDIR /app\nCMD [\"dotnet\", \"%s.dll\"]" % package_name,
         "go": "FROM golang:1.22\nWORKDIR /app\nCOPY . .\nRUN go build -o server .\nCMD [\"./server\"]",
         "rust": "FROM rust:1.82\nWORKDIR /app\nCOPY . .\nRUN cargo build --release\nCMD [\"./target/release/%s\"]" % package_name,
     }

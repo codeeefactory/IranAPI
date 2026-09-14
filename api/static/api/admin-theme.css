@@ -1,17 +1,3 @@
-@font-face {
-  font-family: "Vazirmatn";
-  src: url("https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "JetBrains Mono";
-  src: url("https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/JetBrainsMono-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-
 :root {
   --iranapi-bg: #0b1418;
   --iranapi-panel: #101e24;
@@ -19,19 +5,80 @@
   --iranapi-green: #6ef28b;
   --iranapi-cyan: #65d8ff;
   --iranapi-amber: #f4c766;
-  --iranapi-text: #e8ffef;
-  --iranapi-muted: #9fc9c4;
+  --iranapi-text: #f4fff7;
+  --iranapi-muted: #b9d8d4;
   --iranapi-border: rgba(110, 242, 139, 0.24);
+}
+
+html {
+  font-size: 17px;
 }
 
 html[dir="rtl"] body,
 body {
-  font-family: "Vazirmatn", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  background:
-    radial-gradient(circle at 18% 8%, rgba(110, 242, 139, 0.12), transparent 34rem),
-    radial-gradient(circle at 88% 85%, rgba(101, 216, 255, 0.1), transparent 32rem),
-    var(--iranapi-bg);
+  font-family: "Segoe UI Variable Text", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--iranapi-bg);
   color: var(--iranapi-text);
+}
+
+/* Jazzmin's off-screen live region creates a 10,000px RTL overflow. Keep it
+   accessible while removing it from document geometry. */
+.live-region {
+  position: fixed !important;
+  inset: 0 auto auto 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+.login-box,
+.register-box {
+  width: min(420px, calc(100vw - 2rem)) !important;
+}
+
+.login-logo,
+.register-logo {
+  font-size: 2.15rem !important;
+}
+
+.login-card-body,
+.register-card-body,
+.nav-sidebar .nav-link,
+.dropdown-item,
+.breadcrumb,
+.table,
+.form-control,
+.btn,
+.select2-container {
+  font-size: 1rem !important;
+  line-height: 1.55;
+}
+
+.login-card-body .input-group .form-control,
+.register-card-body .input-group .form-control,
+.login-card-body .btn,
+.register-card-body .btn {
+  min-height: 2.75rem;
+}
+
+.content-header h1 {
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .main-header,
@@ -175,5 +222,252 @@ pre,
 .field-documentation_url {
   direction: ltr;
   unicode-bidi: isolate;
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.live-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.live-collection-card {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 8rem;
+  padding: 1.25rem;
+  border: 1px solid var(--iranapi-border);
+  border-radius: 0.65rem;
+  background: var(--iranapi-panel-2);
+  color: var(--iranapi-text) !important;
+}
+
+.live-collection-card:hover {
+  border-color: var(--iranapi-green);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.live-collection-card strong {
+  color: var(--iranapi-green);
+  font-size: 2rem;
+}
+
+.live-collection-title {
+  color: var(--iranapi-cyan);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.live-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.live-document-form {
+  overflow: clip;
+  border: 1px solid var(--iranapi-border);
+  border-radius: 6px;
+  background: var(--iranapi-panel);
+  box-shadow: 0 18px 48px -36px rgba(0, 0, 0, 0.9);
+}
+
+.live-form-grid .form-row {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 1.1rem 1.25rem !important;
+  border-bottom: 1px solid var(--iranapi-border);
+  transition: background-color 150ms ease;
+}
+
+.live-form-grid .form-row:nth-child(odd) {
+  border-inline-end: 1px solid var(--iranapi-border);
+}
+
+.live-form-grid .form-row:hover,
+.live-form-grid .form-row:focus-within {
+  background: rgba(101, 216, 255, 0.035);
+}
+
+.live-form-grid .form-row:has(textarea),
+.live-form-grid .field-description,
+.live-form-grid .field-content,
+.live-form-grid .field-short_description,
+.live-form-grid .field-features,
+.live-form-grid .field-tags,
+.live-form-grid .field-nodes,
+.live-form-grid .field-files {
+  grid-column: 1 / -1;
+}
+
+.live-field-control {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.live-field-label,
+.live-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.live-field-control label {
+  margin: 0;
+  color: var(--iranapi-cyan);
+  font-weight: 700;
+}
+
+.live-required {
+  color: var(--iranapi-amber);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.live-field-control input:not([type="checkbox"]),
+.live-field-control select,
+.live-field-control textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-height: 3rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--iranapi-border) !important;
+  border-radius: 4px !important;
+  background: #091418 !important;
+  color: var(--iranapi-text) !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.live-field-control input:not([type="checkbox"]):hover,
+.live-field-control select:hover,
+.live-field-control textarea:hover {
+  border-color: rgba(101, 216, 255, 0.55) !important;
+}
+
+.live-field-control input:not([type="checkbox"]):focus,
+.live-field-control select:focus,
+.live-field-control textarea:focus {
+  outline: none;
+  border-color: var(--iranapi-green) !important;
+  background: #071115 !important;
+  box-shadow: 0 0 0 3px rgba(110, 242, 139, 0.14) !important;
+}
+
+.live-field-control textarea {
+  min-height: 7rem;
+  padding: 0.8rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.live-field-control textarea.json-field {
+  min-height: 12rem;
+  direction: ltr;
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  font-size: 0.9rem;
+  background: #071115;
+  color: var(--iranapi-text);
+}
+
+.live-field-control input[type="url"],
+.live-form-grid .field-slug input,
+.live-form-grid .field-path input,
+.live-form-grid .field-api_key input {
+  direction: ltr;
+  text-align: left;
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+}
+
+.live-field-control .help {
+  margin: 0;
+  color: var(--iranapi-muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.live-field-control .errorlist {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(255, 107, 129, 0.45);
+  border-radius: 4px;
+  background: rgba(255, 107, 129, 0.08);
+  color: #ff9aad;
+  list-style: none;
+}
+
+.live-form-grid .checkbox-row {
+  align-content: center;
+}
+
+.live-form-grid .checkbox-row .live-field-control {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3rem;
+}
+
+.live-form-grid .checkbox-row input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  accent-color: var(--iranapi-green);
+}
+
+.live-submit-row {
+  position: sticky;
+  z-index: 10;
+  bottom: 0;
+  display: flex !important;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 !important;
+  padding: 0.9rem 1.15rem !important;
+  border: 0 !important;
+  border-top: 1px solid var(--iranapi-border) !important;
+  border-radius: 0 !important;
+  background: rgba(10, 24, 29, 0.96) !important;
+  backdrop-filter: blur(12px);
+}
+
+.live-submit-row input,
+.live-submit-row a {
+  min-height: 2.7rem;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+  padding: 0.55rem 1rem !important;
+  border-radius: 4px !important;
+  font-weight: 700;
+}
+
+@media (max-width: 820px) {
+  body.sidebar-collapse .app-sidebar {
+    visibility: hidden;
+    transform: translateX(100%) !important;
+    pointer-events: none;
+  }
+
+  body.sidebar-collapse .sidebar-overlay {
+    display: none !important;
+  }
+
+  .live-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .live-form-grid .form-row {
+    grid-column: 1;
+    border-inline-end: 0;
+  }
+
+  .live-submit-row { flex-wrap: wrap; }
+  .live-submit-row input,
+  .live-submit-row a { flex: 1 1 auto; }
 }

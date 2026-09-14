@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">خانه</a> &rsaquo;
+  <a href="{{ index_url }}">کنسول داده زنده</a> &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="iranapi-live-admin">
+  {% if not read_only %}
+    <ul class="object-tools"><li><a href="{{ add_url }}" class="addlink">افزودن سند</a></li></ul>
+  {% endif %}
+  <div class="module">
+    <table>
+      <thead><tr><th>شناسه</th><th>عنوان</th><th>وضعیت</th><th>آخرین تغییر</th><th>عملیات</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.id }}</td>
+          <th><a href="{{ row.change_url }}">{{ row.title }}</a></th>
+          <td>{{ row.status|default:"—" }}</td>
+          <td>{{ row.updated_at|default:"—" }}</td>
+          <td>
+            <a href="{{ row.change_url }}">{% if read_only %}مشاهده{% else %}ویرایش{% endif %}</a>
+            {% if not read_only %} · <a class="deletelink" href="{{ row.delete_url }}">حذف</a>{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">هنوز سندی در این مجموعه نیست.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

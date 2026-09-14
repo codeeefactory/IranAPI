@@ -1,0 +1,16 @@
+@startuml
+!include style.puml
+actor Visitor
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-01\nDiscover APIs" as Main
+  usecase "Search and filter" as Search
+  usecase "Sort and paginate" as Sort
+  usecase "Open API details" as Detail
+}
+Visitor --> Main
+Developer --> Main
+Main ..> Search : <<include>>
+Main ..> Sort : <<include>>
+Detail ..> Main : <<extend>>
+@enduml

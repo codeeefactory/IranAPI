@@ -1,201 +1,331 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { PageShell, SectionHeader } from "@/components/site/Layout";
-import { TerminalWindow, Tag, Prompt, CodeBlock } from "@/components/site/Terminal";
-import { useCatalogApis } from "@/hooks/useCatalog";
-import { Play, Loader2 } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { useState } from "react";
+import {
+  Braces,
+  Check,
+  Clock3,
+  Copy,
+  FileJson2,
+  Globe2,
+  History,
+  Info,
+  Loader2,
+  Play,
+  RotateCcw,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
+import { PageShell } from "@/components/site/Layout";
 import { useSession } from "@/hooks/useAuth";
 import { useCallerExecute, useUsageHistory } from "@/hooks/useUsage";
+import { useI18n } from "@/lib/i18n";
+
+const EXAMPLES = [
+  { label: "GET JSON", method: "GET", url: "https://httpbin.org/get", body: "" },
+  {
+    label: "POST JSON",
+    method: "POST",
+    url: "https://httpbin.org/anything",
+    body: '{\n  "message": "hello from IranAPI"\n}',
+  },
+  { label: "404 response", method: "GET", url: "https://httpbin.org/status/404", body: "" },
+] as const;
+
+type RequestTab = "headers" | "body";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
 
 export default function CallerPage() {
   const { t } = useI18n();
-  const { isAuthenticated, isLoading: sessionLoading } = useSession();
-  const { apis } = useCatalogApis({ page_size: 6 });
-  const firstApi = apis[0];
-  const [apiSlug, setApiSlug] = useState(firstApi?.slug ?? "");
-  const [method, setMethod] = useState("POST");
-  const [url, setUrl] = useState("https://api.iranapi.dev/v1/payments-hub/ping");
-  const [body, setBody] = useState('{\n  "amount": 50000,\n  "callback": "https://app/ok"\n}');
-  const [resp, setResp] = useState<string | null>(null);
+  const { isAuthenticated } = useSession();
+  const [method, setMethod] = useState("GET");
+  const [url, setUrl] = useState("https://httpbin.org/get");
+  const [headers, setHeaders] = useState("{}");
+  const [body, setBody] = useState("");
+  const [activeRequestTab, setActiveRequestTab] = useState<RequestTab>("headers");
+  const [responseBody, setResponseBody] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const caller = useCallerExecute();
   const usage = useUsageHistory({ source: "caller", page_size: 5 }, isAuthenticated);
-  const selectedApi = useMemo(() => apis.find((api) => api.slug === apiSlug) ?? firstApi, [apiSlug, apis, firstApi]);
-  const loading = caller.isPending;
 
-  useEffect(() => {
-    if (!apiSlug && firstApi?.slug) setApiSlug(firstApi.slug);
-  }, [apiSlug, firstApi?.slug]);
+  function loadExample(example: (typeof EXAMPLES)[number]) {
+    setMethod(example.method);
+    setUrl(example.url);
+    setHeaders("{}");
+    setBody(example.body);
+    setActiveRequestTab(example.body ? "body" : "headers");
+    setResponseBody(null);
+    setError(null);
+    setCopied(false);
+    caller.reset();
+  }
+
+  async function copyResponse() {
+    if (responseBody === null) return;
+    try {
+      await navigator.clipboard.writeText(responseBody);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   async function send() {
-    if (!isAuthenticated) {
-      setError("Sign in required for caller execution.");
+    if (!url.trim()) {
+      setError("Enter a public HTTP(S) API URL.");
       return;
     }
-    if (!selectedApi?.slug) {
-      setError("Select an API target first.");
-      return;
-    }
-    setResp(null);
+
+    setResponseBody(null);
     setError(null);
+    setCopied(false);
     let parsedBody: unknown = undefined;
+    let parsedHeaders: Record<string, unknown> = {};
+
+    try {
+      const value: unknown = JSON.parse(headers || "{}");
+      if (!isRecord(value)) throw new Error();
+      parsedHeaders = value;
+    } catch {
+      setActiveRequestTab("headers");
+      setError("Request headers must be a valid JSON object.");
+      return;
+    }
+
     if (body.trim()) {
       try {
         parsedBody = JSON.parse(body);
       } catch {
+        setActiveRequestTab("body");
         setError("Request body must be valid JSON.");
         return;
       }
     }
+
     try {
-      let path = "/";
-      try {
-        path = new URL(url, "https://api.iranapi.dev").pathname.replace(/^\/v\d+\/[^/]+/, "") || "/";
-      } catch {
-        setError("Request URL must be a valid URL or path.");
-        return;
-      }
       const result = await caller.mutateAsync({
-        api_slug: selectedApi.slug,
+        url: url.trim(),
         method,
-        path,
+        headers: parsedHeaders,
         body: parsedBody,
       });
-      setResp(JSON.stringify(result.body, null, 2));
+      const formatted = typeof result.body === "string"
+        ? result.body
+        : JSON.stringify(result.body, null, 2);
+      setResponseBody(formatted || "(empty response body)");
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : "Caller request failed.");
     }
   }
 
+  const statusCode = caller.data?.status_code;
+  const statusTone = statusCode && statusCode >= 400 ? "error" : "success";
+
   return (
     <PageShell>
-      <SectionHeader kicker={t("caller.kicker")} title={t("caller.title")} subtitle={"// " + t("caller.sub")} />
-
-      <div className="grid gap-6 lg:grid-cols-[1fr,280px]">
-        <div className="space-y-4 min-w-0">
-          <TerminalWindow title="~/iranapi/caller">
-            <form
-              onSubmit={(e) => { e.preventDefault(); send(); }}
-              className="space-y-3"
-            >
-              <div data-terminal className="flex flex-wrap items-center gap-2 text-sm">
-                <label className="sr-only" htmlFor="method">method</label>
-                <select
-                  id="method"
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value)}
-                  className="field !w-auto !py-1.5 !px-2 text-primary"
-                >
-                  {["GET", "POST", "PUT", "DELETE"].map((m) => <option key={m}>{m}</option>)}
-                </select>
-                <label className="sr-only" htmlFor="url">url</label>
-                <input
-                  id="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  spellCheck={false}
-                  autoComplete="off"
-                  className="field flex-1 min-w-[200px] !py-1.5 font-mono"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || sessionLoading}
-                  className="btn-primary !py-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                  {loading ? t("caller.running") : t("caller.execute")}
-                </button>
-              </div>
-              <div>
-                <label htmlFor="body" className="block text-xs text-muted-foreground mb-1">{"// "}{t("caller.body")}</label>
-                <textarea
-                  id="body"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  rows={6}
-                  dir="ltr"
-                  spellCheck={false}
-                  className="field !p-3 text-xs text-amber font-mono resize-y"
-                />
-              </div>
-            </form>
-          </TerminalWindow>
-
-          <TerminalWindow title="~/response">
-            {loading ? (
-              <div className="state-block" data-tone="loading">
-                <div className="spinner" aria-hidden />
-                <div className="state-sub">{t("caller.running")}</div>
-              </div>
-            ) : error ? (
-              <div className="state-block" data-tone="error">
-                <div className="state-title text-destructive">{"// "}{t("caller.error")}</div>
-                <div className="state-sub">{error}</div>
-              </div>
-            ) : resp ? (
-              <div className="space-y-2 text-sm">
-                <Prompt>{t("caller.response")}</Prompt>
-                <div className="text-xs flex flex-wrap items-center gap-2" data-ltr>
-                  <Tag color="primary">{caller.data?.status_code ?? 200}</Tag>
-                  <span className="text-muted-foreground">
-                    {caller.data?.latency_ms ?? 0}ms // {caller.data?.region ?? "ir-tehran-1"}
-                  </span>
-                </div>
-                <CodeBlock className="mt-2">{resp}</CodeBlock>
-              </div>
-            ) : (
-              <div className="state-block">
-                <div className="state-title">{"// "}{t("caller.waiting")}</div>
-                <div className="state-sub">
-                  {isAuthenticated ? "press ./execute to fire a request" : "signin required to execute"}
-                </div>
-              </div>
-            )}
-          </TerminalWindow>
-
-          {!isAuthenticated && !sessionLoading ? (
-            <Link to="/signin" className="btn-primary justify-center">./signin</Link>
-          ) : null}
+      <section className="caller-hero" aria-labelledby="caller-title">
+        <div>
+          <div className="caller-eyebrow"><Globe2 aria-hidden /> {t("caller.kicker")}</div>
+          <h1 id="caller-title">{t("caller.title")}</h1>
+          <p>{t("caller.sub")}</p>
         </div>
+        <div className="caller-hero-badges" aria-label="Caller capabilities">
+          <span><ShieldCheck aria-hidden /> private networks blocked</span>
+          <span><Zap aria-hidden /> no sign-in required</span>
+        </div>
+      </section>
 
-        <aside className="space-y-3">
-          <div className="terminal-border rounded-sm bg-card/50 p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">{"// "}{t("caller.targets")}</div>
-            <ul className="mt-3 space-y-1 text-sm">
-              {apis.slice(0, 6).map((a) => (
-                <li key={a.slug}>
+      <div className="caller-page-grid">
+        <div className="caller-workbench">
+          <header className="caller-workbench-header">
+            <div className="caller-window-controls" aria-hidden="true">
+              <span /><span /><span />
+            </div>
+            <div className="caller-workbench-title">
+              <span className="caller-live-dot" aria-hidden />
+              New request
+            </div>
+            <span className="caller-proxy-label">via secure proxy</span>
+          </header>
+
+          <form onSubmit={(event) => { event.preventDefault(); void send(); }} className="caller-composer">
+            <div className="caller-request-bar" data-method={method} data-ltr>
+              <label className="sr-only" htmlFor="method">method</label>
+              <select id="method" value={method} onChange={(event) => setMethod(event.target.value)} className="caller-method-select">
+                {["GET", "POST", "PUT", "PATCH", "DELETE"].map((item) => <option key={item}>{item}</option>)}
+              </select>
+              <span className="caller-url-icon" aria-hidden><Globe2 /></span>
+              <label className="sr-only" htmlFor="url">url</label>
+              <input
+                id="url"
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
+                type="url"
+                placeholder="https://api.example.com/v1/resource"
+                spellCheck={false}
+                autoComplete="off"
+                className="caller-url-input"
+              />
+              <button type="submit" disabled={caller.isPending || !url.trim()} className="caller-send-button">
+                {caller.isPending ? <Loader2 className="animate-spin" aria-hidden /> : <Play aria-hidden />}
+                <span>{caller.isPending ? t("caller.running") : t("caller.execute")}</span>
+              </button>
+            </div>
+
+            <div className="caller-examples" aria-label="Request examples">
+              <span>Quick start</span>
+              {EXAMPLES.map((example) => (
+                <button key={example.label} type="button" onClick={() => loadExample(example)}>
+                  <RotateCcw aria-hidden />
+                  {example.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="caller-panels">
+              <section className="caller-request-panel" aria-label="Request configuration">
+                <div className="caller-panel-tabs" role="tablist" aria-label="Request configuration">
                   <button
                     type="button"
-                    onClick={() => {
-                      setApiSlug(a.slug);
-                      setUrl(`https://api.iranapi.dev/v1/${a.slug}/ping`);
-                    }}
-                    className="block w-full text-start rounded-sm px-2 py-1 text-foreground/80 hover:bg-primary/10 hover:text-primary transition-colors"
-                    data-active={a.slug === selectedApi?.slug || undefined}
+                    role="tab"
+                    aria-selected={activeRequestTab === "headers"}
+                    onClick={() => setActiveRequestTab("headers")}
                   >
-                    {a.name}
+                    <Braces aria-hidden /> Headers <span>{headers.trim() === "{}" ? "0" : "•"}</span>
                   </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="terminal-border rounded-sm bg-card/50 p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">{"// usage.history"}</div>
-            <div className="mt-3 space-y-2 text-xs" data-ltr>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeRequestTab === "body"}
+                    onClick={() => setActiveRequestTab("body")}
+                  >
+                    <FileJson2 aria-hidden /> Body <span>{body.trim() ? "•" : "0"}</span>
+                  </button>
+                </div>
+
+                <div className="caller-editor-toolbar">
+                  <span>{activeRequestTab === "headers" ? "headers.json" : "body.json"}</span>
+                  <span>JSON</span>
+                </div>
+                {activeRequestTab === "headers" ? (
+                  <textarea
+                    id="headers"
+                    aria-label="headers"
+                    value={headers}
+                    onChange={(event) => setHeaders(event.target.value)}
+                    rows={13}
+                    dir="ltr"
+                    spellCheck={false}
+                    className="caller-code-editor"
+                  />
+                ) : (
+                  <textarea
+                    id="body"
+                    aria-label="body"
+                    value={body}
+                    onChange={(event) => setBody(event.target.value)}
+                    rows={13}
+                    dir="ltr"
+                    spellCheck={false}
+                    placeholder={'{\n  "message": "Hello, API"\n}'}
+                    className="caller-code-editor caller-code-editor-body"
+                  />
+                )}
+              </section>
+
+              <section className="caller-response-panel" aria-live="polite">
+                <div className="caller-response-header">
+                  <div>
+                    <span className="caller-response-label">Response</span>
+                    {responseBody !== null && statusCode ? (
+                      <span className="caller-status-code" data-tone={statusTone}>[{statusCode}]</span>
+                    ) : null}
+                  </div>
+                  <div className="caller-response-actions" data-ltr>
+                    {responseBody !== null ? (
+                      <>
+                        <span><Clock3 aria-hidden /> {caller.data?.latency_ms ?? 0}ms</span>
+                        <button type="button" onClick={() => void copyResponse()} aria-label="Copy response">
+                          {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
+                          {copied ? "Copied" : "Copy"}
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="caller-response-body">
+                  {caller.isPending ? (
+                    <div className="caller-empty-state" data-tone="loading">
+                      <Loader2 className="animate-spin" aria-hidden />
+                      <strong>{t("caller.running")}</strong>
+                      <span>Waiting for upstream response</span>
+                    </div>
+                  ) : error ? (
+                    <div className="caller-empty-state" data-tone="error">
+                      <Info aria-hidden />
+                      <strong>{t("caller.error")}</strong>
+                      <span role="alert">{error}</span>
+                    </div>
+                  ) : responseBody !== null ? (
+                    <pre dir="ltr"><code>{responseBody}</code></pre>
+                  ) : (
+                    <div className="caller-empty-state">
+                      <Play aria-hidden />
+                      <strong>{t("caller.waiting")}</strong>
+                      <span>Send a request to inspect response data here.</span>
+                    </div>
+                  )}
+                </div>
+
+                <footer className="caller-response-footer" data-ltr>
+                  <span>{caller.data?.content_type || "application/json"}</span>
+                  <span>{caller.data?.region || "public-direct"}</span>
+                </footer>
+              </section>
+            </div>
+          </form>
+        </div>
+
+        <aside className="caller-sidebar">
+          <section className="caller-side-card">
+            <header><ShieldCheck aria-hidden /><div><span>Safe by default</span><small>Request limits</small></div></header>
+            <dl>
+              <div><dt>Destination</dt><dd>Public HTTP(S)</dd></div>
+              <div><dt>Request body</dt><dd>64 KB</dd></div>
+              <div><dt>Response body</dt><dd>512 KB</dd></div>
+              <div><dt>Private IPs</dt><dd data-tone="blocked">Blocked</dd></div>
+            </dl>
+          </section>
+
+          <section className="caller-side-card caller-history-card">
+            <header><History aria-hidden /><div><span>Recent requests</span><small>{isAuthenticated ? "Workspace history" : "Anonymous session"}</small></div></header>
+            <div className="caller-history-list" data-ltr>
               {usage.isLoading ? (
-                <div className="text-muted-foreground">loading...</div>
+                <div className="caller-history-empty"><Loader2 className="animate-spin" aria-hidden /> Loading history</div>
               ) : usage.data?.results.length ? (
                 usage.data.results.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-0">
-                    <span className="truncate">{item.method || "GET"} {item.path || item.api?.slug || "api"}</span>
-                    <span className="text-amber tabular-nums">{item.latency_ms ?? 0}ms</span>
+                  <div key={item.id} className="caller-history-item">
+                    <span className="caller-history-method">{item.method || "GET"}</span>
+                    <span className="caller-history-path">{item.path || item.api?.slug || "api"}</span>
+                    <span className="caller-history-latency">{item.latency_ms ?? 0}ms</span>
                   </div>
                 ))
               ) : (
-                <div className="text-muted-foreground">no caller usage yet</div>
+                <div className="caller-history-empty">
+                  <History aria-hidden />
+                  {isAuthenticated ? "No recorded calls yet" : "Sign in to save request history"}
+                </div>
               )}
             </div>
+          </section>
+
+          <div className="caller-privacy-note">
+            <ShieldCheck aria-hidden />
+            <span>Credentials remain server-side. Private and local destinations stay blocked.</span>
           </div>
         </aside>
       </div>

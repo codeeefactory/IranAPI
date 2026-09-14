@@ -82,9 +82,9 @@ export function SocialAuth({ next }: { next?: string }) {
     <div className="space-y-2 pt-2">
       <div className="relative my-2 text-center">
         <span aria-hidden className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-        <span className="relative bg-popover/0 px-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground" data-ltr>{t("auth.social.or")}</span>
+        <span className="relative bg-popover/0 px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{t("auth.social.or")}</span>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {providerRows.map((provider) => {
           const icon = providerIcon(provider.slug);
           const isLoading = status.kind === "loading" && status.provider === provider.slug;
@@ -102,7 +102,7 @@ export function SocialAuth({ next }: { next?: string }) {
               title={label}
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
-              <span className="hidden sm:inline truncate">{provider.label}</span>
+              <span className="truncate">{provider.label}</span>
               {isError && (
                 <span aria-hidden className="absolute -top-1 -end-1 h-2 w-2 rounded-full bg-destructive" />
               )}

@@ -3,22 +3,15 @@ set -e
 
 mkdir -p /app/staticfiles /app/media
 
-if [ -z "${MONGODB_URI:-}" ] && [ -z "${MONGODB_USE_MOCK:-}" ]; then
-    export MONGODB_USE_MOCK=true
-    export IRANAPI_AUTO_SEED_SAMPLE_DATA="${IRANAPI_AUTO_SEED_SAMPLE_DATA:-true}"
-    echo "MONGODB_URI is not set; using the in-memory mock database."
-fi
-
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-IranAPIBackend.settings}"
-
-if [ "${MONGODB_USE_MOCK:-false}" = "true" ] && [ -z "${GUNICORN_WORKERS:-}" ]; then
-    export GUNICORN_WORKERS=1
-    echo "MONGODB_USE_MOCK is enabled; defaulting Gunicorn to a single worker."
-fi
 
 echo "Waiting for MongoDB connectivity..."
 python - <<'PY'
 import time
+
+import django
+
+django.setup()
 
 from api.mongo import ping_database
 

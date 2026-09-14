@@ -3,22 +3,22 @@ import { PageShell, SectionHeader } from "@/components/site/Layout";
 export default function Privacy() {
   return (
     <PageShell>
-      <SectionHeader kicker="legal" title="privacy policy" subtitle="// last updated 2026.5.24" />
+      <SectionHeader kicker="legal" title="privacy implementation notes" subtitle="// describes the current repository behavior" />
       <article className="max-w-3xl space-y-5 text-sm text-foreground/85">
         <Section n="01" t="what we collect">
-          account email, billing info, request metadata (timing, status, bytes) for keys you own.
+          account and profile fields, subscription and project records, plus caller metadata such as status, latency, and response size.
         </Section>
         <Section n="02" t="what we do not collect">
-          request and response bodies are not stored. webhook payloads are forwarded, not retained.
+          caller request and response bodies are not persisted by the usage recorder. Public webhook delivery is not implemented.
         </Section>
         <Section n="03" t="retention">
-          metadata retained 30 days. invoices retained 7 years per local tax law.
+          session documents expire through a MongoDB TTL index. A general account-data retention schedule is not implemented in this repository.
         </Section>
         <Section n="04" t="export & delete">
-          request a full data export or deletion at <span className="text-amber">privacy@iranapi.dev</span>.
+          self-service export and deletion endpoints are not implemented yet; contact the operator of your deployment for manual handling.
         </Section>
         <Section n="05" t="contact">
-          questions: <span className="text-amber">privacy@iranapi.dev</span> // pgp on request.
+          use the contact channel configured by the operator of the deployment you are using.
         </Section>
       </article>
     </PageShell>

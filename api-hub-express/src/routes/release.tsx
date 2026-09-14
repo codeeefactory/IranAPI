@@ -1,8 +1,9 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, Loader2, Rocket } from "lucide-react";
+import { AlignLeft, BookOpen, Globe2, KeyRound, Layers3, Loader2, Rocket, Tags } from "lucide-react";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { Prompt, Tag, TerminalWindow } from "@/components/site/Terminal";
+import { FormStatus, SelectField, TextAreaField, TextField } from "@/components/ui/form-controls";
 import { useSession } from "@/hooks/useAuth";
 import { useCatalogCategories, useReleaseApi } from "@/hooks/useCatalog";
 import { ApiClientError, type ApiReleaseInput } from "@/lib/api-client";
@@ -63,54 +64,27 @@ export default function ReleasePage() {
       <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
         <form onSubmit={submit} className="terminal-border rounded-sm bg-card/50 p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="--name" value={form.name} onChange={(name) => setForm((v) => ({ ...v, name }))} required />
-            <label className="block text-xs text-muted-foreground" htmlFor="release-auth">
-              --auth
-              <select
-                id="release-auth"
-                className="field mt-1"
-                value={form.auth_scheme}
-                onChange={(event) => setForm((v) => ({ ...v, auth_scheme: event.target.value as ApiReleaseInput["auth_scheme"] }))}
-              >
+            <TextField id="release-name" label="--name" value={form.name} onChange={(event) => setForm((v) => ({ ...v, name: event.target.value }))} icon={Rocket} required />
+            <SelectField id="release-auth" label="--auth" value={form.auth_scheme} onChange={(event) => setForm((v) => ({ ...v, auth_scheme: event.target.value as ApiReleaseInput["auth_scheme"] }))} icon={KeyRound}>
                 {AUTH_SCHEMES.map((scheme) => <option key={scheme}>{scheme}</option>)}
-              </select>
-            </label>
-            <Field label="--base-url" value={form.base_url} onChange={(base_url) => setForm((v) => ({ ...v, base_url }))} required />
-            <Field label="--docs-url" value={form.documentation_url} onChange={(documentation_url) => setForm((v) => ({ ...v, documentation_url }))} />
-            <label className="block text-xs text-muted-foreground" htmlFor="release-category">
-              --category
-              <input
-                id="release-category"
-                className="field mt-1"
-                value={form.category}
-                list="release-categories"
-                onChange={(event) => setForm((v) => ({ ...v, category: event.target.value }))}
-              />
-              <datalist id="release-categories">
-                {categoryOptions.map((category) => <option key={category} value={category} />)}
-              </datalist>
-            </label>
-            <Field label="--tags" value={form.tags} onChange={(tags) => setForm((v) => ({ ...v, tags }))} />
+            </SelectField>
+            <TextField id="release-base-url" label="--base-url" value={form.base_url} onChange={(event) => setForm((v) => ({ ...v, base_url: event.target.value }))} icon={Globe2} type="url" dir="ltr" required />
+            <TextField id="release-docs-url" label="--docs-url" value={form.documentation_url} onChange={(event) => setForm((v) => ({ ...v, documentation_url: event.target.value }))} icon={BookOpen} type="url" dir="ltr" />
+            <TextField id="release-category" label="--category" value={form.category} list="release-categories" onChange={(event) => setForm((v) => ({ ...v, category: event.target.value }))} icon={Layers3} />
+            <datalist id="release-categories">
+              {categoryOptions.map((category) => <option key={category} value={category} />)}
+            </datalist>
+            <TextField id="release-tags" label="--tags" value={form.tags} onChange={(event) => setForm((v) => ({ ...v, tags: event.target.value }))} icon={Tags} />
           </div>
 
-          <label className="mt-4 block text-xs text-muted-foreground" htmlFor="release-description">
-            --description
-            <textarea
-              id="release-description"
-              className="field mt-1 min-h-32 resize-y"
-              value={form.description}
-              onChange={(event) => setForm((v) => ({ ...v, description: event.target.value }))}
-              required
-            />
-          </label>
+          <TextAreaField id="release-description" fieldClassName="mt-4" label="--description" value={form.description} onChange={(event) => setForm((v) => ({ ...v, description: event.target.value }))} icon={AlignLeft} className="min-h-32" required />
 
-          {error ? <div className="mt-3 text-xs text-destructive" role="alert">{"// "}{error}</div> : null}
+          {error ? <FormStatus tone="error" className="mt-3">{error}</FormStatus> : null}
           {releasedApi ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-primary" role="status">
-              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+            <FormStatus tone="success" className="mt-3">
               <span>published {releasedApi.slug}</span>
               <Link to={`/api/${releasedApi.slug}`} className="underline">view listing</Link>
-            </div>
+            </FormStatus>
           ) : null}
 
           <button
@@ -126,7 +100,7 @@ export default function ReleasePage() {
         <div className="space-y-4">
           <TerminalWindow title="~/iranapi/releases">
             <div className="space-y-2 text-sm" data-ltr>
-              <Prompt>iran apis release --name "{form.name}"</Prompt>
+              <Prompt>iranapi apis release --name "{form.name}"</Prompt>
               <div className="text-xs text-muted-foreground">// target {form.base_url}</div>
               <div className="text-xs text-muted-foreground">// docs {form.documentation_url || "inline overview"}</div>
               <div className="flex flex-wrap gap-2">
@@ -156,15 +130,5 @@ export default function ReleasePage() {
         </div>
       </div>
     </PageShell>
-  );
-}
-
-function Field({ label, value, onChange, required = false }: { label: string; value: string; onChange: (value: string) => void; required?: boolean }) {
-  const id = `release-${label.replace(/^--/, "").replace(/[^a-z0-9]+/gi, "-")}`;
-  return (
-    <label className="block text-xs text-muted-foreground" htmlFor={id}>
-      {label}
-      <input id={id} className="field mt-1" value={value} onChange={(event) => onChange(event.target.value)} required={required} />
-    </label>
   );
 }

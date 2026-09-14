@@ -1,0 +1,21 @@
+@startuml
+!include style.puml
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-05\nManage subscription checkout" as Main
+  usecase "List active plans" as Plans
+  usecase "Create checkout" as Create
+  usecase "Inspect checkout" as Inspect
+  usecase "Confirm and activate" as Confirm
+  usecase "Cancel pending checkout" as Cancel
+}
+Developer --> Main
+Main ..> Plans : <<include>>
+Main ..> Create : <<include>>
+Inspect ..> Main : <<extend>>
+Confirm ..> Main : <<extend>>
+Cancel ..> Main : <<extend>>
+note bottom of Confirm
+Current gateway is manual/local activation.
+end note
+@enduml

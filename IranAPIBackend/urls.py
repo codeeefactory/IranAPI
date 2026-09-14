@@ -3,13 +3,25 @@ import logging
 
 from django.conf import settings
 from django.contrib import admin
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.utils.html import escape
 from django.urls import include, path, re_path
 from django.views.static import serve
 
 
 logger = logging.getLogger(__name__)
+
+
+def cli_download(_request):
+    package_path = settings.FRONTEND_DIR / "downloads" / "iranapi-cli-1.0.0.tgz"
+    if not package_path.is_file():
+        raise Http404("CLI package not found")
+    return FileResponse(
+        package_path.open("rb"),
+        as_attachment=True,
+        filename=package_path.name,
+        content_type="application/gzip",
+    )
 
 
 def frontend_app(request, slug: str | None = None):
@@ -22,7 +34,18 @@ def frontend_app(request, slug: str | None = None):
 
 
 def robots_txt(_request):
-    return HttpResponse("User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n", content_type="text/plain")
+    body = """User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/v1/account/
+Disallow: /api/v1/auth/
+Disallow: /api/account/
+Disallow: /api/auth/
+Sitemap: /sitemap.xml
+"""
+    response = HttpResponse(body, content_type="text/plain")
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 def sitemap_xml(request):
@@ -49,6 +72,7 @@ def sitemap_xml(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("downloads/iranapi-cli-1.0.0.tgz", cli_download, name="cli-download"),
     re_path(
         r"^api/(?!(?:v1|auth|health|usage|profile|categories|apis|pricing-plans|documentations)/)(?P<slug>[-\w]+)/?$",
         frontend_app,

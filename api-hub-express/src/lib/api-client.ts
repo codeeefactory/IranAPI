@@ -8,6 +8,8 @@ export type CurrentUser = {
   first_name: string;
   last_name: string;
   date_joined?: string | null;
+  account_type: "user" | "api_developer";
+  is_staff: boolean;
 };
 
 export type UserProfile = {
@@ -36,6 +38,16 @@ export type LoginInput = {
   password: string;
 };
 
+export type CliAuthorizationInput = {
+  callback_url: string;
+  state: string;
+  code_challenge: string;
+};
+
+export type CliAuthorizationResponse = {
+  redirect_url: string;
+};
+
 export type RegisterInput = {
   username: string;
   password: string;
@@ -43,6 +55,7 @@ export type RegisterInput = {
   email?: string;
   first_name?: string;
   last_name?: string;
+  account_type?: "user" | "api_developer";
 };
 
 export type UserUpdateInput = {
@@ -207,19 +220,24 @@ export type UsageListParams = {
 };
 
 export type CallerExecuteInput = {
-  api_slug: string;
+  url?: string;
+  api_slug?: string;
   endpoint_id?: number;
   method: string;
   path?: string;
   body?: unknown;
+  query?: Record<string, unknown>;
+  path_params?: Record<string, unknown>;
+  headers?: Record<string, unknown>;
 };
 
 export type CallerExecuteResponse = {
   status_code: number;
   latency_ms: number;
   region: string;
+  content_type?: string;
   body: unknown;
-  usage: UsageItem;
+  usage: UsageItem | null;
 };
 
 export type StudioFlowNode = {
@@ -302,6 +320,64 @@ export type ApiProjectInitResponse = {
   supported_languages: SupportedProjectLanguage[];
 };
 
+export type ProjectRouteAnalysis = {
+  method: string;
+  path: string;
+  source: string;
+};
+
+export type ProjectArchiveAnalysis = {
+  filename: string;
+  fingerprint: string;
+  archive_format: "zip" | "tar";
+  archive_size: number;
+  file_count: number;
+  uncompressed_size: number;
+  language: "java" | "javascript" | "typescript" | "python" | "cpp" | "csharp" | "unknown";
+  language_confidence: number;
+  frameworks: string[];
+  entrypoints: string[];
+  manifest_files: string[];
+  dockerfiles: string[];
+  routes: ProjectRouteAnalysis[];
+  warnings: string[];
+  deployment: {
+    ready: boolean;
+    runtime: string;
+    builder: "dockerfile" | "buildpack";
+    start_command: string;
+    port: number;
+  };
+};
+
+export type ProjectDeployment = {
+  id: number;
+  project_name: string;
+  slug: string;
+  region: string;
+  status: "queued" | "building" | "deployed" | "failed";
+  language: string;
+  frameworks: string[];
+  routes: ProjectRouteAnalysis[];
+  analysis: ProjectArchiveAnalysis;
+  deployment_url: string;
+  build_log: string;
+  failure_reason: string;
+  deployed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type ProjectAnalyzeResponse = {
+  message?: string;
+  analysis: ProjectArchiveAnalysis;
+};
+
+export type ProjectDeployResponse = {
+  message?: string;
+  deployment: ProjectDeployment;
+};
+
 export type ApiRatingResponse = {
   rating: string;
   rating_count: number;
@@ -361,6 +437,27 @@ export const http = axios.create({
   headers: {
     Accept: "application/json",
   },
+});
+
+const CSRF_SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const prefix = `${encodeURIComponent(name)}=`;
+  for (const part of document.cookie.split(";")) {
+    const cookie = part.trim();
+    if (cookie.startsWith(prefix)) return decodeURIComponent(cookie.slice(prefix.length));
+  }
+  return null;
+}
+
+http.interceptors.request.use((config) => {
+  const method = (config.method || "GET").toUpperCase();
+  if (!CSRF_SAFE_METHODS.has(method)) {
+    const csrfToken = readCookie("csrftoken");
+    if (csrfToken) config.headers.set("X-CSRFToken", csrfToken);
+  }
+  return config;
 });
 
 http.interceptors.response.use(
@@ -447,6 +544,11 @@ export const authApi = {
     return data;
   },
 
+  async authorizeCli(input: CliAuthorizationInput): Promise<CliAuthorizationResponse> {
+    const { data } = await http.post<CliAuthorizationResponse>("/auth/cli/authorize/", input);
+    return data;
+  },
+
   async register(input: RegisterInput): Promise<SessionPayload> {
     const { data } = await http.post<SessionPayload>("/auth/register/", input);
     return data;
@@ -522,7 +624,7 @@ export const accountApi = {
   },
 
   async executeCaller(input: CallerExecuteInput): Promise<CallerExecuteResponse> {
-    const { data } = await http.post<CallerExecuteResponse>("/account/caller/", input);
+    const { data } = await http.post<CallerExecuteResponse>("/public/caller/", input);
     return data;
   },
 
@@ -543,6 +645,34 @@ export const accountApi = {
 
   async initializeProject(input: ApiProjectInitInput): Promise<ApiProjectInitResponse> {
     const { data } = await http.post<ApiProjectInitResponse>("/account/projects/init/", input);
+    return data;
+  },
+
+  async analyzeProject(archive: File): Promise<ProjectAnalyzeResponse> {
+    const form = new FormData();
+    form.append("archive", archive);
+    const { data } = await http.post<ProjectAnalyzeResponse>("/account/projects/analyze/", form);
+    return data;
+  },
+
+  async deployProject(archive: File, projectName: string, region: string): Promise<ProjectDeployResponse> {
+    const form = new FormData();
+    form.append("archive", archive);
+    form.append("project_name", projectName);
+    form.append("region", region);
+    const { data } = await http.post<ProjectDeployResponse>("/account/projects/deployments/", form);
+    return data;
+  },
+
+  async projectDeployments(): Promise<PaginatedResponse<ProjectDeployment>> {
+    const { data } = await http.get<PaginatedResponse<ProjectDeployment>>("/account/projects/deployments/");
+    return data;
+  },
+
+  async projectDeployment(slug: string): Promise<{ deployment: ProjectDeployment }> {
+    const { data } = await http.get<{ deployment: ProjectDeployment }>(
+      `/account/projects/deployments/${encodeURIComponent(slug)}/`,
+    );
     return data;
   },
 

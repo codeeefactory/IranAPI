@@ -59,6 +59,106 @@ class Category(models.Model):
         return self.name
 
 
+class LiveDataConsole(Category):
+    """Proxy model used only to mount the durable document-store admin."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "داده زنده"
+        verbose_name_plural = "کنسول داده زنده"
+
+
+class CategoriesSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "دسته‌بندی"
+        verbose_name_plural = "دسته‌بندی‌ها"
+
+
+class ApisSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "API"
+        verbose_name_plural = "APIها"
+
+
+class PricingPlansSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "پلن قیمت API"
+        verbose_name_plural = "پلن‌های قیمت API"
+
+
+class SubscriptionPlansSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "پلن اشتراک"
+        verbose_name_plural = "پلن‌های اشتراک"
+
+
+class DocumentationsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "مستند"
+        verbose_name_plural = "مستندات"
+
+
+class ApiEndpointsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "Endpoint"
+        verbose_name_plural = "Endpointها"
+
+
+class AccessGrantsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "دسترسی"
+        verbose_name_plural = "دسترسی‌ها"
+
+
+class UserSubscriptionsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "اشتراک کاربر"
+        verbose_name_plural = "اشتراک کاربران"
+
+
+class SubscriptionCheckoutsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "پرداخت اشتراک"
+        verbose_name_plural = "پرداخت‌های اشتراک"
+
+
+class OrganizationsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "سازمان"
+        verbose_name_plural = "سازمان‌ها"
+
+
+class StudioFlowsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "Flow استودیو"
+        verbose_name_plural = "Flowهای Studio"
+
+
+class ApiProjectsSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "پروژه تولیدشده"
+        verbose_name_plural = "پروژه‌های تولیدشده"
+
+
+class ApiUsageSection(Category):
+    class Meta:
+        proxy = True
+        verbose_name = "مصرف API"
+        verbose_name_plural = "مصرف API"
+
+
 class API(models.Model):
     """API Model"""
     STATUS_CHOICES = [

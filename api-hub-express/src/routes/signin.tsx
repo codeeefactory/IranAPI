@@ -1,16 +1,17 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { PageShell } from "@/components/site/Layout";
-import { TerminalWindow, Prompt, Cursor } from "@/components/site/Terminal";
 import { SocialAuth } from "@/components/site/SocialAuth";
 import { useI18n } from "@/lib/i18n";
-import { ApiClientError } from "@/lib/api-client";
+import { ApiClientError, authApi } from "@/lib/api-client";
 import { useLogin } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { FormStatus, PasswordField, TextField } from "@/components/ui/form-controls";
+import { ArrowRight, Check, Loader2, LockKeyhole, ShieldCheck, SquareTerminal, UserRound } from "lucide-react";
 
 export default function SignInPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const login = useLogin();
   const [username, setUsername] = useState("");
   const [pw, setPw] = useState("");
@@ -38,6 +39,19 @@ export default function SignInPage() {
     try {
       await login.mutateAsync({ username, password: pw });
       setSuccess(t("auth.success.signin"));
+      const params = new URLSearchParams(location.search);
+      const callbackUrl = params.get("cli_callback");
+      const state = params.get("cli_state");
+      const codeChallenge = params.get("cli_challenge");
+      if (callbackUrl && state && codeChallenge) {
+        const authorization = await authApi.authorizeCli({
+          callback_url: callbackUrl,
+          state,
+          code_challenge: codeChallenge,
+        });
+        window.location.assign(authorization.redirect_url);
+        return;
+      }
       redirectTimerRef.current = window.setTimeout(() => navigate("/dashboard"), 600);
     } catch (err) {
       const e = err as ApiClientError;
@@ -50,85 +64,112 @@ export default function SignInPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-md">
-        <TerminalWindow title="~/iranapi/auth/signin" glow>
-          <div className="space-y-3 text-sm">
-            <Prompt>iran auth login</Prompt>
-            <div className="text-muted-foreground text-xs">{"// "}{t("auth.signin.sub")}</div>
-            <form onSubmit={onSubmit} noValidate className="space-y-3 pt-2">
-              <Field
-                id="username"
-                name="username"
-                label={t("auth.field.username")}
-                value={username}
-                onChange={setUsername}
-                autoComplete="username"
-                placeholder="demo-dev"
-                error={errors.username}
-              />
-              <Field
-                id="password"
-                name="password"
-                label={t("auth.field.password")}
-                value={pw}
-                onChange={setPw}
-                type="password"
-                autoComplete="current-password"
-                placeholder="********"
-                error={errors.pw}
-              />
-              {errors.form && (
-                <div role="alert" className="text-xs text-destructive">{"// "}{errors.form}</div>
-              )}
-              {success && (
-                <div role="status" className="text-xs text-primary text-glow">{"// "}{success}</div>
-              )}
-
-              <button
-                type="submit"
-                disabled={login.isPending}
-                className="btn-primary w-full justify-center disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {login.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {login.isPending ? t("auth.submit.loading") : t("auth.submit.signin")}
-              </button>
-            </form>
-            <SocialAuth next="/dashboard" />
-            <div className="pt-3 text-xs text-muted-foreground">
-              {"// "}{t("auth.toSignup")} <Link to="/signup" className="text-primary hover:underline">./signup</Link>
+      <section className="auth-login-stage" aria-labelledby="signin-title">
+        <div className="auth-terminal">
+          <header className="auth-terminal-toolbar" dir="ltr">
+            <div className="auth-window-controls" aria-hidden="true">
+              <span className="auth-window-dot auth-window-dot-close" />
+              <span className="auth-window-dot auth-window-dot-minimize" />
+              <span className="auth-window-dot auth-window-dot-maximize" />
             </div>
-            <Prompt><Cursor /></Prompt>
-          </div>
-        </TerminalWindow>
-      </div>
-    </PageShell>
-  );
-}
+            <div className="auth-terminal-title">
+              <SquareTerminal aria-hidden />
+              <span>{t("auth.terminalTitle")}</span>
+            </div>
+            <div className="auth-terminal-status">
+              <span aria-hidden />
+              {t("auth.secure")}
+            </div>
+          </header>
 
-function Field({ id, name, label, value, onChange, type = "text", placeholder, autoComplete, error }: {
-  id: string; name: string; label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; autoComplete?: string; error?: string;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-xs text-muted-foreground mb-1" data-ltr>--{label}</label>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        required
-        dir={type === "email" || type === "password" || name === "username" ? "ltr" : undefined}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-err` : undefined}
-        className="field"
-      />
-      {error && (
-        <div id={`${id}-err`} role="alert" className="mt-1 text-[11px] text-destructive">{"// "}{error}</div>
-      )}
-    </div>
+          <div className="auth-terminal-layout">
+            <aside className="auth-terminal-context" aria-hidden="true">
+              <div className="auth-context-brand">
+                <span className="auth-context-icon"><SquareTerminal /></span>
+                <span>{t("auth.workspace")}</span>
+              </div>
+              <div className="auth-context-copy">
+                <p className="auth-context-kicker">{t("auth.context.signinKicker")}</p>
+                <h2>{t("auth.context.signinTitle1")}<br />{t("auth.context.signinTitle2")}</h2>
+                <p>{t("auth.context.signinDescription")}</p>
+              </div>
+              <div className="auth-command-block">
+                <p dir="ltr"><span>guest@iranapi</span><b>:~$</b> iranapi status</p>
+                <ul>
+                  <li><Check /> {t("auth.context.catalog")} <strong>{t("auth.context.online")}</strong></li>
+                  <li><Check /> {t("auth.context.session")} <strong>{t("auth.context.protected")}</strong></li>
+                  <li><Check /> {t("auth.workspace")} <strong>{t("auth.context.ready")}</strong></li>
+                </ul>
+              </div>
+            </aside>
+
+            <div className="auth-form-pane">
+              <div className="auth-form-route" dir="ltr">
+                <span>~</span><b>/</b>auth<b>/</b>signin
+                <span className="auth-secure-badge"><ShieldCheck /> {t("auth.secureSession")}</span>
+              </div>
+
+              <div className="auth-form-heading">
+                <h1 id="signin-title">{t("auth.signin.title")}</h1>
+                <p>{t("auth.signin.sub")}</p>
+              </div>
+
+              <form onSubmit={onSubmit} noValidate className="auth-login-form">
+                <TextField
+                  id="username"
+                  name="username"
+                  label={t("auth.field.username")}
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  autoComplete="username"
+                  placeholder="demo-dev"
+                  error={errors.username}
+                  icon={UserRound}
+                  required
+                  dir="ltr"
+                />
+                <PasswordField
+                  id="password"
+                  name="password"
+                  label={t("auth.field.password")}
+                  value={pw}
+                  onChange={(event) => setPw(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="********"
+                  error={errors.pw}
+                  icon={LockKeyhole}
+                  required
+                  dir="ltr"
+                />
+
+                {errors.form ? <FormStatus tone="error">{errors.form}</FormStatus> : null}
+                {success ? <FormStatus tone="success">{success}</FormStatus> : null}
+
+                <button
+                  type="submit"
+                  disabled={login.isPending}
+                  className="auth-submit disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span>
+                  {login.isPending && <Loader2 className="animate-spin" aria-hidden />}
+                  {login.isPending ? t("auth.submit.loading") : t("auth.submit.signin")}
+                  </span>
+                  <ArrowRight aria-hidden />
+                </button>
+              </form>
+
+              <div className="auth-social-row">
+                <SocialAuth next={location.pathname + location.search} />
+              </div>
+
+              <p className="auth-signup-link">
+                {t("auth.toSignup")}{" "}
+                <Link to="/signup">{t("auth.signup.cta")}</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </PageShell>
   );
 }

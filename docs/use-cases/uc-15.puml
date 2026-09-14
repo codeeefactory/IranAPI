@@ -1,0 +1,27 @@
+@startuml
+!include style.puml
+actor "CLI User" as Visitor
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-15\nUse IranAPI CLI" as Main
+  usecase "Doctor / catalog / docs / schema" as Public
+  usecase "Call public URL" as Call
+  usecase "Store or remove token" as Token
+  usecase "Who am I / raw request" as Private
+  usecase "Analyze or deploy project" as Project
+}
+Visitor --> Public
+Visitor --> Call
+Developer --> Token
+Developer --> Private
+Developer --> Project
+Public ..> Main : <<extend>>
+Call ..> Main : <<extend>>
+Token ..> Main : <<extend>>
+Private ..> Main : <<extend>>
+Project ..> Main : <<extend>>
+note bottom of Token
+login validates and stores an existing token;
+it does not accept username/password.
+end note
+@enduml

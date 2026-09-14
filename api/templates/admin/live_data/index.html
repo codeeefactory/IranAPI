@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main" class="iranapi-live-admin">
+  <p class="help">این صفحه مستقیماً داده‌های عملیاتی MongoDB را نمایش می‌دهد.</p>
+  <div class="live-collection-grid">
+    {% for item in collections %}
+      <a class="live-collection-card" href="{{ item.url }}">
+        <span class="live-collection-title">{{ item.label }}</span>
+        <strong>{{ item.count }}</strong>
+        {% if item.read_only %}<small>فقط خواندنی</small>{% endif %}
+      </a>
+    {% empty %}
+      <p>مجموعه‌ای تعریف نشده است.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

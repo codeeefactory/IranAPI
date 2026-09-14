@@ -60,8 +60,12 @@ def build_openapi_schema() -> dict:
                     "responses": {
                         "200": {
                             "description": "Service health response",
-                            "content": {"application/json": {"example": {"status": "ok", "timestamp": "2026-05-17T00:00:00Z"}}},
-                        }
+                            "content": {"application/json": {"example": {"status": "ok", "database": "up", "timestamp": "2026-05-17T00:00:00Z"}}},
+                        },
+                        "503": {
+                            "description": "MongoDB is unavailable",
+                            "content": {"application/json": {"example": {"status": "unavailable", "database": "down", "timestamp": "2026-05-17T00:00:00Z"}}},
+                        },
                     },
                 }
             },
@@ -84,6 +88,20 @@ def build_openapi_schema() -> dict:
                     "tags": ["Auth"],
                     "summary": "Sign in with username and password",
                     "responses": {"200": {"description": "Session created."}, "400": _error_response("Invalid credentials.")},
+                },
+            },
+            "/api/v1/auth/cli/authorize/": {
+                "post": {
+                    "tags": ["Auth"],
+                    "summary": "Authorize a loopback CLI login with the browser session",
+                    "responses": {"200": {"description": "One-time authorization redirect created."}},
+                },
+            },
+            "/api/v1/auth/cli/token/": {
+                "post": {
+                    "tags": ["Auth"],
+                    "summary": "Exchange a one-time CLI authorization code using PKCE",
+                    "responses": {"200": {"description": "CLI token issued."}, "400": _error_response("Invalid or expired code.")},
                 },
             },
             "/api/v1/auth/social/providers/": {
@@ -122,7 +140,7 @@ def build_openapi_schema() -> dict:
                 "post": {
                     "tags": ["Catalog"],
                     "summary": "Release a new API to Explore",
-                    "security": [{"sessionCookie": []}, {"legacyToken": []}],
+                    "security": [{"sessionCookie": []}, {"bearerToken": []}],
                     "responses": {"201": {"description": "API created as active and published."}, "400": _error_response("Validation failed.")},
                 },
             },
@@ -133,7 +151,7 @@ def build_openapi_schema() -> dict:
                 "get": {"tags": ["Catalog"], "summary": "List similar APIs"},
             },
             "/api/v1/catalog/apis/{slug}/ratings/": {
-                "post": {"tags": ["Catalog"], "summary": "Submit or update a rating", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "post": {"tags": ["Catalog"], "summary": "Submit or update a rating", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/catalog/apis/{slug}/plans/": {
                 "get": {
@@ -178,50 +196,85 @@ def build_openapi_schema() -> dict:
                 },
             },
             "/api/v1/account/user/": {
-                "get": {"tags": ["Account"], "summary": "Fetch current user", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
-                "patch": {"tags": ["Account"], "summary": "Update current user", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "Fetch current user", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "patch": {"tags": ["Account"], "summary": "Update current user", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/profile/": {
-                "get": {"tags": ["Account"], "summary": "Fetch profile", "description": "Returns masked API key preview only.", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
-                "patch": {"tags": ["Account"], "summary": "Update profile", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "Fetch profile", "description": "Returns masked API key preview only.", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "patch": {"tags": ["Account"], "summary": "Update profile", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/api-key/rotate/": {
-                "post": {"tags": ["Account"], "summary": "Rotate API key", "description": "Returns the updated profile with a masked API key preview.", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Rotate API key", "description": "Returns the updated profile with a masked API key preview.", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/access/": {
-                "get": {"tags": ["Account"], "summary": "List access grants", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "List access grants", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/organizations/": {
-                "get": {"tags": ["Account"], "summary": "List organizations", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
-                "post": {"tags": ["Account"], "summary": "Create an organization", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "List organizations", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Create an organization", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/subscription/": {
-                "get": {"tags": ["Account"], "summary": "Fetch current user subscription", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
-                "post": {"tags": ["Account"], "summary": "Create a subscription checkout", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "Fetch current user subscription", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Create a subscription checkout", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/subscription/checkout/{checkout_id}/": {
-                "get": {"tags": ["Account"], "summary": "Fetch a subscription checkout", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
-                "delete": {"tags": ["Account"], "summary": "Cancel a pending subscription checkout", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "Fetch a subscription checkout", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "delete": {"tags": ["Account"], "summary": "Cancel a pending subscription checkout", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/subscription/checkout/{checkout_id}/confirm/": {
-                "post": {"tags": ["Account"], "summary": "Confirm checkout and activate subscription", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Confirm checkout and activate subscription", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/usage/": {
-                "get": {"tags": ["Account"], "summary": "List usage summaries", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "List usage summaries", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/usage/stats/": {
-                "get": {"tags": ["Account"], "summary": "Get aggregated usage statistics", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "Get aggregated usage statistics", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/caller/": {
-                "post": {"tags": ["Account"], "summary": "Execute a catalog API sample call and record usage", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "post": {
+                    "tags": ["Account"],
+                    "summary": "Execute an allowlisted catalog endpoint through the secure server-side caller",
+                    "security": [{"sessionCookie": []}, {"bearerToken": []}],
+                },
+            },
+            "/api/v1/public/caller/": {
+                "post": {
+                    "tags": ["Public"],
+                    "summary": "Call any public HTTP(S) API without authentication",
+                },
             },
             "/api/v1/account/studio/flows/": {
-                "get": {"tags": ["Account"], "summary": "List deployed Studio flows", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
-                "post": {"tags": ["Account"], "summary": "Deploy a Studio flow and record usage", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "List deployed Studio flows", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Deploy a Studio flow and record usage", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
             },
             "/api/v1/account/projects/init/": {
-                "get": {"tags": ["Account"], "summary": "List initialized API projects and supported language starters", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
-                "post": {"tags": ["Account"], "summary": "Initialize an API project starter in a selected language", "security": [{"sessionCookie": []}, {"legacyToken": []}]},
+                "get": {"tags": ["Account"], "summary": "List initialized API projects and supported language starters", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "post": {"tags": ["Account"], "summary": "Initialize an API project starter in a selected language", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+            },
+            "/api/v1/account/projects/analyze/": {
+                "post": {
+                    "tags": ["Account"],
+                    "summary": "Safely analyze a compressed API project without executing code",
+                    "security": [{"sessionCookie": []}, {"bearerToken": []}],
+                    "requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {"type": "object", "required": ["archive"], "properties": {"archive": {"type": "string", "format": "binary"}}}}}},
+                },
+            },
+            "/api/v1/account/projects/deployments/": {
+                "get": {"tags": ["Account"], "summary": "List API project deployments", "security": [{"sessionCookie": []}, {"bearerToken": []}]},
+                "post": {
+                    "tags": ["Account"],
+                    "summary": "Upload, analyze, and queue an API project deployment",
+                    "security": [{"sessionCookie": []}, {"bearerToken": []}],
+                    "requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {"type": "object", "required": ["archive"], "properties": {"archive": {"type": "string", "format": "binary"}, "project_name": {"type": "string"}, "region": {"type": "string"}}}}}},
+                },
+            },
+            "/api/v1/account/projects/deployments/{slug}/": {
+                "get": {
+                    "tags": ["Account"],
+                    "summary": "Inspect build status and live URL for one API project deployment",
+                    "security": [{"sessionCookie": []}, {"bearerToken": []}],
+                    "parameters": [{"name": "slug", "in": "path", "required": True, "schema": {"type": "string"}}],
+                },
             },
         },
         "components": {
@@ -231,11 +284,11 @@ def build_openapi_schema() -> dict:
                     "in": "cookie",
                     "name": "sessionid",
                 },
-                "legacyToken": {
-                    "type": "apiKey",
-                    "in": "header",
-                    "name": "Authorization",
-                    "description": "Legacy compatibility token. Prefer secure session cookies for first-party UI.",
+                "bearerToken": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "bearerFormat": "iapi_ account key or compatibility token",
+                    "description": "Send an IranAPI account key as Authorization: Bearer iapi_... .",
                 },
             }
         },

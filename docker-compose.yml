@@ -1,25 +1,95 @@
 services:
+  mongodb:
+    image: mongo:8.0
+    container_name: iranapi-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-iranapi}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-iranapi-dev-only}
+      MONGO_INITDB_DATABASE: ${IRANAPI_MONGODB_DATABASE:-iranapi}
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - iranapi_mongodb_data:/data/db
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --username
+        - ${MONGO_ROOT_USERNAME:-iranapi}
+        - --password
+        - ${MONGO_ROOT_PASSWORD:-iranapi-dev-only}
+        - --authenticationDatabase
+        - admin
+        - --eval
+        - db.adminCommand('ping').ok
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
     container_name: iranapi-backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
-      - DJANGO_SETTINGS_MODULE=IranAPIBackend.settings
+      DJANGO_SETTINGS_MODULE: IranAPIBackend.settings
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-compose-development-only}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      IRANAPI_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-iranapi}:${MONGO_ROOT_PASSWORD:-iranapi-dev-only}@mongodb:27017/?authSource=admin&retryWrites=false
+      IRANAPI_MONGODB_DATABASE: ${IRANAPI_MONGODB_DATABASE:-iranapi}
+      IRANAPI_AUTO_SEED_SAMPLE_DATA: ${IRANAPI_AUTO_SEED_SAMPLE_DATA:-true}
+      IRANAPI_GOOGLE_AUTH_URL: ${IRANAPI_GOOGLE_AUTH_URL:-}
+      IRANAPI_GITHUB_AUTH_URL: ${IRANAPI_GITHUB_AUTH_URL:-}
     volumes:
-      - ./db.sqlite3:/app/db.sqlite3
       - ./media:/app/media
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  deployer:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: iranapi-deployer
+    restart: unless-stopped
+    command: ["python", "manage.py", "run_project_deployer"]
+    environment:
+      DJANGO_SETTINGS_MODULE: IranAPIBackend.settings
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-compose-development-only}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      IRANAPI_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-iranapi}:${MONGO_ROOT_PASSWORD:-iranapi-dev-only}@mongodb:27017/?authSource=admin&retryWrites=false
+      IRANAPI_MONGODB_DATABASE: ${IRANAPI_MONGODB_DATABASE:-iranapi}
+      IRANAPI_AUTO_SEED_SAMPLE_DATA: "false"
+      IRANAPI_PROJECT_DEPLOYMENT_PUBLIC_HOST: ${IRANAPI_PROJECT_DEPLOYMENT_PUBLIC_HOST:-http://localhost}
+      IRANAPI_GOOGLE_AUTH_URL: ${IRANAPI_GOOGLE_AUTH_URL:-}
+      IRANAPI_GITHUB_AUTH_URL: ${IRANAPI_GITHUB_AUTH_URL:-}
+    volumes:
+      - ./media:/app/media
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      mongodb:
+        condition: service_healthy
 
   frontend:
     build:
       context: ./api-hub-express
     container_name: iranapi-frontend
+    restart: unless-stopped
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000/api
+      - "5173:80"
     depends_on:
       - backend
 
+volumes:
+  iranapi_mongodb_data:

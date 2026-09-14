@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import { CyberCursor } from "@/components/site/CyberCursor";
 import { CommandPalette } from "@/components/site/CommandPalette";
 import { I18nProvider } from "@/lib/i18n";
 
@@ -42,8 +41,7 @@ function RouteFallback() {
 
 function AppRoutes() {
   return (
-    <BrowserRouter>
-      <CyberCursor />
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <CommandPalette />
       <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>

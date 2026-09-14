@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LogOut, Menu, X } from "lucide-react";
+import { Code2, LogOut, Menu, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/site/LanguageSwitcher";
 import { Logo } from "@/components/site/Logo";
@@ -16,10 +16,9 @@ function useNav() {
     { to: "/documentation", label: t("nav.docs") },
     { to: "/pricing", label: t("nav.pricing") },
     { to: "/dashboard", label: t("nav.dashboard") },
-    { to: "/studio", label: t("nav.studio") },
-    { to: "/init", label: "init" },
+    { to: "/studio", label: t("nav.build") },
     { to: "/caller", label: t("nav.caller") },
-    { to: "/release", label: "release" },
+    { to: "/release", label: t("nav.release") },
     { to: "/cli", label: t("nav.cli") },
   ];
 }
@@ -50,7 +49,7 @@ export function SiteHeader() {
           <span className="text-amber blink hidden sm:inline" aria-hidden>_</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-0.5 text-sm" aria-label="Primary">
+        <nav className="hidden xl:flex items-center gap-0.5 text-sm" aria-label={t("a11y.primaryNavigation")}>
           {NAV.map((n) => {
             const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
             return (
@@ -78,9 +77,15 @@ export function SiteHeader() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
             </span>
-            <span>{t("nav.uptime")} <span className="text-primary">99.97%</span></span>
+            <span><span className="text-primary">MongoDB</span> {t("header.sourceOfTruth")}</span>
           </div>
           <LanguageSwitcher />
+          {user?.account_type === "api_developer" ? (
+            <a href="/admin/" className="hidden sm:inline-flex btn-ghost text-amber">
+              <Code2 className="h-3.5 w-3.5" aria-hidden />
+              {t("nav.admin")}
+            </a>
+          ) : null}
           {isAuthenticated ? (
             <button
               type="button"
@@ -106,7 +111,7 @@ export function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? t("nav.close") : t("nav.menu")}
-            className="lg:hidden inline-flex items-center justify-center rounded-sm border border-border bg-card/50 h-10 w-10 text-foreground/80 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+            className="xl:hidden inline-flex items-center justify-center rounded-sm border border-border bg-card/50 h-10 w-10 text-foreground/80 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -117,11 +122,11 @@ export function SiteHeader() {
       <div
         id="mobile-nav"
         className={cn(
-          "lg:hidden border-t border-border bg-background/95 backdrop-blur-md overflow-hidden transition-[max-height] duration-200",
+          "xl:hidden border-t border-border bg-background/95 backdrop-blur-md overflow-hidden transition-[max-height] duration-200",
           open ? "max-h-[85vh]" : "max-h-0",
         )}
       >
-        <nav className="mx-auto max-w-7xl px-4 sm:px-6 py-3" aria-label="Mobile">
+        <nav className="mx-auto max-w-7xl px-4 sm:px-6 py-3" aria-label={t("a11y.mobileNavigation")}>
           <ul className="grid gap-1 text-sm">
             {NAV.map((n) => {
               const active = n.to === "/" ? path === "/" : path.startsWith(n.to);
@@ -140,6 +145,13 @@ export function SiteHeader() {
                 </li>
               );
             })}
+            {user?.account_type === "api_developer" ? (
+              <li>
+                <a href="/admin/" className="flex min-h-11 items-center gap-2 rounded-sm px-3 py-2.5 text-amber hover:bg-amber/10">
+                  <Code2 className="h-4 w-4" aria-hidden />{t("nav.admin")}
+                </a>
+              </li>
+            ) : null}
             <li className="pt-2 sm:hidden">
               {isAuthenticated ? (
                 <button
@@ -180,14 +192,14 @@ export function SiteFooter() {
             </div>
             <p className="mt-3 text-xs text-muted-foreground leading-relaxed">{t("footer.tag")}</p>
           </div>
-          <FooterCol title="// catalog" links={[["/browse", t("nav.browse")], ["/documentation", t("nav.docs")], ["/pricing", t("nav.pricing")]]} />
-          <FooterCol title="// build" links={[["/dashboard", t("nav.dashboard")], ["/studio", t("nav.studio")], ["/init", "init"], ["/caller", t("nav.caller")], ["/release", "release"]]} />
-          <FooterCol title="// legal" links={[["/terms", t("terms.title")], ["/privacy", t("privacy.title")]]} />
+          <FooterCol title={`// ${t("footer.catalog")}`} links={[["/browse", t("nav.browse")], ["/documentation", t("nav.docs")], ["/pricing", t("nav.pricing")]]} />
+          <FooterCol title={`// ${t("footer.build")}`} links={[["/dashboard", t("nav.dashboard")], ["/studio", t("nav.build")], ["/caller", t("nav.caller")], ["/release", t("nav.release")]]} />
+          <FooterCol title={`// ${t("footer.legal")}`} links={[["/terms", t("terms.title")], ["/privacy", t("privacy.title")]]} />
         </div>
         <div className="ascii-divider mt-8" />
         <div className="mt-4 flex flex-wrap justify-between gap-3 text-xs text-muted-foreground" data-ltr>
-          <span>© {new Date().getFullYear()} iranapi // all systems nominal</span>
-          <span>build <span className="text-primary">2026.5.24-edge</span> // sha <span className="text-amber">a1f9c2e</span></span>
+          <span>© {new Date().getFullYear()} iranapi</span>
+          <span><span className="text-primary">OpenAPI 3.0</span> // <span className="text-amber">{t("footer.mongoBacked")}</span></span>
         </div>
       </div>
     </footer>
@@ -212,13 +224,17 @@ function FooterCol({ title, links }: { title: string; links: [string, string][] 
 }
 
 export function PageShell({ children, className }: { children: ReactNode; className?: string }) {
+  const { t } = useI18n();
   return (
-    <div className="relative min-h-dvh flex flex-col crt-flicker">
+    <div className="linux-shell relative min-h-dvh flex flex-col crt-flicker">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-sm focus:bg-primary focus:px-3 focus:py-1 focus:text-primary-foreground">
-        skip to content
+        {t("a11y.skipContent")}
       </a>
       <SiteHeader />
       <main id="main" className={cn("mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6", className)}>
+        <div className="linux-shell-prompt" dir="ltr" aria-hidden="true">
+          <span className="linux-prompt-user">guest</span><span className="linux-prompt-muted">@</span><span className="linux-prompt-host">iranapi</span><span className="linux-prompt-muted">:~$</span><span className="linux-prompt-command">cd /workspace</span><span className="linux-prompt-cursor" />
+        </div>
         {children}
       </main>
       <SiteFooter />

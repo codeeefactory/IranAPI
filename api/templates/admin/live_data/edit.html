@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">خانه</a> &rsaquo;
+  <a href="{{ collection_url }}">{{ collection }}</a> &rsaquo; {{ document_id|default:"افزودن" }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="iranapi-live-admin">
+  <form method="post" novalidate class="live-document-form">
+    {% csrf_token %}
+    <fieldset class="module aligned live-form-grid">
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <div class="form-row field-{{ field.name }}{% if field.field.widget.input_type == 'checkbox' %} checkbox-row{% endif %}">
+          <div class="live-field-control">
+            {% if field.field.widget.input_type == 'checkbox' %}
+              {{ field }}
+              <span class="live-checkbox-label">{{ field.label_tag }}{% if field.field.required %}<span class="live-required" aria-hidden="true">*</span>{% endif %}</span>
+            {% else %}
+              <span class="live-field-label">{{ field.label_tag }}{% if field.field.required %}<span class="live-required" aria-hidden="true">*</span>{% endif %}</span>
+              {{ field }}
+            {% endif %}
+            {{ field.errors }}
+            {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </fieldset>
+    <div class="submit-row live-submit-row">
+      <a class="button cancel-link" href="{{ collection_url }}">بازگشت</a>
+      {% if not read_only %}<input type="submit" value="ذخیره" class="default">{% endif %}
+      {% if delete_url %}<a class="deletelink" href="{{ delete_url }}">حذف</a>{% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

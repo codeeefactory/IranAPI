@@ -9,60 +9,16 @@ export const subscriptionKeys = {
 };
 
 const FALLBACK_PLANS: SubscriptionPlan[] = [
-  {
-    id: 0,
-    name: "starter",
-    slug: "starter",
-    description: "// for prototypes & weekend hacks",
-    plan_type: "starter",
-    price: "0",
-    currency: "IRR",
-    interval: "month",
-    interval_days: 30,
-    included_requests: 25000,
-    api_publish_limit: 1,
-    features: ["25k calls / mo", "1 project", "shared edge pool"],
-    is_popular: false,
-    is_active: true,
-  },
-  {
-    id: 0,
-    name: "growth",
-    slug: "growth",
-    description: "// for product teams shipping daily",
-    plan_type: "growth",
-    price: "1490000",
-    currency: "IRR",
-    interval: "month",
-    interval_days: 30,
-    included_requests: 250000,
-    api_publish_limit: 10,
-    features: ["250k calls / mo", "10 projects", "priority webhooks", "team rbac"],
-    is_popular: true,
-    is_active: true,
-  },
-  {
-    id: 0,
-    name: "enterprise",
-    slug: "enterprise",
-    description: "// dedicated infra, vpc peering, on-prem",
-    plan_type: "enterprise",
-    price: "0",
-    currency: "IRR",
-    interval: "month",
-    interval_days: 30,
-    included_requests: 1000000,
-    api_publish_limit: null,
-    features: ["custom call volume", "dedicated edge cluster", "99.99% sla", "named sre on-call"],
-    is_popular: false,
-    is_active: true,
-  },
+  { id: 1, name: "starter", slug: "starter", description: "// for prototypes & weekend hacks", plan_type: "starter", price: "0", currency: "IRR", interval: "month", interval_days: 30, included_requests: 25000, api_publish_limit: 1, features: ["25k calls / mo", "1 project", "shared edge pool"], is_popular: false, is_active: true },
+  { id: 2, name: "growth", slug: "growth", description: "// for product teams shipping daily", plan_type: "growth", price: "1490000", currency: "IRR", interval: "month", interval_days: 30, included_requests: 250000, api_publish_limit: 10, features: ["250k calls / mo", "10 projects", "priority webhooks", "team rbac"], is_popular: true, is_active: true },
+  { id: 3, name: "enterprise", slug: "enterprise", description: "// dedicated infra, vpc peering, on-prem", plan_type: "enterprise", price: "0", currency: "IRR", interval: "month", interval_days: 30, included_requests: 1000000, api_publish_limit: null, features: ["custom call volume", "dedicated edge cluster", "99.99% sla", "named sre on-call"], is_popular: false, is_active: true },
 ];
 
 export function useSubscriptionPlans() {
   const query = useQuery({
     queryKey: subscriptionKeys.plans,
     queryFn: catalogApi.listSubscriptionPlans,
+    retry: false,
   });
 
   const plans = useMemo(() => query.data?.results ?? FALLBACK_PLANS, [query.data]);

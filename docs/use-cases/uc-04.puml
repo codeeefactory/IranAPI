@@ -1,0 +1,19 @@
+@startuml
+!include style.puml
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-04\nManage developer account" as Main
+  usecase "Update user and profile" as Profile
+  usecase "Rotate API key" as Key
+  usecase "Create or list organizations" as Org
+  usecase "View access grants" as Grants
+}
+Developer --> Main
+Main ..> Profile : <<include>>
+Main ..> Key : <<include>>
+Main ..> Org : <<include>>
+Main ..> Grants : <<include>>
+note bottom of Key
+Full key appears only in rotation response.
+end note
+@enduml

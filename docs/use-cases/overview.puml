@@ -1,0 +1,51 @@
+@startuml
+!include style.puml
+skinparam defaultFontSize 15
+actor Visitor
+actor "Authenticated Developer" as Developer
+actor "API Developer" as ApiDeveloper
+actor "System Administrator" as Admin
+actor "External Services" as External
+rectangle IranAPI {
+  usecase "UC-01 Discover APIs" as UC01
+  usecase "UC-02 Inspect details" as UC02
+  usecase "UC-03 Authentication" as UC03
+  usecase "UC-04 Account and org" as UC04
+  usecase "UC-05 Subscription" as UC05
+  usecase "UC-06 Publish API" as UC06
+  usecase "UC-07 Rate API" as UC07
+  usecase "UC-08 Caller" as UC08
+  usecase "UC-09 Store Studio flow" as UC09
+  usecase "UC-10 Init project" as UC10
+  usecase "UC-11 Dashboard" as UC11
+  usecase "UC-12 Live-data admin" as UC12
+  usecase "UC-13 Analyze archive" as UC13
+  usecase "UC-14 Deploy project" as UC14
+  usecase "UC-15 CLI workflows" as UC15
+}
+Visitor --> UC01
+Visitor --> UC02
+Visitor --> UC03
+Visitor --> UC08
+Visitor --> UC15
+Developer --> UC03
+Developer --> UC04
+Developer --> UC05
+Developer --> UC07
+Developer --> UC08
+Developer --> UC09
+Developer --> UC10
+Developer --> UC11
+Developer --> UC13
+Developer --> UC14
+Developer --> UC15
+ApiDeveloper --> UC06
+ApiDeveloper --> UC12
+Admin --> UC12
+External --> UC03
+External --> UC08
+External --> UC14
+UC02 ..> UC01 : <<extend>>
+UC07 ..> UC02 : <<extend>>
+UC14 ..> UC13 : <<include>>
+@enduml

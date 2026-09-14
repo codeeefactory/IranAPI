@@ -1,0 +1,19 @@
+@startuml
+!include style.puml
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-13\nAnalyze project archive" as Main
+  usecase "Validate archive safely" as Validate
+  usecase "Detect runtime and framework" as Detect
+  usecase "Extract routes and entrypoints" as Extract
+  usecase "Report readiness and warnings" as Report
+}
+Developer --> Main
+Main ..> Validate : <<include>>
+Main ..> Detect : <<include>>
+Main ..> Extract : <<include>>
+Main ..> Report : <<include>>
+note bottom of Main
+Static analysis only; project code is not executed.
+end note
+@enduml

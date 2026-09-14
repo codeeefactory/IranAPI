@@ -6,6 +6,7 @@ __pycache__/
 .Python
 env/
 venv/
+.validation-venv/
 ENV/
 /bin/
 build/
@@ -31,8 +32,6 @@ wheels/
 # Django
 *.log
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
 /media
 /staticfiles
 
@@ -55,6 +54,15 @@ dist-ssr/
 /.tmp*.err
 /api-hub-express/.tmp*.err
 /api-hub-express/*.zip
+/api-hub-express/output/
+/api-hub-express/test-results/
+/api-hub-express/.playwright-cli/
+/.playwright-cli/
+/output/
+/external_projects/
+/iranapi-cli/*.tgz
+!/api-hub-express/public/downloads/
+!/api-hub-express/public/downloads/*.tgz
 
 # IDE
 .vscode/
@@ -72,3 +80,19 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Report / LaTeX generated artifacts
+/report/*.aux
+/report/*.log
+/report/*.lof
+/report/*.lot
+/report/*.out
+/report/*.toc
+/report/*.xdv
+/report/*.synctex.gz
+/report/*.fls
+/report/*.fdb_latexmk
+/report/*.bbl
+/report/*.blg
+/report/main.pdf
+/tmp/pdfs/

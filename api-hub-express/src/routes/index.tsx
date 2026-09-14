@@ -5,21 +5,21 @@ import { Reveal } from "@/components/site/Reveal";
 import { useI18n } from "@/lib/i18n";
 import { useCatalogHome } from "@/hooks/useCatalog";
 import { ArrowRight, Boxes, GitBranch, Lock, Radio, Sparkles, Star, Zap } from "lucide-react";
-import heroBg from "@/assets/hero-bg.jpg";
 
 export default function IndexPage() {
   const { t } = useI18n();
-  const { apis, categories, stats } = useCatalogHome();
+  const { apis, categories, stats, isLoading, isError, isFallback, refetch } = useCatalogHome();
+  if (isLoading) {
+    return <PageShell><div className="state-block" data-tone="loading"><div className="spinner" aria-hidden /><div className="state-sub">loading catalog...</div></div></PageShell>;
+  }
+  if (isError && !isFallback) {
+    return <PageShell><div className="state-block" data-tone="error" role="alert"><div className="state-title">// catalog unavailable</div><button type="button" className="btn-primary mt-3" onClick={() => void refetch()}>./retry</button></div></PageShell>;
+  }
   return (
     <PageShell>
       {/* HERO */}
-      <section className="relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-16 overflow-hidden">
+      <section className="linux-home-hero relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-16 overflow-hidden">
 
-        <div
-          className="absolute inset-0 -z-10 opacity-[0.12]"
-          style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
-          aria-hidden
-        />
         <div className="absolute inset-0 grid-bg -z-10 opacity-40" aria-hidden />
         <div className="scan-line" aria-hidden />
 
@@ -27,8 +27,8 @@ export default function IndexPage() {
           <Reveal className="space-y-7">
             <div className="inline-flex items-center gap-2 rounded-sm border border-primary/40 bg-primary/5 px-3 py-1 text-xs">
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-primary">{t("hero.badge")}</span>
-              <span className="text-muted-foreground">// {stats.requestsPerSec.toLocaleString()} req/s</span>
+              <span className="text-primary">{isFallback ? "catalog://local snapshot" : t("hero.badge")}</span>
+              <span className="text-muted-foreground">// {stats.publishedCount.toLocaleString()} published</span>
             </div>
 
             <h1 className="text-4xl sm:text-6xl font-black leading-[1.05] tracking-tight">
@@ -58,26 +58,19 @@ export default function IndexPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Tag color="primary">SOC2</Tag>
+              <Tag color="primary">MongoDB</Tag>
               <Tag color="amber">RTL-ready</Tag>
-              <Tag color="cyan">edge-cached</Tag>
-              <Tag color="magenta">webhook-signed</Tag>
+              <Tag color="cyan">OpenAPI 3.0</Tag>
+              <Tag color="magenta">server-side caller</Tag>
             </div>
           </Reveal>
 
           <TerminalWindow title="~/iranapi/quickstart.sh" glow>
             <div data-terminal className="min-w-max space-y-2 text-sm">
-              <Prompt>curl \</Prompt>
-              <div className="whitespace-nowrap ps-6 text-foreground/90">https://api.iranapi.dev/v1/zarinpal/pay \</div>
-              <div className="whitespace-nowrap ps-6 text-foreground/90">-H <span className="text-amber">"x-iran-key: $IRAN_KEY"</span> \</div>
-              <div className="whitespace-nowrap ps-6 text-foreground/90">-d <span className="text-amber">{`'{"amount":50000,"callback":"/ok"}'`}</span></div>
-              <div className="pt-3 text-xs text-muted-foreground">{"// HTTP/2 200  // 142ms  // signed:0xa1f9c2e"}</div>
-              <pre dir="ltr" className="mt-2 text-xs text-primary/90 bg-background/60 rounded-sm border border-border p-3 overflow-x-auto">{`{
-  "ok": true,
-  "intent_id": "pi_4f9c8b2a",
-  "redirect": "https://gw.zarinpal.com/...",
-  "expires_in": 900
-}`}</pre>
+              <Prompt>curl http://localhost:8000/api/v1/catalog/apis/</Prompt>
+              <div className="pt-3 text-xs text-muted-foreground">{"// live catalog JSON from MongoDB"}</div>
+              <Prompt>curl http://localhost:8000/api/v1/schema/openapi.json</Prompt>
+              <div className="pt-3 text-xs text-primary">{"// machine-readable OpenAPI contract"}</div>
               <Prompt><Cursor /></Prompt>
             </div>
           </TerminalWindow>
@@ -88,8 +81,8 @@ export default function IndexPage() {
           {[
             { label: t("stats.apis"), value: stats.apiCount },
             { label: t("stats.categories"), value: stats.categoryCount },
-            { label: t("stats.uptime"), value: stats.uptime + "%" },
-            { label: t("stats.devs"), value: stats.developers },
+            { label: t("stats.uptime"), value: stats.publishedCount },
+            { label: t("stats.devs"), value: stats.totalViews },
           ].map((s, i) => (
             <Reveal key={s.label} delay={i * 80}>
               <div className="surface-card rounded-sm p-4 transition-all hover:border-primary/60 hover:shadow-glow">
@@ -122,9 +115,9 @@ export default function IndexPage() {
               </div>
               <p className="mt-3 text-sm text-foreground/80 line-clamp-2">{a.tagline}</p>
               <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                <span>p95 <span className="text-primary">{a.latency}ms</span></span>
-                <span>up <span className="text-primary">{a.uptime}%</span></span>
-                <span>req <span className="text-amber">{a.calls}</span></span>
+                <span>state <span className="text-primary">{a.rapidapi.publication_status}</span></span>
+                <span>auth <span className="text-primary">{a.rapidapi.public_auth_scheme}</span></span>
+                <span><span className="text-amber">{a.calls}</span></span>
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
                 {a.tags.slice(0, 3).map((t) => (
@@ -165,12 +158,12 @@ export default function IndexPage() {
         <SectionHeader kicker={t("section.manifesto.kicker")} title={t("section.manifesto.title")} />
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            { icon: Zap, title: "edge-first", body: "calls hit the closest pop in <50ms. no cold starts, no surprises." },
-            { icon: Lock, title: "signed everything", body: "every payload signed, every webhook verified, every secret scoped." },
-            { icon: Radio, title: "live observability", body: "p50/p95/p99, error budget burn, regional heatmaps. built in." },
-            { icon: GitBranch, title: "versioned by default", body: "every endpoint is /v1, /v2-staged, /v3-beta. no breaking changes." },
-            { icon: Boxes, title: "one bill", body: "aggregate billing across providers. usage-based, irr or usd." },
-            { icon: Sparkles, title: "ai-native", body: "openapi -> typed sdks -> ai completions in your editor." },
+            { icon: Zap, title: "live caller", body: "allowlisted provider hosts and server-owned credentials keep browser input away from secrets." },
+            { icon: Lock, title: "masked secrets", body: "account keys are hashed, shown once on rotation, and redacted from normal payloads." },
+            { icon: Radio, title: "usage records", body: "caller and studio actions write request counts and action metadata to MongoDB." },
+            { icon: GitBranch, title: "versioned contract", body: "the public /api/v1 surface is documented by a machine-readable OpenAPI schema." },
+            { icon: Boxes, title: "one database", body: "catalog, accounts, sessions, billing records, admin, and workflows use MongoDB." },
+            { icon: Sparkles, title: "persian providers", body: "Neshan, Kavenegar, Zarinpal, and ArvanCloud entries ship with real endpoint metadata." },
           ].map((f) => (
             <div key={f.title} className="surface-card group rounded-sm p-5 transition-all hover:border-primary/60 hover:-translate-y-0.5 hover:shadow-glow">
               <div className="inline-flex items-center justify-center rounded-sm border border-primary/30 bg-primary/5 p-2 text-primary text-glow">

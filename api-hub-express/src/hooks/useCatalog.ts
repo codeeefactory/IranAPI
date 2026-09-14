@@ -17,6 +17,7 @@ export function useCatalogApis(params?: ApiListParams) {
   const query = useQuery({
     queryKey: catalogKeys.apis(params),
     queryFn: () => catalogApi.listApis(params),
+    retry: false,
   });
 
   const apis = useMemo(() => query.data?.results.map(toApiItem) ?? APIS, [query.data]);
@@ -27,6 +28,7 @@ export function useCatalogCategories() {
   const query = useQuery({
     queryKey: catalogKeys.categories(),
     queryFn: catalogApi.listCategories,
+    retry: false,
   });
 
   const categories = query.data?.results ?? CATEGORIES;
@@ -37,6 +39,7 @@ export function useCatalogDocumentations(params?: DocumentationListParams) {
   const query = useQuery({
     queryKey: catalogKeys.documentations(params),
     queryFn: () => catalogApi.listDocumentations(params),
+    retry: false,
   });
 
   const documentations = query.data?.results ?? MOCK_CATALOG_APIS.flatMap((api) => api.documentations);
@@ -58,30 +61,32 @@ export function useCatalogHome() {
     isLoading: apisQuery.isLoading || categoriesQuery.isLoading,
     isError: apisQuery.isError || categoriesQuery.isError,
     isFallback: apisQuery.isFallback || categoriesQuery.isFallback,
+    refetch: () => Promise.all([apisQuery.refetch(), categoriesQuery.refetch()]),
   };
 }
 
 export function useCatalogApi(slug?: string) {
-  const fallbackApi = APIS.find((api) => api.slug === slug);
   const query = useQuery({
     queryKey: catalogKeys.api(slug),
     queryFn: () => catalogApi.getApi(slug as string),
     enabled: Boolean(slug),
+    retry: false,
   });
 
-  const api = query.data ? toApiItem(query.data) : fallbackApi;
+  const api = query.data ? toApiItem(query.data) : APIS.find((item) => item.slug === slug);
   return { ...query, api, isFallback: !query.data };
 }
 
 export function useSimilarApis(slug?: string) {
-  const fallbackApi = APIS.find((api) => api.slug === slug);
-  const fallbackSimilar = APIS.filter((api) => api.slug !== slug && (!fallbackApi || api.category === fallbackApi.category)).slice(0, 3);
   const query = useQuery({
     queryKey: catalogKeys.similar(slug),
     queryFn: () => catalogApi.listSimilarApis(slug as string),
     enabled: Boolean(slug),
+    retry: false,
   });
 
+  const fallbackApi = APIS.find((api) => api.slug === slug);
+  const fallbackSimilar = APIS.filter((api) => api.slug !== slug && (!fallbackApi || api.category === fallbackApi.category)).slice(0, 3);
   const apis = query.data?.map(toApiItem) ?? fallbackSimilar;
   return { ...query, apis, isFallback: !query.data };
 }

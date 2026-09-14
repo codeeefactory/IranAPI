@@ -41,11 +41,11 @@
 - 🌐 **Axios** - کلاینت HTTP
 
 ### بک‌اند
-- 🐍 **Django 5.2** - فریمورک وب Python سطح بالا
+- 🐍 **Django 6.0** - فریمورک وب Python سطح بالا
 - 🔌 **Django REST Framework** - ابزار قدرتمند API
 - 🌍 **Django CORS Headers** - اشتراک‌گذاری منابع cross-origin
 - 🔑 **احراز هویت Token** - دسترسی امن به API
-- 💾 **SQLite** - دیتابیس سبک (توسعه)
+- 💾 **MongoDB 8.0** - تنها دیتابیس زمان اجرا، با backend رسمی Django و PyMongo
 
 ## ساختار پروژه
 
@@ -66,7 +66,7 @@ IranAPI/
 │   └── admin.py             # پیکربندی Django admin
 ├── manage.py                 # اسکریپت مدیریت Django
 ├── requirements.txt          # وابستگی‌های Python
-└── db.sqlite3               # دیتابیس SQLite (پس از migrations ایجاد می‌شود)
+└── mongo_migrations/        # migrationهای سازگار با MongoDB برای Admin/Auth
 ```
 
 ## 🚀 راه‌اندازی سریع با Docker Compose
@@ -318,12 +318,12 @@ docker compose exec backend python manage.py shell
 1. بررسی کنید هر دو container در حال اجرا هستند: `docker compose ps`
 2. بررسی کنید بک‌اند قابل دسترسی است: به http://localhost:8000/api/categories/ بروید
 3. کنسول مرورگر را برای خطاهای CORS بررسی کنید
-4. بررسی کنید `VITE_API_BASE_URL` در `docker-compose.yml` روی `http://localhost:8000/api` تنظیم شده است
+4. بررسی کنید `VITE_API_BASE_URL` روی `/api/v1` و `VITE_DEV_PROXY_TARGET` روی `http://backend:8000` تنظیم شده باشد
 
 ### پایداری داده
 
 داده‌های شما در موارد زیر ذخیره می‌شوند:
-- **دیتابیس**: `./db.sqlite3` (در ریشه پروژه)
+- **دیتابیس**: volume نام‌دار `iranapi_mongodb_data`
 - **فایل‌های media**: `./media/` (در ریشه پروژه)
 
 این‌ها به عنوان volume mount شده‌اند، بنابراین داده‌های شما حتی زمانی که containers متوقف می‌شوند نیز باقی می‌مانند.
@@ -407,7 +407,8 @@ docker compose down -v --rmi all
    
    `.env` را ویرایش کنید و تنظیم کنید:
    ```
-   VITE_API_BASE_URL=http://localhost:8000/api
+   VITE_API_BASE_URL=/api/v1
+   VITE_DEV_PROXY_TARGET=http://127.0.0.1:8000
    ```
 
 4. **شروع سرور توسعه**:
@@ -420,37 +421,38 @@ docker compose down -v --rmi all
 ## 📡 API Endpoints
 
 ### 🔐 احراز هویت
-- `POST /api/users/register/` - ثبت‌نام کاربر
-- `POST /api/users/login/` - ورود کاربر
-- `POST /api/users/logout/` - خروج کاربر
-- `GET /api/users/me/` - دریافت کاربر فعلی
+- `POST /api/v1/auth/register/` - ثبت‌نام و ایجاد نشست
+- `POST /api/v1/auth/login/` - ورود و ایجاد نشست
+- `POST /api/v1/auth/logout/` - خروج و حذف نشست
+- `GET /api/v1/auth/session/` - وضعیت نشست فعلی
 
 ### 🗂️ دسته‌بندی‌ها
-- `GET /api/categories/` - لیست همه دسته‌بندی‌ها
-- `GET /api/categories/{id}/` - دریافت جزئیات دسته‌بندی
-- `GET /api/categories/{id}/apis/` - دریافت APIهای در دسته‌بندی
+- `GET /api/v1/catalog/categories/` - لیست دسته‌بندی‌ها
+- `GET /api/v1/catalog/categories/{slug}/` - جزئیات دسته‌بندی
+- `GET /api/v1/catalog/categories/{slug}/apis/` - APIهای دسته‌بندی
 
 ### 🔌 APIها
-- `GET /api/apis/` - لیست همه APIها (با فیلتر)
-- `GET /api/apis/{id}/` - دریافت جزئیات API
-- `GET /api/apis/{id}/similar/` - دریافت APIهای مشابه
-- `POST /api/apis/{id}/rate/` - امتیازدهی به API
+- `GET /api/v1/catalog/apis/` - فهرست و جستجوی APIها
+- `GET /api/v1/catalog/apis/{slug}/` - جزئیات API
+- `GET /api/v1/catalog/apis/{slug}/similar/` - APIهای مشابه
+- `POST /api/v1/catalog/apis/{slug}/ratings/` - ثبت یا تغییر امتیاز
 
 ### 💰 پلن‌های قیمت‌گذاری
-- `GET /api/pricing-plans/` - لیست پلن‌های قیمت‌گذاری
-- `GET /api/pricing-plans/?api={id}` - دریافت پلن‌ها برای API خاص
+- `GET /api/v1/catalog/pricing-plans/` - فهرست پلن‌های API
+- `GET /api/v1/catalog/subscription-plans/` - فهرست پلن‌های اشتراک
 
 ### 📖 مستندات
-- `GET /api/documentations/` - لیست مستندات
-- `GET /api/documentations/?api={id}` - دریافت مستندات برای API خاص
+- `GET /api/v1/catalog/documentations/` - فهرست و جستجوی مستندات
+- `GET /api/v1/catalog/apis/{slug}/docs/` - مستندات یک API
 
 ### 👤 پروفایل کاربر
-- `GET /api/profiles/me/` - دریافت پروفایل کاربر
-- `PATCH /api/profiles/me/` - به‌روزرسانی پروفایل کاربر
+- `GET /api/v1/account/profile/` - دریافت پروفایل کاربر
+- `PATCH /api/v1/account/profile/` - به‌روزرسانی پروفایل کاربر
+- `POST /api/v1/account/api-key/rotate/` - چرخش کلید Bearer
 
 ### 📊 استفاده
-- `GET /api/usage/` - دریافت تاریخچه استفاده از API
-- `GET /api/usage/stats/` - دریافت آمار استفاده
+- `GET /api/v1/account/usage/` - دریافت تاریخچه استفاده از API
+- `GET /api/v1/account/usage/stats/` - دریافت آمار استفاده
 
 ## 💻 توسعه
 
@@ -470,16 +472,15 @@ docker compose down -v --rmi all
 
 ## 🗄️ مدل‌های دیتابیس
 
-- **📁 Category**: دسته‌بندی‌های API (هوش مصنوعی، پرداخت، ارتباطات و غیره)
-- **🔌 API**: مدل اصلی API با جزئیات، امتیازها و وضعیت
-- **💰 PricingPlan**: سطوح قیمت‌گذاری برای APIها
-- **📖 Documentation**: محتوای مستندات API
-- **👤 UserProfile**: اطلاعات پروفایل کاربر توسعه یافته
-- **📊 APIUsage**: ردیابی استفاده از API به ازای هر کاربر
+- مجموعه‌های عملیاتی MongoDB شامل دسته‌بندی‌ها، APIها، endpointها، پلن‌ها، مستندات و امتیازها هستند.
+- حساب و پروفایل کاربر در سند `users` نگهداری می‌شود؛ نشست‌ها، اشتراک‌ها، پروژه‌ها و مصرف نیز مجموعه‌های پایدار جدا دارند.
+- کاربران، مجوزها و نشست‌های داخلی Django Admin هم با بک‌اند رسمی MongoDB در همان پایگاه ذخیره می‌شوند.
 
 ## 🔐 احراز هویت
 
-API از **Token Authentication** استفاده می‌کند. پس از ورود/ثبت‌نام، token در `localStorage` ذخیره می‌شود و به طور خودکار در درخواست‌های API گنجانده می‌شود.
+رابط وب از نشست `HttpOnly` مبتنی بر MongoDB استفاده می‌کند. برای فراخوانی ماشینی می‌توان کلید یک‌بارنمایش‌داده‌شده `iapi_...` را با هدر `Authorization: Bearer` فرستاد؛ کلید خام در `localStorage` یا MongoDB ذخیره نمی‌شود.
+
+ورود با Google/GitHub به‌صورت پیش‌فرض خاموش است. برای فعال‌سازی، URL کامل شروع OAuth را فقط در محیط backend قرار دهید (`IRANAPI_GITHUB_AUTH_URL` یا `IRANAPI_GOOGLE_AUTH_URL`) و سرویس را rebuild کنید؛ مقدار خالی عمداً پیام «provider پیکربندی نشده» نشان می‌دهد.
 
 ## 🌍 پیکربندی CORS
 
@@ -491,10 +492,13 @@ CORS برای اجازه درخواست از موارد زیر پیکربندی 
 
 ## 📝 افزودن داده نمونه
 
-می‌توانید داده نمونه را از طریق موارد زیر اضافه کنید:
-1. 🎛️ پنل ادمین Django (`/admin/`)
-2. 🐍 Django shell: `python manage.py shell`
-3. ⚙️ دستورات مدیریت (ایجاد دستورات سفارشی)
+کاتالوگ واقعی سرویس‌دهندگان ایرانی را با دستور زیر وارد یا به‌روزرسانی کنید:
+
+```bash
+python manage.py seed_persian_apis
+```
+
+پس از آن داده‌ها از کنسول زنده MongoDB در پنل ادمین (`/admin/`) قابل مشاهده و ویرایش‌اند.
 
 ---
 

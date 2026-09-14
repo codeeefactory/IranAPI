@@ -1,3 +1,5 @@
+FROM docker:29-cli AS docker-cli
+
 FROM public.ecr.aws/docker/library/node:20-alpine AS frontend-build
 
 WORKDIR /frontend
@@ -24,11 +26,14 @@ RUN test -f src/lib/utils.ts \
     && npx vite build --base /static/
 
 
-FROM python:3.12-slim AS backend-base
+FROM public.ecr.aws/docker/library/python:3.12-slim AS backend-base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=8
 
 WORKDIR /app
 
@@ -42,6 +47,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=iranapi:iranapi manage.py ./manage.py
 COPY --chown=iranapi:iranapi IranAPIBackend ./IranAPIBackend
 COPY --chown=iranapi:iranapi api ./api
+COPY --chown=iranapi:iranapi mongo_migrations ./mongo_migrations
 COPY docker/backend-entrypoint.sh /entrypoint.sh
 
 RUN sed -i 's/\r$//' /entrypoint.sh \
@@ -60,6 +66,17 @@ ENTRYPOINT ["/entrypoint.sh"]
 CMD ["sh", "-c", "gunicorn IranAPIBackend.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${GUNICORN_WORKERS:-3}"]
 
 
+FROM backend-base AS deployer-runtime
+
+USER root
+
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker-cli /usr/local/libexec/docker/cli-plugins /usr/local/libexec/docker/cli-plugins
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python", "manage.py", "run_project_deployer"]
+
+
 FROM public.ecr.aws/docker/library/nginx:1.27-alpine AS frontend-runtime
 
 COPY api-hub-express/nginx.conf /etc/nginx/conf.d/default.conf
@@ -72,9 +89,9 @@ CMD ["nginx", "-g", "daemon off;"]
 
 FROM backend-base AS app-runtime
 
-# Runflare deploys the default final stage, so ship the prebuilt frontend
-# bundle directly to avoid needing the frontend build stages remotely.
-COPY --chown=iranapi:iranapi frontend_static ./frontend_static
+# The default deployment image always receives the frontend built from the
+# same source revision; stale checked-in bundles cannot reach production.
+COPY --from=frontend-build --chown=iranapi:iranapi /frontend/dist ./frontend_static
 
 USER iranapi
 

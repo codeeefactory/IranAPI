@@ -103,8 +103,6 @@ export type ApiItem = Omit<CatalogApiDetail, "endpoints"> & {
   categorySlug: string;
   category: string;
   ratingValue: number;
-  latency: number;
-  uptime: number;
   calls: string;
   pricing: PricingKind;
   apiEndpoints: CatalogEndpoint[];
@@ -116,7 +114,6 @@ export type ApiItem = Omit<CatalogApiDetail, "endpoints"> & {
 export type CatalogStats = {
   apiCount: number;
   categoryCount: number;
-  uptime: number;
-  requestsPerSec: number;
-  developers: string;
+  publishedCount: number;
+  totalViews: number;
 };

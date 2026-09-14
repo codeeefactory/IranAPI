@@ -1,9 +1,6 @@
 node_modules/
 dist/
-.vite/
-.cache/
+output/
+test-results/
+.playwright-cli/
 *.log
-Dockerfile*
-docker-compose*.yml
-**/*.local.*
-

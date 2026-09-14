@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">خانه</a> &rsaquo;
+  <a href="{{ collection_url }}">{{ collection }}</a> &rsaquo; حذف
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="iranapi-live-admin delete-confirmation">
+  <p>سند «{{ document }}» حذف شود؟ این عملیات قابل بازگشت نیست.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="submit-row">
+      <a class="button cancel-link" href="{{ collection_url }}">انصراف</a>
+      <input type="submit" value="بله، حذف شود" class="deletelink">
+    </div>
+  </form>
+</div>
+{% endblock %}

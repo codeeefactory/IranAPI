@@ -260,6 +260,8 @@ def serialize_user(user: dict[str, Any] | MongoUser | None) -> dict[str, Any] | 
             "first_name": user.first_name,
             "last_name": user.last_name,
             "date_joined": user.date_joined,
+            "account_type": user.account_type,
+            "is_staff": user.is_staff,
         }
 
     return {
@@ -269,6 +271,8 @@ def serialize_user(user: dict[str, Any] | MongoUser | None) -> dict[str, Any] | 
         "first_name": user.get("first_name", ""),
         "last_name": user.get("last_name", ""),
         "date_joined": user.get("date_joined"),
+        "account_type": user.get("account_type", "user"),
+        "is_staff": bool(user.get("is_staff", False)),
     }
 
 
@@ -363,6 +367,26 @@ def serialize_api_project(project: dict[str, Any]) -> dict[str, Any]:
         "file_count": len(project.get("files", [])),
         "created_at": project.get("created_at"),
         "updated_at": project.get("updated_at"),
+    }
+
+
+def serialize_project_deployment(deployment: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": int(deployment["_id"]),
+        "project_name": deployment.get("project_name", ""),
+        "slug": deployment.get("slug", ""),
+        "region": deployment.get("region", "ir-tehran-1"),
+        "status": deployment.get("status", "queued"),
+        "language": deployment.get("language", "unknown"),
+        "frameworks": deployment.get("frameworks", []),
+        "routes": deployment.get("routes", []),
+        "analysis": deployment.get("analysis", {}),
+        "deployment_url": deployment.get("deployment_url", ""),
+        "build_log": deployment.get("build_log", ""),
+        "failure_reason": deployment.get("failure_reason", ""),
+        "deployed_at": deployment.get("deployed_at"),
+        "created_at": deployment.get("created_at"),
+        "updated_at": deployment.get("updated_at"),
     }
 
 
@@ -497,6 +521,7 @@ class RegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
+    account_type = serializers.ChoiceField(choices=["user", "api_developer"], default="user")
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
@@ -632,13 +657,23 @@ class RatingSerializer(serializers.Serializer):
 
 
 class CallerRequestSerializer(serializers.Serializer):
-    api_slug = serializers.SlugField(max_length=160)
+    url = serializers.URLField(required=False, max_length=2048)
+    api_slug = serializers.SlugField(required=False, max_length=160)
     endpoint_id = serializers.IntegerField(required=False, min_value=1)
     method = serializers.ChoiceField(choices=["GET", "POST", "PUT", "PATCH", "DELETE"], default="GET")
     path = serializers.CharField(max_length=500, required=False, allow_blank=True)
     body = serializers.JSONField(required=False)
+    query = serializers.DictField(required=False, default=dict)
+    path_params = serializers.DictField(required=False, default=dict)
+    headers = serializers.DictField(required=False, default=dict)
 
     def validate(self, attrs):
         attrs["method"] = attrs.get("method", "GET").upper()
         attrs["path"] = (attrs.get("path") or "").strip()
+        attrs["url"] = (attrs.get("url") or "").strip()
+        attrs["api_slug"] = (attrs.get("api_slug") or "").strip()
+        if bool(attrs["url"]) == bool(attrs["api_slug"]):
+            raise serializers.ValidationError("Provide exactly one of url or api_slug.")
+        if attrs["url"] and (attrs.get("endpoint_id") or attrs["path"] or attrs.get("path_params")):
+            raise serializers.ValidationError("endpoint_id, path, and path_params are only valid with api_slug.")
         return attrs

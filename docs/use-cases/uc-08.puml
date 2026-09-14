@@ -1,0 +1,26 @@
+@startuml
+!include style.puml
+actor Visitor
+actor "Authenticated Developer" as Developer
+actor "Upstream API" as Upstream
+rectangle IranAPI {
+  usecase "UC-08\nExecute request in Caller" as Main
+  usecase "Call public URL" as Public
+  usecase "Call catalog endpoint" as Catalog
+  usecase "Block private/unsafe targets" as SSRF
+  usecase "Verify active grant" as Grant
+  usecase "Inject server credential" as Secret
+  usecase "Record usage" as Usage
+}
+Visitor --> Public
+Developer --> Public
+Developer --> Catalog
+Public ..> Main : <<extend>>
+Catalog ..> Main : <<extend>>
+Public ..> SSRF : <<include>>
+Catalog ..> Grant : <<include>>
+Catalog ..> Secret : <<include>>
+Catalog ..> Usage : <<include>>
+Upstream --> Public
+Upstream --> Catalog
+@enduml

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import secrets
+import hashlib
+import base64
+import time
 from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
@@ -10,7 +13,7 @@ from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.utils import timezone
 from django.utils.text import slugify
-from pymongo import ASCENDING, DESCENDING
+from pymongo import ASCENDING, DESCENDING, ReturnDocument
 from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 
@@ -92,6 +95,7 @@ class MongoUser:
     is_active: bool
     is_staff: bool = False
     is_superuser: bool = False
+    account_type: str = "user"
 
     @property
     def is_authenticated(self) -> bool:
@@ -118,10 +122,12 @@ class MongoRepository:
         self.api_ratings = self.db["api_ratings"]
         self.api_usage = self.db["api_usage"]
         self.sessions = self.db["sessions"]
+        self.cli_auth_codes = self.db["cli_auth_codes"]
         self.legacy_tokens = self.db["legacy_tokens"]
         self.organizations = self.db["organizations"]
         self.studio_flows = self.db["studio_flows"]
         self.api_projects = self.db["api_projects"]
+        self.project_deployments = self.db["project_deployments"]
 
     def build_mongo_user(self, user_doc: dict[str, Any]) -> MongoUser:
         return MongoUser(
@@ -134,6 +140,7 @@ class MongoRepository:
             is_active=bool(user_doc.get("is_active", True)),
             is_staff=bool(user_doc.get("is_staff", False)),
             is_superuser=bool(user_doc.get("is_superuser", False)),
+            account_type=str(user_doc.get("account_type") or "user"),
         )
 
     def _find_user(self, query: dict[str, Any]) -> dict[str, Any] | None:
@@ -178,8 +185,10 @@ class MongoRepository:
         email: str = "",
         first_name: str = "",
         last_name: str = "",
+        account_type: str = "user",
     ) -> dict[str, Any]:
         self.validate_unique_user_fields(username=username, email=email)
+        account_type = "api_developer" if account_type == "api_developer" else "user"
 
         now = timezone.now()
         document: dict[str, Any] = {
@@ -191,8 +200,9 @@ class MongoRepository:
             "last_name": last_name.strip(),
             "password_hash": make_password(password),
             "is_active": True,
-            "is_staff": False,
+            "is_staff": account_type == "api_developer",
             "is_superuser": False,
+            "account_type": account_type,
             "date_joined": now,
             "last_login": now,
             "created_at": now,
@@ -287,6 +297,7 @@ class MongoRepository:
         for _ in range(10):
             candidate = f"iapi_{secrets.token_hex(20)}"
             preview = f"{candidate[:6]}...{candidate[-4:]}"
+            fingerprint = hashlib.sha256(candidate.encode("utf-8")).hexdigest()
             try:
                 self.users.update_one(
                     {"_id": user_id},
@@ -294,6 +305,7 @@ class MongoRepository:
                         "$set": {
                             "profile.api_key": None,
                             "profile.api_key_hash": make_password(candidate),
+                            "profile.api_key_fingerprint": fingerprint,
                             "profile.api_key_preview": preview,
                             "profile.updated_at": timezone.now(),
                             "updated_at": timezone.now(),
@@ -357,6 +369,32 @@ class MongoRepository:
         if session_id:
             self.sessions.delete_one({"_id": session_id})
 
+    def create_cli_auth_code(self, *, user_id: int, code_challenge: str) -> str:
+        code = secrets.token_urlsafe(32)
+        now = timezone.now()
+        self.cli_auth_codes.insert_one(
+            {
+                "_id": hashlib.sha256(code.encode("utf-8")).hexdigest(),
+                "user_id": int(user_id),
+                "code_challenge": code_challenge,
+                "created_at": now,
+                "expires_at": now + timedelta(minutes=5),
+            }
+        )
+        return code
+
+    def consume_cli_auth_code(self, *, code: str, code_verifier: str) -> dict[str, Any] | None:
+        code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+        document = self.cli_auth_codes.find_one_and_delete(
+            {"_id": code_hash, "expires_at": {"$gt": timezone.now()}}
+        )
+        if not document:
+            return None
+        challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("utf-8")).digest()).rstrip(b"=").decode("ascii")
+        if not secrets.compare_digest(str(document.get("code_challenge") or ""), challenge):
+            return None
+        return document
+
     def create_or_get_legacy_token(self, user_id: int) -> str:
         token_doc = self.legacy_tokens.find_one({"user_id": int(user_id)})
         if token_doc:
@@ -380,9 +418,16 @@ class MongoRepository:
             return None
 
         token_doc = self.legacy_tokens.find_one({"_id": token})
-        if not token_doc:
-            return None
-        return self.get_user_by_id(token_doc["user_id"])
+        if token_doc:
+            return self.get_user_by_id(token_doc["user_id"])
+
+        if token.startswith("iapi_"):
+            fingerprint = hashlib.sha256(token.encode("utf-8")).hexdigest()
+            user_doc = self.users.find_one({"profile.api_key_fingerprint": fingerprint})
+            stored_hash = (user_doc or {}).get("profile", {}).get("api_key_hash")
+            if user_doc and stored_hash and check_password(token, stored_hash):
+                return user_doc
+        return None
 
     def category_counts(self) -> dict[int, int]:
         results = self.apis.aggregate(
@@ -876,6 +921,61 @@ class MongoRepository:
     def list_api_projects(self, user_id: int) -> list[dict[str, Any]]:
         return list(self.api_projects.find({"user_id": int(user_id)}).sort([("updated_at", DESCENDING)]))
 
+    def list_project_deployments(self, user_id: int) -> list[dict[str, Any]]:
+        return list(self.project_deployments.find({"user_id": int(user_id)}).sort([("created_at", DESCENDING)]))
+
+    def get_project_deployment(self, user_id: int, slug: str) -> dict[str, Any] | None:
+        return self.project_deployments.find_one({"user_id": int(user_id), "slug": slug})
+
+    def claim_next_project_deployment(self) -> dict[str, Any] | None:
+        now = timezone.now()
+        return self.project_deployments.find_one_and_update(
+            {"status": "queued"},
+            {"$set": {"status": "building", "build_started_at": now, "updated_at": now}},
+            sort=[("created_at", ASCENDING)],
+            return_document=ReturnDocument.AFTER,
+        )
+
+    def update_project_deployment(self, deployment_id: int, **fields: Any) -> dict[str, Any] | None:
+        fields["updated_at"] = timezone.now()
+        return self.project_deployments.find_one_and_update(
+            {"_id": int(deployment_id)},
+            {"$set": fields},
+            return_document=ReturnDocument.AFTER,
+        )
+
+    def create_project_deployment(
+        self,
+        *,
+        user_id: int,
+        project_name: str,
+        region: str,
+        analysis: dict[str, Any],
+        archive_path: str,
+    ) -> dict[str, Any]:
+        now = timezone.now()
+        deployment = {
+            "_id": next_id("project_deployments"),
+            "user_id": int(user_id),
+            "project_name": project_name.strip(),
+            "slug": unique_slug(self.project_deployments, project_name or analysis.get("filename", "api-project"), max_length=120),
+            "region": region.strip() or "ir-tehran-1",
+            "status": "queued",
+            "language": analysis.get("language", "unknown"),
+            "frameworks": analysis.get("frameworks", []),
+            "routes": analysis.get("routes", []),
+            "analysis": analysis,
+            "archive_path": archive_path,
+            "archive_fingerprint": analysis.get("fingerprint", ""),
+            "deployment_url": "",
+            "build_log": "",
+            "failure_reason": "",
+            "created_at": now,
+            "updated_at": now,
+        }
+        self.project_deployments.insert_one(deployment)
+        return deployment
+
     def initialize_api_project(
         self,
         *,
@@ -915,6 +1015,7 @@ class MongoRepository:
         nodes: list[dict[str, Any]],
         region: str,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
+        started = time.perf_counter()
         flow = self.build_studio_flow_document(
             {
                 "user_id": int(user_id),
@@ -927,6 +1028,11 @@ class MongoRepository:
             }
         )
         self.studio_flows.insert_one(flow)
+        flow["latency_ms"] = max(round((time.perf_counter() - started) * 1000), 1)
+        self.studio_flows.update_one(
+            {"_id": flow["_id"]},
+            {"$set": {"latency_ms": flow["latency_ms"], "updated_at": timezone.now()}},
+        )
         usage = self.record_studio_flow_usage(user_id=user_id, api_doc=api_doc, flow_doc=flow)
         return flow, usage
 
@@ -1016,29 +1122,36 @@ class MongoRepository:
         usage_docs = self.list_usage(user_id)
         recent_threshold = timezone.now() - timedelta(days=30)
         recent_usage = [item for item in usage_docs if item.get("last_used") and item["last_used"] >= recent_threshold]
-        api_ids = [int(item["api_id"]) for item in usage_docs if item.get("api_id") is not None]
+        request_totals: dict[int, int] = {}
+        for item in usage_docs:
+            if item.get("api_id") is None:
+                continue
+            api_id = int(item["api_id"])
+            request_totals[api_id] = request_totals.get(api_id, 0) + int(item.get("requests_count", 0))
+
+        api_ids = list(request_totals)
         api_map = self.get_apis_by_ids(api_ids)
 
         ranked = sorted(
-            usage_docs,
+            request_totals.items(),
             key=lambda item: (
-                -int(item.get("requests_count", 0)),
-                api_map.get(int(item["api_id"]), {}).get("name", ""),
+                -item[1],
+                api_map.get(item[0], {}).get("name", ""),
             ),
         )
 
         return {
             "total_requests": sum(int(item.get("requests_count", 0)) for item in usage_docs),
-            "active_apis": len(usage_docs),
+            "active_apis": len(request_totals),
             "recent_usage_count": len(recent_usage),
             "recent_requests": sum(int(item.get("requests_count", 0)) for item in recent_usage),
             "top_apis": [
                 {
-                    "name": api_map.get(int(item["api_id"]), {}).get("name", ""),
-                    "slug": api_map.get(int(item["api_id"]), {}).get("slug", ""),
-                    "requests_count": int(item.get("requests_count", 0)),
+                    "name": api_map.get(api_id, {}).get("name", ""),
+                    "slug": api_map.get(api_id, {}).get("slug", ""),
+                    "requests_count": requests_count,
                 }
-                for item in ranked[:5]
+                for api_id, requests_count in ranked[:5]
             ],
         }
 
@@ -1273,7 +1386,7 @@ class MongoRepository:
             "nodes": nodes,
             "region": payload.get("region", "ir-tehran-1").strip() or "ir-tehran-1",
             "status": payload.get("status", "draft"),
-            "latency_ms": int(payload.get("latency_ms") or (120 + len(nodes) * 83)),
+            "latency_ms": int(payload.get("latency_ms") or 0),
             "created_at": payload.get("created_at", now),
             "updated_at": payload.get("updated_at", now),
         }

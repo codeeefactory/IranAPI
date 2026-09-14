@@ -8,18 +8,6 @@ import type {
   PricingKind,
 } from "@/types/catalog";
 
-const latencyBySlug: Record<string, number> = {
-  "speech-gateway": 186,
-  "payments-hub": 154,
-  "geo-routes": 112,
-};
-
-const callsBySlug: Record<string, string> = {
-  "speech-gateway": "1.8M",
-  "payments-hub": "977K",
-  "geo-routes": "1.3M",
-};
-
 function pricingKind(api: CatalogApiSummary | CatalogApiDetail): PricingKind {
   if ("pricing_plans" in api && api.pricing_plans.some((plan) => Number(plan.price) === 0)) return "free";
   if ("pricing_plans" in api && api.pricing_plans.some((plan) => plan.plan_type === "basic")) return "freemium";
@@ -66,9 +54,7 @@ export function toApiItem(api: CatalogApiSummary | CatalogApiDetail): ApiItem {
     categorySlug: category.slug,
     category: category.slug,
     ratingValue: Number(api.rating),
-    latency: latencyBySlug[api.slug] ?? 180,
-    uptime: api.rapidapi.publication_status === "published" ? 99.97 : 99.91,
-    calls: callsBySlug[api.slug] ?? `${api.views_count.toLocaleString()} views`,
+    calls: `${api.views_count.toLocaleString()} views`,
     pricing: pricingKind(api),
     apiEndpoints,
     endpointCount: apiEndpoints.length,
@@ -81,8 +67,7 @@ export function buildCatalogStats(apis: ApiItem[], categories: CatalogCategory[]
   return {
     apiCount: apis.length,
     categoryCount: categories.length,
-    uptime: apis.length ? Number((apis.reduce((total, api) => total + api.uptime, 0) / apis.length).toFixed(2)) : 99.97,
-    requestsPerSec: apis.reduce((total, api) => total + Math.max(api.views_count, 1), 0),
-    developers: "12,400+",
+    publishedCount: apis.filter((api) => api.rapidapi.publication_status === "published").length,
+    totalViews: apis.reduce((total, api) => total + api.views_count, 0),
   };
 }

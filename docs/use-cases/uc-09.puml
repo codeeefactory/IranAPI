@@ -1,0 +1,19 @@
+@startuml
+!include style.puml
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-09\nDefine and store Studio flow" as Main
+  usecase "Validate node graph" as Validate
+  usecase "Link catalog API" as Link
+  usecase "Store owned flow" as Store
+  usecase "Record Studio usage event" as Usage
+}
+Developer --> Main
+Main ..> Validate : <<include>>
+Main ..> Link : <<include>>
+Main ..> Store : <<include>>
+Main ..> Usage : <<include>>
+note bottom of Main
+Stores flow definition; does not execute node graph.
+end note
+@enduml

@@ -12,6 +12,7 @@
   includefoot
 ]{geometry}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage[table]{xcolor}
@@ -27,7 +28,7 @@
 \usepackage{etoolbox}
 \usepackage[hidelinks,unicode]{hyperref}
 \usepackage{xepersian}
-\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds,shapes.geometric}
 
 \newcommand{\UniversityName}{دانشگاه دامغان}
 \newcommand{\FacultyName}{دانشکده فنی و مهندسی}
@@ -176,7 +177,7 @@
 \renewcommand{\theequation}{\arabic{equation}-\thechapter}
 
 \DeclareCaptionFont{universitycaption}{\fontsize{12}{15}\selectfont}
-\DeclareCaptionLabelFormat{rtl-number}{#1~\lr{#2}}
+\DeclareCaptionLabelFormat{rtl-number}{#1~#2}
 \DeclareCaptionLabelFormat{appendix-number}{#1~#2}
 \captionsetup{
   font=universitycaption,
@@ -188,6 +189,26 @@
   singlelinecheck=false
 }
 \AtBeginEnvironment{table}{\fontsize{12}{15}\selectfont}
+
+\newcommand{\ManualTableCaption}[2]{%
+  \refstepcounter{table}\label{#2}%
+  \addcontentsline{lot}{table}{\protect\numberline{\thetable}#1}%
+  \par\vspace{0.25\baselineskip}%
+  \begin{center}
+    {\fontsize{12}{15}\selectfont\bfseries\color{damghanTeal}جدول \thetable\quad #1}
+  \end{center}
+  \vspace{0.15\baselineskip}%
+}
+
+\newcommand{\ManualFigureCaption}[2]{%
+  \refstepcounter{figure}\label{#2}%
+  \addcontentsline{lof}{figure}{\protect\numberline{\thefigure}#1}%
+  \par\vspace{0.25\baselineskip}%
+  \begin{center}
+    {\fontsize{12}{15}\selectfont\bfseries\color{damghanTeal}شکل \thefigure\quad #1}
+  \end{center}
+  \vspace{0.15\baselineskip}%
+}
 
 \lstset{
   basicstyle=\ttfamily\fontsize{12}{15}\selectfont,
@@ -215,6 +236,17 @@
   #2
 }
 
+% Start each detailed use case on its own page.
+\newcommand{\UseCaseStart}{\clearpage\phantomsection}
+\newcommand{\UseCaseDiagram}[3]{%
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\linewidth,height=4.8cm,keepaspectratio]{images/use-cases/#1.png}
+    \ManualFigureCaption{نمودار \lr{PlantUML} مورد کاربرد #2}{fig:usecase-#3}
+  \end{figure}
+  \vspace{-0.45\baselineskip}%
+}
+
 \newcommand{\StartAbjadPages}{%
   \clearpage
   \pagenumbering{arabic}
@@ -230,8 +262,7 @@
 
 \newcommand{\StartBackMatter}{%
   \clearpage
-  \pagenumbering{gobble}
-  \pagestyle{empty}
+  \pagestyle{thesis}
 }
 
 \newcommand{\StartAppendices}{%
@@ -309,13 +340,13 @@
 \vspace*{\fill}
 
 \FrontPage{تشکر و قدردانی}{
-از استاد راهنما و همه افرادی که در مسیر انجام این پروژه راهنمایی و حمایت کردند، سپاسگزاری می‌شود.
+از استاد راهنما و همه کسانی که در مسیر انجام این پروژه با راهنمایی، پیگیری و دلگرمی کنار من بودند، صمیمانه سپاسگزارم.
 }
 
 \FrontPage{چکیده}{
-این گزارش پروژه \lr{IranAPI Hub} را به عنوان یک پلتفرم فارسی برای اشتراک‌گذاری، جستجو و مصرف \lr{API} بررسی می‌کند. پروژه از بک‌اند \lr{Django REST Framework} و فرانت‌اند \lr{React} استفاده می‌کند و تجربه‌ای شبیه \lr{API Marketplace} ارائه می‌دهد: کاربر می‌تواند کاتالوگ را مرور کند، مستندات را بخواند، وارد حساب خود شود، مصرف و اشتراک را ببیند، \lr{API} منتشر کند و از ابزارهایی مانند \lr{Caller} و \lr{Studio} استفاده کند.
+این گزارش درباره یک پلتفرم فارسی برای اشتراک‌گذاری، جستجو و مصرف \lr{API} است؛ سامانه‌ای که تلاش می‌کند تجربه کشف سرویس، خواندن مستندات، مدیریت حساب و انتشار \lr{API} را در یک مسیر پیوسته کنار هم قرار دهد. در این پروژه، بک‌اند با \lr{Django REST Framework} و رابط کاربری با \lr{React} ساخته شده و فضای کلی آن به \lr{API Marketplace} نزدیک است. کاربر می‌تواند کاتالوگ را ببیند، مستندات را بررسی کند، وارد حساب خود شود، مصرف و اشتراک را دنبال کند، \lr{API} منتشر کند و از ابزارهایی مانند \lr{Caller} و \lr{Studio} کمک بگیرد.
 
-در این گزارش، متن با تمرکز بر تجربه واقعی کاربر، معماری فنی و مسیرهای توسعه آینده نوشته شده است. منابع نظری و فنی از داکیومنت‌های رسمی مانند \lr{Python}، \lr{Django}، \lr{Django REST Framework}، \lr{React}، \lr{Node.js}، \lr{Docker}، \lr{MongoDB}، \lr{OpenAPI} و \lr{RapidAPI} انتخاب شده‌اند. آزمون‌های بک‌اند با دستور \lr{python manage.py test api} اجرا شدند و نتیجه در فصل آزمون آمده است.
+گزارش از دو زاویه به پروژه نگاه می‌کند: تجربه کاربر و ساختار فنی. ابتدا روشن می‌شود کاربر با سامانه چه کاری انجام می‌دهد و سپس توضیح داده می‌شود این رفتارها چگونه میان رابط کاربری، بک‌اند و لایه داده تقسیم شده‌اند. منابع فنی از داکیومنت‌های رسمی مانند \lr{Python}، \lr{Django}، \lr{Django REST Framework}، \lr{React}، \lr{Node.js}، \lr{Docker}، \lr{MongoDB}، \lr{OpenAPI} و \lr{RapidAPI} انتخاب شده‌اند. برای ارزیابی بک‌اند نیز دستور \lr{python manage.py test api} اجرا شد و نتیجه آن در فصل آزمون آمده است.
 
 \vspace{1cm}
 \noindent\textbf{کلیدواژه‌ها:} پلتفرم اشتراک‌گذاری \lr{API}، \lr{Django REST Framework}، \lr{React}، احراز هویت، \lr{OpenAPI}
@@ -325,6 +356,7 @@
 \tableofcontents
 
 \clearpage
+\phantomsection
 \chapter*{فهرست علائم و نشانه‌ها}
 \addcontentsline{toc}{chapter}{فهرست علائم و نشانه‌ها}
 \begin{longtable}{>{\raggedleft\arraybackslash}p{3cm} p{9cm}}
@@ -342,10 +374,12 @@
 \end{longtable}
 
 \clearpage
+\phantomsection
 \addcontentsline{toc}{chapter}{فهرست جدول‌ها}
 \listoftables
 
 \clearpage
+\phantomsection
 \addcontentsline{toc}{chapter}{فهرست نمودارها، عکس‌ها و نقشه‌ها}
 \listoffigures
 
@@ -361,8 +395,9 @@
 \input{chapters/08-conclusion}
 
 \clearpage
-\begin{thebibliography}{99}
+\phantomsection
 \addcontentsline{toc}{chapter}{منابع}
+\begin{thebibliography}{99}
 
 \bibitem{python}
 \lr{Python Software Foundation}. \lr{Python 3 Documentation}. \url{https://docs.python.org/3/}.

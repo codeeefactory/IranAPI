@@ -7,12 +7,15 @@ import { Search, Star, SlidersHorizontal, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 export default function BrowsePage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string | null>(null);
   const [price, setPrice] = useState<string | null>(null);
-  const { apis } = useCatalogApis({ page_size: 100, ordering: "-rating" });
-  const { categories } = useCatalogCategories();
+  const apiQuery = useCatalogApis({ page_size: 100, ordering: "-rating" });
+  const categoryQuery = useCatalogCategories();
+  const { apis, isFallback: apiFallback } = apiQuery;
+  const { categories, isFallback: categoryFallback } = categoryQuery;
+  const isFallback = apiFallback || categoryFallback;
 
   const results = useMemo(() => {
     return apis.filter((a) => {
@@ -26,6 +29,13 @@ export default function BrowsePage() {
   const countKey = results.length === 1 ? "browse.results.count_one" : "browse.results.count_other";
   const clearAll = () => { setQ(""); setCat(null); setPrice(null); };
   const hasFilters = q || cat || price;
+
+  if (apiQuery.isLoading || categoryQuery.isLoading) {
+    return <PageShell><div className="state-block" data-tone="loading"><div className="spinner" aria-hidden /><div className="state-sub">loading catalog...</div></div></PageShell>;
+  }
+  if ((apiQuery.isError || categoryQuery.isError) && !isFallback) {
+    return <PageShell><div className="state-block" data-tone="error" role="alert"><div className="state-title">// catalog unavailable</div><button type="button" className="btn-primary mt-3" onClick={() => void Promise.all([apiQuery.refetch(), categoryQuery.refetch()])}>./retry</button></div></PageShell>;
+  }
 
   return (
     <PageShell>
@@ -74,7 +84,11 @@ export default function BrowsePage() {
               </li>
               {categories.map((c) => {
                 const n = apis.filter((a) => a.category === c.slug).length;
-                const label = t(`cat.${c.slug}`);
+                const categoryKey = `cat.${c.slug}`;
+                const translatedLabel = t(categoryKey);
+                const label = translatedLabel === categoryKey
+                  ? (lang === "fa" ? c.name : c.name_en || c.name)
+                  : translatedLabel;
                 return (
                   <li key={c.slug}>
                     <button
@@ -133,9 +147,9 @@ export default function BrowsePage() {
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground" data-ltr>
-                  <span>p95 <span className="text-primary">{a.latency}ms</span></span>
-                  <span>up <span className="text-primary">{a.uptime}%</span></span>
-                  <span>req <span className="text-amber">{a.calls}</span></span>
+                  <span>state <span className="text-primary">{a.rapidapi.publication_status}</span></span>
+                  <span>auth <span className="text-primary">{a.rapidapi.public_auth_scheme}</span></span>
+                  <span><span className="text-amber">{a.calls}</span></span>
                   <Tag color={a.pricing === "paid" ? "magenta" : a.pricing === "freemium" ? "cyan" : "primary"}>{t(`status.${a.pricing}`)}</Tag>
 
                   {a.tags.slice(0, 3).map((tg) => (<Tag key={tg} color="muted">{tg}</Tag>))}

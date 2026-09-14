@@ -1,130 +1,152 @@
-<div align="center">
+# IranAPI Hub
 
-# 🚀 IranAPI Hub
+IranAPI is a Persian-first API marketplace with a React frontend, Django REST backend, secure server-side provider caller, and MongoDB as its only runtime database.
 
-<div>
-  <strong>🌐 Language / زبان</strong><br>
-  <a href="README.md">🇬🇧 English</a> | <a href="README-fa.md">🇮🇷 فارسی</a>
-</div>
+## Features
 
----
+- Curated Iranian providers: Neshan, Kavenegar, ZarinPal, and ArvanCloud
+- Searchable API catalog, pricing, documentation, ratings, and access grants
+- Account dashboard, usage tracking, subscription checkout, organizations, Studio flows, project generation, and compressed API-project analysis/deployment
+- Runnable per-endpoint call examples for Java, JavaScript, TypeScript, Python, C++, and C#
+- Real provider calls through a server-controlled allowlist; provider credentials never reach the browser
+- Persian/RTL interface and responsive Django administration console
+- MongoDB-backed Django Admin/Auth/Sessions and operational document collections
 
-**A modern API marketplace platform with Persian language support**
+## Stack
 
-*Featuring a React frontend and Django REST API backend*
+- Frontend: React 18, TypeScript, Vite, React Router, TanStack Query
+- Backend: Python 3.12, Django 6.0, Django REST Framework
+- Database: MongoDB 8.0, official Django MongoDB Backend, PyMongo
+- Runtime: Docker Compose or local Python/Node processes
 
-</div>
+## Docker setup
 
-## ✨ Features
+1. Copy `.env.example` to `.env` and replace all placeholder secrets.
+2. Start the stack:
 
-- 📚 **Comprehensive API catalog** - Browse thousands of APIs
-- 🌍 **Persian (Farsi) interface** - Full RTL support for Persian users
-- 🎨 **Dark/Light theme** - Beautiful UI with theme switching
-- 📖 **API documentation** - Complete documentation for each API
-- 💰 **Pricing plans** - Flexible pricing for all needs
-- 🔐 **User authentication** - Secure token-based authentication
-- 📊 **API usage tracking** - Monitor your API consumption
-- 🗂️ **Category-based browsing** - Organized by categories
-- 🔍 **Search and filtering** - Find APIs quickly
+   ```bash
+   docker compose up --build
+   ```
 
-## 🛠️ Tech Stack
+3. Open:
 
-### Frontend
-- ⚛️ **React 18** + **TypeScript** - Modern UI framework
-- ⚡ **Vite** - Lightning-fast build tool
-- 🎨 **Tailwind CSS** - Utility-first CSS framework
-- 🧩 **shadcn/ui** - Beautiful component library
-- 🧭 **React Router** - Client-side routing
-- 🔄 **TanStack Query** - Powerful data synchronization
-- 🌐 **Axios** - HTTP client
+   - Frontend: `http://localhost:5173`
+   - Backend API: `http://localhost:8000/api/v1/`
+   - Health: `http://localhost:8000/api/v1/system/health/`
+   - Admin: `http://localhost:8000/admin/`
 
-### Backend
-- 🐍 **Django 5.2** - High-level Python web framework
-- 🔌 **Django REST Framework** - Powerful API toolkit
-- 🌍 **Django CORS Headers** - Cross-origin resource sharing
-- 🔑 **Token Authentication** - Secure API access
-- 💾 **SQLite** - Lightweight database (development)
+MongoDB data is persisted in the named `iranapi_mongodb_data` volume. The backend waits for a successful MongoDB ping, applies Mongo-compatible migrations, creates indexes, and then starts. The `deployer` service consumes the project queue, builds each uploaded archive as a Docker image, starts it with CPU/memory/process/capability limits, and publishes its live URL. In production, run this untrusted-code worker and its Docker daemon on a dedicated isolated host.
 
-## Project Structure
+Create an admin account inside the backend container:
 
-```
-IranAPI/
-├── api-hub-express/          # Frontend React application
-│   ├── src/
-│   │   ├── components/       # Reusable components
-│   │   ├── pages/            # Route pages
-│   │   ├── hooks/            # Custom hooks (including API hooks)
-│   │   └── lib/              # Utilities and API service
-│   └── public/               # Static assets
-├── IranAPIBackend/           # Django project settings
-├── api/                      # Django API app
-│   ├── models.py            # Database models
-│   ├── serializers.py       # DRF serializers
-│   ├── views.py             # API viewsets
-│   └── admin.py             # Django admin configuration
-├── manage.py                 # Django management script
-├── requirements.txt          # Python dependencies
-└── db.sqlite3               # SQLite database (created after migrations)
+```bash
+docker compose exec backend python manage.py createsuperuser
 ```
 
-## 🚀 Quick Start with Docker Compose
+## Local setup
 
-<div align="center">
+Run MongoDB first, then configure these environment variables:
 
-**The easiest way to run this project is using Docker Compose**
+```text
+IRANAPI_MONGODB_URI=mongodb://localhost:27017/
+IRANAPI_MONGODB_DATABASE=iranapi
+DJANGO_SECRET_KEY=replace-with-a-long-random-secret
+DJANGO_DEBUG=true
+```
 
-*This guide will walk you through the process step by step*
+Install and initialize:
 
-</div>
+```bash
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_persian_apis
+python manage.py runserver
+```
 
-### 📋 Prerequisites
+In another terminal:
 
-- `GET /api/v1/account/user/`
-- `PATCH /api/v1/account/user/`
-- `GET /api/v1/account/profile/`
-- `PATCH /api/v1/account/profile/`
-- `GET /api/v1/account/access/`
-- `GET /api/v1/account/subscription/`
-- `POST /api/v1/account/subscription/`
-- `POST /api/v1/account/subscription/checkout/{checkout_id}/confirm/`
-- `GET /api/v1/account/usage/`
-- `GET /api/v1/account/usage/stats/`
+```bash
+cd api-hub-express
+npm ci
+npm run dev
+```
 
-1. **🐳 Docker Desktop** (or Docker Engine + Docker Compose)
-   - 📥 Download for Windows/Mac: [Docker Desktop](https://www.docker.com/products/docker-desktop)
-   - 🐧 For Linux: Follow your distribution's installation guide
-   - ✅ Verify installation:
-     ```bash
-     docker --version
-     docker compose version
-     ```
+## CLI
 
-- `GET /api/v1/catalog/categories/`
-- `GET /api/v1/catalog/categories/{slug}/`
-- `GET /api/v1/catalog/categories/{slug}/apis/`
-- `GET /api/v1/catalog/apis/`
-- `POST /api/v1/catalog/apis/`
-- `GET /api/v1/catalog/apis/{slug}/`
-- `GET /api/v1/catalog/apis/{slug}/similar/`
-- `POST /api/v1/catalog/apis/{slug}/ratings/`
-- `GET /api/v1/catalog/apis/{slug}/plans/`
-- `GET /api/v1/catalog/apis/{slug}/docs/`
-- `GET /api/v1/catalog/apis/{slug}/endpoints/`
-- `GET /api/v1/catalog/pricing-plans/`
-- `GET /api/v1/catalog/subscription-plans/`
-- `GET /api/v1/catalog/documentations/`
+The Node.js 20+ CLI lives in `iranapi-cli/` and installs the `iranapi` command:
 
-### 📝 Step-by-Step Setup Guide
+```bash
+cd iranapi-cli
+npm ci
+npm test
+npm install --global .
+iranapi doctor
+```
 
-#### Step 1️⃣: Clone the Repository
+Browse the catalog and call any public HTTP(S) API allowed by the backend caller policy:
 
-Open your terminal (Command Prompt on Windows, Terminal on Mac/Linux) and navigate to where you want to store the project:
+```bash
+iranapi apis list --search maps --limit 10
+iranapi docs search authentication --api neshan-maps
+iranapi call GET https://httpbin.org/get --json
+```
 
-- Portal auth uses Mongo-backed sessions stored in a dedicated collection.
-- User subscription plans are managed in IranAPI through `/catalog/subscription-plans/` and `/account/subscription/`.
-- Authenticated developers can publish APIs directly through `/catalog/apis/`; released APIs are active and visible in Browse/Explore.
-- API details expose RapidAPI-style endpoint references, sample payloads, code snippets, and browser test console output.
-- Legacy token responses still exist on compatibility auth routes.
-- Local API key generation is disabled by default.
-- Public API access and account subscriptions should be treated as IranAPI-managed unless a legacy importer maps old external metadata.
-- Docker verification still has to be run on a machine with Docker installed.
+Analyze or deploy compressed API projects (`.zip`, `.tar`, `.tar.gz`, `.tgz`):
+
+```bash
+iranapi analyze ./my-api.zip --json
+iranapi deploy ./my-api.tar.gz --name "My API" --region ir-tehran-1 --json
+```
+
+Deploy waits for the worker to return a live URL. Use `--no-wait` for queue-only automation, or `--timeout <seconds>` to change the build deadline.
+
+Use `iranapi login` for browser sign-in, or `iranapi login --token <token>` for automation. Credential precedence is `--token`, `IRANAPI_TOKEN`, then `~/.iranapi/config.json`.
+
+## Real API caller
+
+Set only the credentials for providers you want to call:
+
+```text
+NESHAN_SERVICE_KEY=
+KAVENEGAR_API_KEY=
+ZARINPAL_MERCHANT_ID=
+ARVANCLOUD_API_KEY=
+```
+
+Direct calls to arbitrary public HTTP(S) URLs use `/api/v1/public/caller/` without an IranAPI account. Catalog calls with server-managed provider credentials need an active access grant and authentication through the Mongo-backed session cookie, a compatibility token, or the one-time `iapi_...` key created in the dashboard:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/account/caller/ \
+  -H "Authorization: Bearer $IRANAPI_KEY" \
+  -H "Content-Type: application/json" \
+  --data '{"api_slug":"neshan-maps","endpoint_id":1,"method":"GET","path":"/v3/search","query":{"term":"تهران","lat":35.7,"lng":51.4}}'
+```
+
+The backend chooses the upstream host, exact catalog endpoint, authentication method, timeouts, and response-size limit. Browser input cannot override provider hosts or credentials.
+
+## Social sign-in configuration
+
+Google and GitHub buttons are deliberately disabled until an authorization URL is configured. Set the complete URL supplied by your OAuth provider/broker in the backend environment, then rebuild the backend:
+
+```text
+IRANAPI_GITHUB_AUTH_URL=https://github.com/login/oauth/authorize?...
+IRANAPI_GOOGLE_AUTH_URL=
+```
+
+Do not commit client secrets or URLs containing sensitive values. An empty variable is expected in local development and shows a clear “not configured” message instead of attempting a broken redirect.
+
+## Tests
+
+Tests use a dedicated MongoDB database named `test_iranapi` by default:
+
+```bash
+python manage.py test
+cd api-hub-express
+npm run lint
+npm run build
+npx playwright test
+```
+
+Never point tests at a production database. `reset_database()` refuses to clear a database unless its name starts with `test_` or `IRANAPI_MONGODB_ALLOW_RESET=true` is explicitly set.
+
+See [Persian API seed guide](docs/persian-api-catalog.md) for catalog details.

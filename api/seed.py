@@ -5,6 +5,7 @@ from typing import Any
 
 from django.utils import timezone
 
+from .persian_catalog import PERSIAN_API_SLUGS, seed_persian_api_catalog
 from .repositories import MongoRepository
 
 
@@ -52,10 +53,19 @@ def _ensure_user(
 def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
     repository = MongoRepository()
 
-    has_seed_records = bool(repository.get_user_by_username("demo-dev")) and bool(
-        repository.apis.find_one({"slug": "speech-gateway"})
-    ) and bool(
-        repository.api_endpoints.find_one({"api_slug": "speech-gateway"})
+    existing_demo_user = repository.get_user_by_username("demo-dev")
+    has_seed_records = (
+        bool(existing_demo_user)
+        and bool(repository.apis.find_one({"slug": "speech-gateway"}))
+        and bool(repository.api_endpoints.find_one({"api_slug": "speech-gateway"}))
+        and all(repository.apis.find_one({"slug": slug}) for slug in PERSIAN_API_SLUGS)
+        and all(
+            (api_doc := repository.apis.find_one({"slug": slug}))
+            and repository.access_grants.find_one(
+                {"user_id": int(existing_demo_user["_id"]), "api_id": int(api_doc["_id"]), "status": "active"}
+            )
+            for slug in PERSIAN_API_SLUGS
+        )
     )
 
     if not force and has_seed_records:
@@ -246,6 +256,8 @@ def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
         ),
     )
 
+    seed_persian_api_catalog(repository, owner=demo_user, now=now)
+
     starter_subscription, _ = _ensure_document(
         repository.subscription_plans,
         {"slug": "starter"},
@@ -261,7 +273,7 @@ def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
                 "interval_days": 30,
                 "api_publish_limit": 3,
                 "included_requests": 25000,
-                "features": ["انتشار ۳ API", "داشبورد مصرف", "پروفایل توسعه‌دهنده"],
+                "features": ["سقف انتشار ۳ API", "ثبت تا ۲۵٬۰۰۰ درخواست در ماه", "نمایش مصرف در داشبورد"],
                 "is_popular": False,
                 "is_active": True,
                 "sort_order": 1,
@@ -277,7 +289,7 @@ def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
             {
                 "slug": "growth",
                 "name": "Growth",
-                "description": "برای تیم‌هایی که چند سرویس فعال، گزارش مصرف و اولویت انتشار می‌خواهند.",
+                "description": "برای تیم‌هایی که سقف انتشار و ثبت مصرف بیشتری می‌خواهند.",
                 "plan_type": "growth",
                 "price": 1490000,
                 "currency": "IRR",
@@ -285,7 +297,7 @@ def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
                 "interval_days": 30,
                 "api_publish_limit": 15,
                 "included_requests": 250000,
-                "features": ["انتشار ۱۵ API", "گزارش مصرف پیشرفته", "اولویت بررسی API", "پشتیبانی ایمیلی"],
+                "features": ["سقف انتشار ۱۵ API", "ثبت تا ۲۵۰٬۰۰۰ درخواست در ماه", "نمایش مصرف در داشبورد"],
                 "is_popular": True,
                 "is_active": True,
                 "sort_order": 2,
@@ -301,7 +313,7 @@ def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
             {
                 "slug": "scale",
                 "name": "Scale",
-                "description": "برای سازمان‌هایی که انتشار نامحدود، SLA و کنترل عملیاتی نیاز دارند.",
+                "description": "برای سازمان‌هایی که سقف انتشار ثبت‌شده و ثبت مصرف بیشتری می‌خواهند.",
                 "plan_type": "scale",
                 "price": 4990000,
                 "currency": "IRR",
@@ -309,7 +321,7 @@ def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
                 "interval_days": 30,
                 "api_publish_limit": None,
                 "included_requests": 1000000,
-                "features": ["انتشار نامحدود", "SLA اختصاصی", "گزارش سازمانی", "پشتیبانی اولویت‌دار"],
+                "features": ["بدون سقف انتشار ثبت‌شده", "ثبت تا ۱٬۰۰۰٬۰۰۰ درخواست در ماه", "نمایش مصرف در داشبورد"],
                 "is_popular": False,
                 "is_active": True,
                 "sort_order": 3,
@@ -599,6 +611,30 @@ def seed_sample_data(*, force: bool = False) -> dict[str, int | bool]:
             }
         ),
     )
+
+    for slug in PERSIAN_API_SLUGS:
+        persian_api = repository.apis.find_one({"slug": slug})
+        if not persian_api:
+            continue
+        _ensure_document(
+            repository.access_grants,
+            {"user_id": int(demo_user["_id"]), "api_id": int(persian_api["_id"])},
+            repository.build_access_grant_document(
+                {
+                    "user_id": int(demo_user["_id"]),
+                    "api_id": int(persian_api["_id"]),
+                    "pricing_plan_id": None,
+                    "source": "manual",
+                    "status": "active",
+                    "external_subscription_id": f"qa-persian-{slug}",
+                    "requests_per_day": 100,
+                    "requests_per_month": 3000,
+                    "metadata": {"purpose": "local-provider-validation", "seeded": True},
+                    "created_at": now,
+                    "updated_at": now,
+                }
+            ),
+        )
 
     _ensure_document(
         repository.api_usage,

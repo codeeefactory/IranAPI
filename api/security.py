@@ -4,7 +4,16 @@ import re
 from typing import Any
 
 
-SENSITIVE_KEYS = {"password", "api_key", "token", "secret", "authorization"}
+SENSITIVE_KEYS = {
+    "password",
+    "password_confirm",
+    "api_key",
+    "api_key_hash",
+    "api_key_fingerprint",
+    "token",
+    "secret",
+    "authorization",
+}
 INLINE_SECRET_RE = re.compile(r"(Bearer\s+)[A-Za-z0-9._~+/=-]{16,}", re.I)
 
 

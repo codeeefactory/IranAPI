@@ -34,11 +34,11 @@ export default function PaymentPage() {
 
   return (
     <PageShell>
-      <SectionHeader kicker="iran billing checkout" title="confirm payment" subtitle="// settled in irr or usd. invoices issued via email." />
+      <SectionHeader kicker="subscription checkout" title="manual activation" subtitle="// development workflow: no payment gateway charge or invoice is issued" />
       <div className="mx-auto max-w-xl space-y-4">
         <TerminalWindow title="~/iranapi/billing/checkout" glow>
           <div className="space-y-3 text-sm">
-            <Prompt>iran billing checkout --plan {selectedPlan?.slug ?? selectedSlug}</Prompt>
+            <Prompt>iranapi billing checkout --plan {selectedPlan?.slug ?? selectedSlug}</Prompt>
             {selectedPlan ? (
               <CheckoutPanel plan={selectedPlan} checkout={checkout} />
             ) : (
@@ -60,7 +60,7 @@ export default function PaymentPage() {
                 disabled={!selectedPlan || isBusy}
                 onClick={handlePay}
               >
-                {isBusy ? "./processing" : isAuthenticated ? "./confirm_and_pay" : "./signin_to_pay"}
+                {isBusy ? "./processing" : isAuthenticated ? "./confirm_manual_checkout" : "./signin_to_continue"}
               </button>
             )}
           </div>
@@ -72,8 +72,7 @@ export default function PaymentPage() {
 
 function CheckoutPanel({ plan, checkout }: { plan: SubscriptionPlan; checkout?: SubscriptionCheckout }) {
   const subtotal = Number(checkout?.amount ?? plan.price);
-  const vat = subtotal * 0.09;
-  const total = subtotal + vat;
+  const total = subtotal;
   const currency = (checkout?.currency ?? plan.currency).toLowerCase();
 
   return (
@@ -84,7 +83,6 @@ function CheckoutPanel({ plan, checkout }: { plan: SubscriptionPlan; checkout?: 
       <Row label="reference" value={checkout?.reference ?? "pending"} />
       <div className="ascii-divider" />
       <Row label="subtotal" value={`${formatMoney(subtotal)} ${currency}`} />
-      <Row label="vat 9%" value={`${formatMoney(vat)} ${currency}`} />
       <div className="flex items-center justify-between pt-2 text-base">
         <span className="text-muted-foreground">// total</span>
         <span className="font-black text-primary text-glow">{formatMoney(total)} {currency}</span>

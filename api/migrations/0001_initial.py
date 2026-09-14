@@ -1,4 +1,5 @@
 import django.db.models.deletion
+import django_mongodb_backend.fields.auto
 from django.conf import settings
 from django.db import migrations, models
 
@@ -15,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Category',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', django_mongodb_backend.fields.auto.ObjectIdAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100, verbose_name='نام')),
                 ('name_en', models.CharField(blank=True, max_length=100, verbose_name='نام انگلیسی')),
                 ('slug', models.SlugField(blank=True, unique=True)),
@@ -34,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='API',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', django_mongodb_backend.fields.auto.ObjectIdAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=200, verbose_name='نام')),
                 ('name_en', models.CharField(blank=True, max_length=200, verbose_name='نام انگلیسی')),
                 ('slug', models.SlugField(blank=True, unique=True)),
@@ -65,7 +66,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Documentation',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', django_mongodb_backend.fields.auto.ObjectIdAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=200, verbose_name='عنوان')),
                 ('slug', models.SlugField(blank=True)),
                 ('content', models.TextField(verbose_name='محتوای')),
@@ -84,7 +85,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='PricingPlan',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', django_mongodb_backend.fields.auto.ObjectIdAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100, verbose_name='نام')),
                 ('plan_type', models.CharField(choices=[('free', 'رایگان'), ('basic', 'پایه'), ('pro', 'حرفه\u200cای'), ('enterprise', 'سازمانی')], default='basic', max_length=20, verbose_name='نوع پلن')),
                 ('price', models.DecimalField(decimal_places=2, default=0.0, max_digits=10, verbose_name='قیمت')),
@@ -107,7 +108,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserProfile',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', django_mongodb_backend.fields.auto.ObjectIdAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('phone', models.CharField(blank=True, max_length=20, verbose_name='تلفن')),
                 ('company', models.CharField(blank=True, max_length=200, verbose_name='شرکت')),
                 ('bio', models.TextField(blank=True, verbose_name='بیوگرافی')),
@@ -125,7 +126,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='APIUsage',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', django_mongodb_backend.fields.auto.ObjectIdAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('requests_count', models.IntegerField(default=0, verbose_name='تعداد درخواست')),
                 ('last_used', models.DateTimeField(auto_now=True, verbose_name='آخرین استفاده')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),

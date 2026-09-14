@@ -1,0 +1,19 @@
+@startuml
+!include style.puml
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-11\nView dashboard and usage" as Main
+  usecase "View subscription" as Subscription
+  usecase "View access grants" as Grants
+  usecase "View usage statistics" as Stats
+  usecase "Filter usage history" as History
+}
+Developer --> Main
+Main ..> Subscription : <<include>>
+Main ..> Grants : <<include>>
+Main ..> Stats : <<include>>
+Main ..> History : <<include>>
+note bottom of Main
+Read-only view; secrets remain masked.
+end note
+@enduml

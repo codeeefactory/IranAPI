@@ -1,0 +1,16 @@
+@startuml
+!include style.puml
+actor "Authenticated Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-10\nInitialize starter project" as Main
+  usecase "Choose language and options" as Choose
+  usecase "Generate project files" as Generate
+  usecase "Persist owned project" as Store
+  usecase "List own projects" as List
+}
+Developer --> Main
+Developer --> List
+Main ..> Choose : <<include>>
+Main ..> Generate : <<include>>
+Main ..> Store : <<include>>
+@enduml

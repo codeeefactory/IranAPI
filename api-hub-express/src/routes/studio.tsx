@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, Rocket } from "lucide-react";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
+import { BuildTabs } from "@/components/site/BuildTabs";
 import { TerminalWindow, Prompt, Tag } from "@/components/site/Terminal";
 import { useSession } from "@/hooks/useAuth";
 import { useCatalogApis } from "@/hooks/useCatalog";
@@ -67,7 +68,8 @@ export default function StudioPage() {
 
   return (
     <PageShell>
-      <SectionHeader kicker={t("studio.kicker")} title={t("studio.title")} subtitle={"// " + t("studio.sub")} />
+      <SectionHeader kicker="build / flows" title="Flow builder" subtitle="// Create and deploy API orchestration flows." />
+      <BuildTabs />
 
       <div className="grid gap-4 lg:grid-cols-[1fr,320px]">
         <div className="terminal-border rounded-sm bg-card/40 min-h-[420px] p-4 sm:p-6 grid-bg overflow-x-auto">
@@ -128,13 +130,13 @@ export default function StudioPage() {
             </div>
           ) : null}
           <pre data-ltr className="mt-4 text-[10px] text-muted-foreground overflow-x-auto">{`// flow: ${flowName}.v1
-// triggers: 1   nodes: ${nodes.length}   branches: 0   p95: ${deploy.data?.flow.latency_ms ?? 478}ms`}</pre>
+// triggers: 1   nodes: ${nodes.length}   branches: 0   recorded latency: ${deploy.data?.flow.latency_ms ? `${deploy.data.flow.latency_ms}ms` : "—"}`}</pre>
         </div>
 
         <div className="space-y-4">
           <TerminalWindow title="~/iranapi/studio/deploy">
             <div data-terminal className="text-sm space-y-2">
-              <Prompt>iran flow deploy {flowName}</Prompt>
+              <Prompt>iranapi flow deploy {flowName}</Prompt>
               <div className="text-xs text-muted-foreground">// validating dag...</div>
               <div className="text-xs text-primary">// {nodes.length} nodes ok</div>
               <div className="text-xs text-primary">// target {selectedApi?.slug ?? "api"}</div>

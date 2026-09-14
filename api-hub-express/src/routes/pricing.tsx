@@ -1,29 +1,25 @@
 import { Link } from "react-router-dom";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
-import { Tag } from "@/components/site/Terminal";
 import { Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSubscriptionPlans } from "@/hooks/useSubscription";
 import type { SubscriptionPlan } from "@/lib/api-client";
 
-const OVERAGE = [
-  { catKey: "cat.payments", unitKey: "pricing.overage.unitIrr", n: "120" },
-  { catKey: "cat.sms-otp", unitKey: "pricing.overage.unitIrr", n: "85" },
-  { catKey: "cat.ai-ml", unitKey: "pricing.overage.unitTok", n: "0.0008" },
-  { catKey: "cat.maps-geo", unitKey: "pricing.overage.unitIrr", n: "40" },
-];
-
 export default function PricingPage() {
   const { t } = useI18n();
-  const { plans } = useSubscriptionPlans();
+  const { plans, isLoading, isError, isFallback, refetch } = useSubscriptionPlans();
 
   return (
     <PageShell>
       <SectionHeader kicker={t("pricing.kicker")} title={t("pricing.title")} subtitle={"// " + t("pricing.sub")} />
 
+      {isLoading && <div className="state-block" data-tone="loading"><div className="spinner" aria-hidden /><div className="state-sub">loading plans...</div></div>}
+      {isError && !isFallback && <div className="state-block" data-tone="error" role="alert"><div className="state-title">// pricing unavailable</div><button type="button" className="btn-primary mt-3" onClick={() => void refetch()}>./retry</button></div>}
+      {!isLoading && !isError && plans.length === 0 && <div className="state-block"><div className="state-title">// no active plans published</div></div>}
+
       <div className="grid gap-4 md:grid-cols-3">
         {plans.map((p) => {
-          const features = getPlanFeatures(p, t);
+          const features = getPlanFeatures(p);
           const price = formatPlanPrice(p, t);
           const unit = p.plan_type === "enterprise" ? t("pricing.unit.custom") : `${p.currency.toLowerCase()} / ${p.interval}`;
           const cta = p.plan_type === "enterprise" ? t("pricing.plans.enterprise.cta") : `./checkout_${p.slug}`;
@@ -39,7 +35,7 @@ export default function PricingPage() {
               )}
               <div className="text-xs uppercase tracking-widest text-muted-foreground">{"// "}{t("pricing.plan")}</div>
               <div className="mt-1 text-2xl font-black text-primary text-glow">{p.name || p.slug}</div>
-              <p className="mt-1 text-xs text-muted-foreground">{p.description || t(`pricing.plans.${legacyPlanKey(p)}.desc`)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{p.description || "No description published."}</p>
               <div className="mt-5 flex items-baseline gap-2" data-ltr>
                 <span className="text-4xl font-black text-foreground">{price}</span>
                 <span className="text-xs text-muted-foreground">{unit}</span>
@@ -63,31 +59,13 @@ export default function PricingPage() {
         })}
       </div>
 
-      <div className="mt-12 surface-card rounded-sm p-6">
-        <div className="text-xs uppercase tracking-widest text-primary">{"// "}{t("pricing.overage")}</div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4 text-sm">
-          {OVERAGE.map((row) => (
-            <div key={row.catKey} className="rounded-sm border border-border bg-background/40 p-3 transition hover:border-primary/60 hover:shadow-glow">
-              <Tag color="muted">{t(row.catKey)}</Tag>
-              <div className="mt-2 text-foreground" data-ltr>{t(row.unitKey, { n: row.n })}</div>
-            </div>
-          ))}
-        </div>
-      </div>
     </PageShell>
   );
 }
 
-function legacyPlanKey(plan: SubscriptionPlan) {
-  if (plan.plan_type === "starter") return "free";
-  if (plan.plan_type === "growth") return "team";
-  if (plan.plan_type === "enterprise") return "enterprise";
-  return "team";
-}
-
-function getPlanFeatures(plan: SubscriptionPlan, t: (key: string) => string) {
+function getPlanFeatures(plan: SubscriptionPlan) {
   if (plan.features?.length) return plan.features;
-  return t(`pricing.plans.${legacyPlanKey(plan)}.features`).split("|");
+  return ["No feature list published."];
 }
 
 function formatPlanPrice(plan: SubscriptionPlan, t: (key: string) => string) {

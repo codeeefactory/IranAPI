@@ -16,7 +16,8 @@
 - Metadata sync: title, student name, supervisor, and date are set in `main.tex`; student ID is intentionally not shown because the attached PDF cover sample does not include it. Latest metadata values are `سایت اشتراک گذاری API با پایتون`, `سجاد رضاقلی زاده`, and `دکتر زهره کریمی`.
 - Intended report build command: `xelatex -interaction=nonstopmode -file-line-error main.tex` repeated three times from `report/`.
 - Backend test command: `python manage.py test api`.
-- Backend test status: passed, 49 tests.
+- Backend test status (latest workspace): 99 tests discovered; execution blocked locally because MongoDB at `localhost:27017` is not running. Prior recorded run passed against isolated `test_iranapi`.
+- Browser test status (latest workspace): 20 Playwright scenarios are defined; prior recorded run covered 16 scenarios plus manual desktop/mobile visual inspection.
 - Compilation status: successful with the user-installed MiKTeX `xelatex.exe`; `main.pdf` was produced after repeated XeLaTeX runs.
 - Modernization pass on 2026-07-19:
   - Removed all visible missing-information placeholder text from report body.
@@ -39,5 +40,29 @@
   - Replaced internal evidence-style bibliography entries with official documentation sources for Python, Django, Django REST Framework, React, TypeScript, Vite, Node.js, Docker Compose, MongoDB, OpenAPI, RapidAPI, and Playwright.
   - Kept technical terms in English where Persian equivalents would be unclear, such as API, Endpoint, Serializer, Dashboard, Client, OpenAPI, and Docker Compose.
   - Rebuilt `main.pdf`; current output is 38 pages and cover, chapter, table, content, reference, and appendix pages were visually checked.
+- Human-language and TOC repair pass on 2026-07-24:
+  - Reworked stiff chapter openings, abstract text, testing/result discussion, and conclusion into more natural Persian while keeping thesis tone.
+  - Fixed table-of-contents page continuity by continuing page numbering through references, glossary, and appendix instead of gobbling appendix pages.
+  - Added stable TOC anchors for preliminary lists and references.
+  - Replaced fragile LaTeX captions with manual table/figure captions so the final log no longer reports `endL or endR` problems.
+  - Rebuilt `main.pdf`; current output is 39 pages. TOC now shows references on page 26 and appendix entries on page 28. Key pages were rendered and visually checked.
+- Detailed use-case pass on 2026-08-25:
+  - Added 12 implementation-grounded Persian use cases to the requirements chapter, covering public discovery, documentation, authentication, account and organization management, subscriptions, API publishing, ratings, Caller, Studio, project initialization, dashboard usage, and system administration.
+  - Documented actor, goal, precondition, trigger, main flow, alternate/error flows, and postcondition for every use case.
+  - Added summary and requirements-traceability tables and explained the dependencies among private and public flows.
+  - Rebuilt `main.pdf` three times; current output is 47 pages with no unresolved references, LaTeX errors, or overfull boxes. Main-content pages 9 through 18 were rendered and visually checked.
+- Latest project-sync pass on 2026-08-30:
+  - Added implementation-grounded use cases `UC-13` (static compressed-project analysis), `UC-14` (queued, isolated Docker deployment), and `UC-15` (CLI catalog/project workflows).
+  - Added an explicit page start before every detailed use case, so each use case begins on its own report page.
+  - Synchronized requirements, traceability, architecture data groups, implementation flows, results, conclusion, and runbook with project archive storage, deployment worker, CLI, and admin sections.
+  - Updated current test inventory to 99 backend test methods and 20 Playwright scenarios; execution still depends on an available MongoDB/Docker environment.
+  - Rebuilt `main.pdf` three times; pre-diagram output was 57 pages, with `UC-01` through `UC-15` starting on dedicated pages and no unresolved LaTeX references or overfull boxes.
+- PlantUML use-case correction pass on 2026-08-31:
+  - Replaced the three broad TikZ diagrams with 15 implementation-grounded PlantUML diagrams, one on every detailed `UC-01` through `UC-15` page.
+  - Corrected `UC-03` actor ownership for sign-out, `UC-09` Studio storage semantics, `UC-12` live MongoDB role/ownership scope, and `UC-15` public-versus-token CLI behavior.
+  - Added maintainable PlantUML sources under `docs/use-cases/` and generated report figures under `report/images/use-cases/`.
+  - Enlarged every embedded use-case diagram to 98% available width with a 4.8 cm height cap while preserving one dedicated page per use case.
+  - Rebuilt `main.pdf` repeatedly; current output is 58 pages. Pages 19--36 were rendered, and all summary/use-case pages were visually checked for readable diagrams, clipping, and overlap.
+  - Final LaTeX log has no unresolved references/citations, missing characters, LaTeX errors, or overfull boxes.
 
 Unresolved warnings: MiKTeX reports that updates have not been checked. Some underfull boxes remain from narrow Persian table columns; they do not stop compilation. The final LaTeX log has no unresolved citations, missing references, font warnings, or overfull boxes.

@@ -1,0 +1,16 @@
+@startuml
+!include style.puml
+actor "API Developer" as Developer
+rectangle IranAPI {
+  usecase "UC-06\nPublish API" as Main
+  usecase "Validate metadata" as Validate
+  usecase "Resolve or create category" as Category
+  usecase "Store owner and overview" as Store
+  usecase "Expose in public catalog" as Publish
+}
+Developer --> Main
+Main ..> Validate : <<include>>
+Main ..> Category : <<include>>
+Main ..> Store : <<include>>
+Main ..> Publish : <<include>>
+@enduml

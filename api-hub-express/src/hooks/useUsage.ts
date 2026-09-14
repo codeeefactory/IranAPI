@@ -6,6 +6,7 @@ export const usageKeys = {
   all: ["account", "usage"] as const,
   list: (params?: UsageListParams) => [...usageKeys.all, params ?? {}] as const,
   projectInit: ["account", "project-init"] as const,
+  projectDeployments: ["account", "project-deployments"] as const,
 };
 
 export function useUsageHistory(params?: UsageListParams, enabled = true) {
@@ -42,5 +43,27 @@ export function useInitializeProject() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: usageKeys.projectInit });
     },
+  });
+}
+
+export function useAnalyzeProject() {
+  return useMutation({ mutationFn: (archive: File) => accountApi.analyzeProject(archive) });
+}
+
+export function useProjectDeployments(enabled = true) {
+  return useQuery({
+    queryKey: usageKeys.projectDeployments,
+    queryFn: accountApi.projectDeployments,
+    enabled,
+    refetchInterval: 3000,
+  });
+}
+
+export function useDeployProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ archive, projectName, region }: { archive: File; projectName: string; region: string }) =>
+      accountApi.deployProject(archive, projectName, region),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: usageKeys.projectDeployments }),
   });
 }

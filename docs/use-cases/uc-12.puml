@@ -1,0 +1,22 @@
+@startuml
+!include style.puml
+actor "System Administrator" as Admin
+actor "API Developer (staff session)" as Developer
+rectangle IranAPI {
+  usecase "UC-12\nManage live MongoDB data" as Main
+  usecase "Manage all live collections" as All
+  usecase "Manage owned API metadata" as Owned
+  usecase "Validate structured forms" as Validate
+  usecase "Review API usage (read-only)" as Usage
+}
+Admin --> All
+Admin --> Usage
+Developer --> Owned
+All ..> Main : <<extend>>
+Owned ..> Main : <<extend>>
+All ..> Validate : <<include>>
+Owned ..> Validate : <<include>>
+note bottom of Owned
+Limited to owned APIs, plans, docs, and endpoints.
+end note
+@enduml

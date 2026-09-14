@@ -1,0 +1,22 @@
+@startuml
+!include style.puml
+actor Visitor
+actor "Authenticated Developer" as Developer
+actor "Social Identity Provider" as IdP
+rectangle IranAPI {
+  usecase "UC-03\nManage authentication" as Main
+  usecase "Register" as Register
+  usecase "Sign in" as SignIn
+  usecase "Start social sign-in" as Social
+  usecase "Sign out" as SignOut
+}
+Visitor --> Register
+Visitor --> SignIn
+Visitor --> Social
+Developer --> SignOut
+Register ..> Main : <<extend>>
+SignIn ..> Main : <<extend>>
+Social ..> SignIn : <<extend>>
+SignOut ..> Main : <<extend>>
+IdP --> Social
+@enduml

@@ -1,4 +1,5 @@
-from rest_framework.authentication import BaseAuthentication
+from django.conf import settings
+from rest_framework.authentication import BaseAuthentication, SessionAuthentication
 
 from .repositories import MongoRepository
 
@@ -14,9 +15,10 @@ class MongoSessionAuthentication(BaseAuthentication):
                 if user_doc:
                     return repository.build_mongo_user(user_doc), None
 
-        session_id = request.COOKIES.get("sessionid", "")
+        session_id = request.COOKIES.get(settings.MONGO_SESSION_COOKIE_NAME, "")
         if session_id:
             user_doc = repository.session_user(session_id)
             if user_doc:
+                SessionAuthentication().enforce_csrf(request)
                 return repository.build_mongo_user(user_doc), None
         return None

@@ -1,10 +1,12 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useState } from "react";
-import { ArrowLeft, Activity, Code2, LoaderCircle, Shield, Star, Zap, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Code2, LoaderCircle, Shield, Star, type LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/site/Layout";
 import { CodeBlock, Prompt, Tag, TerminalWindow } from "@/components/site/Terminal";
 import { useSession } from "@/hooks/useAuth";
 import { useCatalogApi, useRateApi, useSimilarApis } from "@/hooks/useCatalog";
+import type { CatalogEndpoint } from "@/types/catalog";
+import { buildCallSnippet, CALL_LANGUAGES, CALL_LANGUAGE_LABELS, type CallLanguage } from "@/lib/code-snippets";
 
 type EndpointPreview = {
   id?: string | number;
@@ -13,13 +15,42 @@ type EndpointPreview = {
   summary?: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function buildCallerPayload(apiSlug: string, endpoint: CatalogEndpoint) {
+  const sample = isRecord(endpoint.sample_request) ? endpoint.sample_request : {};
+  const query = isRecord(sample.query) ? sample.query : undefined;
+  const pathParams = isRecord(sample.path) ? sample.path : undefined;
+  const explicitBody = sample.body ?? sample.form;
+  const remainingBody = Object.fromEntries(
+    Object.entries(sample).filter(([key]) => !["query", "path", "headers", "body", "form"].includes(key)),
+  );
+  return {
+    api_slug: apiSlug,
+    endpoint_id: endpoint.id,
+    method: endpoint.method,
+    path: endpoint.path,
+    ...(query ? { query } : {}),
+    ...(pathParams ? { path_params: pathParams } : {}),
+    ...(explicitBody !== undefined
+      ? { body: explicitBody }
+      : Object.keys(remainingBody).length
+        ? { body: remainingBody }
+        : {}),
+  };
+}
+
 export default function ApiDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { api, isLoading } = useCatalogApi(slug);
+  const { api, isLoading, isError, refetch } = useCatalogApi(slug);
   const { apis: similarApis } = useSimilarApis(slug);
   const { isAuthenticated } = useSession();
   const ratingMutation = useRateApi(slug);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [callLanguage, setCallLanguage] = useState<CallLanguage>("javascript");
+  const [selectedEndpointId, setSelectedEndpointId] = useState<number | null>(null);
 
   if (!api && isLoading) {
     return (
@@ -31,10 +62,25 @@ export default function ApiDetailsPage() {
       </PageShell>
     );
   }
+  if (!api && isError) {
+    return (
+      <PageShell>
+        <div className="state-block" data-tone="error" role="alert">
+          <div className="state-title">// API data unavailable</div>
+          <button type="button" className="btn-primary mt-3" onClick={() => void refetch()}>./retry</button>
+        </div>
+      </PageShell>
+    );
+  }
   if (!api) return <Navigate to="/browse" replace />;
 
   const firstEndpoint = api.apiEndpoints[0];
+  const snippetEndpoint = api.apiEndpoints.find((endpoint) => endpoint.id === selectedEndpointId) ?? firstEndpoint;
   const activeRating = selectedRating ?? Math.round(api.ratingValue);
+  const quickstartPayload = firstEndpoint ? buildCallerPayload(api.slug, firstEndpoint) : null;
+  const quickstartCurl = quickstartPayload
+    ? `curl -X POST http://localhost:8000/api/v1/account/caller/ \\\n  -H "Authorization: Bearer \${IRANAPI_KEY}" \\\n  -H "Content-Type: application/json" \\\n  --data '${JSON.stringify(quickstartPayload)}'`
+    : "No active endpoint is registered for this API yet.";
 
   return (
     <PageShell>
@@ -43,7 +89,7 @@ export default function ApiDetailsPage() {
       </Link>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr,360px]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <div className="terminal-border rounded-sm bg-card/60 p-6">
             <div className="text-xs text-muted-foreground">{api.org} // {api.category}</div>
             <h1 className="mt-2 text-3xl font-black text-primary text-glow">{api.name}</h1>
@@ -59,14 +105,10 @@ export default function ApiDetailsPage() {
 
           <TerminalWindow title={`~/iranapi/${api.slug}/quickstart.sh`} glow>
             <div className="space-y-2 text-sm">
-              <Prompt>iran install {api.name}</Prompt>
-              <div className="pl-6 text-muted-foreground text-xs">{"// "}fetching openapi schema...</div>
-              <div className="pl-6 text-primary text-xs">{"// "}ok {api.endpoints} endpoints registered</div>
-              <Prompt>cat .env</Prompt>
-              <pre className="text-xs bg-background/60 border border-border rounded-sm p-3 text-amber">{`IRAN_KEY=ir_live_4f9c8b2a...
-${api.slug.toUpperCase().replace(/-/g, "_")}_REGION=tehran-1`}</pre>
-              <Prompt>curl https://api.iranapi.dev/v1/{api.slug.split("-")[0]}/ping</Prompt>
-              <pre className="text-xs bg-background/60 border border-border rounded-sm p-3 text-primary/90">{`{ "ok": true, "latency_ms": ${api.latency}, "region": "ir-tehran-1" }`}</pre>
+              <Prompt>export IRANAPI_KEY=&lt;copy-once-from-dashboard&gt;</Prompt>
+              <div className="pl-6 text-muted-foreground text-xs">{"// "}{api.endpoints} catalog endpoints registered</div>
+              <Prompt>{firstEndpoint ? `${firstEndpoint.method} ${firstEndpoint.path}` : "no endpoint"}</Prompt>
+              <CodeBlock>{quickstartCurl}</CodeBlock>
             </div>
           </TerminalWindow>
 
@@ -82,11 +124,45 @@ ${api.slug.toUpperCase().replace(/-/g, "_")}_REGION=tehran-1`}</pre>
                       {endpoint?.summary && <div className="mt-1 text-xs text-muted-foreground">{endpoint.summary}</div>}
                     </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">p95 {api.latency + i * 12}ms</span>
+                  <span className="text-xs text-muted-foreground">{endpoint?.requires_auth === false ? "public" : "provider auth"}</span>
                 </li>
               ))}
             </ul>
           </div>
+
+          {snippetEndpoint && (
+            <TerminalWindow title={`~/iranapi/${api.slug}/call-${snippetEndpoint.id}`} glow>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <label className="block min-w-0 flex-1 text-xs text-muted-foreground" htmlFor="snippet-endpoint">
+                  --endpoint
+                  <select
+                    id="snippet-endpoint"
+                    value={snippetEndpoint.id}
+                    onChange={(event) => setSelectedEndpointId(Number(event.target.value))}
+                    className="field mt-1"
+                  >
+                    {api.apiEndpoints.map((endpoint) => (
+                      <option key={endpoint.id} value={endpoint.id}>{endpoint.method} {endpoint.path}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="flex flex-wrap gap-1" aria-label="code language">
+                  {CALL_LANGUAGES.map((language) => (
+                    <button
+                      key={language}
+                      type="button"
+                      onClick={() => setCallLanguage(language)}
+                      className={`rounded-sm border px-2 py-1 text-xs ${callLanguage === language ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {CALL_LANGUAGE_LABELS[language]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 text-xs text-muted-foreground">// ready-to-run {CALL_LANGUAGE_LABELS[callLanguage]} request</div>
+              <CodeBlock className="mt-2">{buildCallSnippet(callLanguage, api, snippetEndpoint)}</CodeBlock>
+            </TerminalWindow>
+          )}
 
           {api.documentations.length > 0 && (
             <div className="terminal-border rounded-sm bg-card/50 p-6">
@@ -118,7 +194,7 @@ ${api.slug.toUpperCase().replace(/-/g, "_")}_REGION=tehran-1`}</pre>
           )}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <div className="terminal-border rounded-sm bg-card/60 p-5">
             <div className="flex items-center justify-between">
               <div className="text-xs uppercase tracking-widest text-muted-foreground">// vitals</div>
@@ -127,10 +203,9 @@ ${api.slug.toUpperCase().replace(/-/g, "_")}_REGION=tehran-1`}</pre>
               </div>
             </div>
             <dl className="mt-4 space-y-3 text-sm">
-              <Vital icon={Zap} label="latency p95" value={`${api.latency}ms`} />
-              <Vital icon={Activity} label="uptime 30d" value={`${api.uptime}%`} />
+              <Vital icon={Shield} label="provider auth" value={api.rapidapi.public_auth_scheme} />
               <Vital icon={Code2} label="endpoints" value={String(api.endpoints)} />
-              <Vital icon={Shield} label="signing" value="hmac-sha256" />
+              <Vital icon={Star} label="catalog views" value={api.views_count.toLocaleString()} />
             </dl>
             <Link
               to="/caller"
@@ -173,9 +248,9 @@ ${api.slug.toUpperCase().replace(/-/g, "_")}_REGION=tehran-1`}</pre>
           </div>
 
           <div className="terminal-border rounded-sm bg-card/40 p-5 text-xs text-muted-foreground space-y-2">
-            <div>// last incident: <span className="text-primary">none in 30d</span></div>
-            <div>// changelog: <span className="text-amber">v1.4.2</span></div>
-            <div>// sdks: <span className="text-cyan">ts, py, go, php</span></div>
+            <div>// publication: <span className="text-primary">{api.rapidapi.publication_status}</span></div>
+            <div>// catalog version: <span className="text-amber">{api.rapidapi.canonical_version}</span></div>
+            <div>// documentation: <span className="text-cyan">{api.documentation_url ? "provider link available" : "catalog only"}</span></div>
           </div>
 
           {similarApis.length > 0 && (

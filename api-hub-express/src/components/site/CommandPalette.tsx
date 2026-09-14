@@ -17,7 +17,7 @@ const ROUTES: { to: string; label: string }[] = [
   { to: "/documentation", label: "Documentation" },
   { to: "/pricing", label: "Pricing" },
   { to: "/dashboard", label: "Dashboard" },
-  { to: "/studio", label: "Studio" },
+  { to: "/studio", label: "Build" },
   { to: "/caller", label: "Caller" },
   { to: "/cli", label: "CLI" },
   { to: "/signin", label: "Sign in" },

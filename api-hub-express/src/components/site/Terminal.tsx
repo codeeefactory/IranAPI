@@ -15,18 +15,18 @@ export function TerminalWindow({
   return (
     <div
       className={cn(
-        "terminal-border rounded-md bg-card/80 backdrop-blur-sm overflow-hidden",
+        "terminal-border linux-window rounded-md bg-card/80 backdrop-blur-sm overflow-hidden",
         glow && "shadow-glow",
         className,
       )}
     >
-      <div className="flex items-center gap-2 border-b border-border bg-background/60 px-3 py-2">
+      <div className="terminal-titlebar flex items-center gap-2 border-b border-border bg-background/60 px-3 py-2">
         <span className="h-2.5 w-2.5 rounded-full bg-destructive/80" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber/80" />
         <span className="h-2.5 w-2.5 rounded-full bg-primary/80" />
         <span className="ml-3 text-xs text-muted-foreground">{title}</span>
       </div>
-      <div className="overflow-x-auto p-4 sm:p-6">{children}</div>
+      <div className="terminal-window-body overflow-x-auto p-4 sm:p-6">{children}</div>
     </div>
   );
 }

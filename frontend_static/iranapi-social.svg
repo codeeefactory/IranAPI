@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">IranAPI</title>
+  <desc id="desc">API hub for Iranian product teams</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071310"/>
+      <stop offset="1" stop-color="#071522"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(620 325) rotate(90) scale(330 560)">
+      <stop stop-color="#45e65e" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#45e65e" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#9ee8bf" stroke-opacity=".07"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect x="54" y="52" width="1092" height="526" rx="18" fill="none" stroke="#45e65e" stroke-opacity=".28" stroke-width="2"/>
+  <g font-family="Vazirmatn, Inter, Arial, sans-serif">
+    <text x="92" y="142" fill="#45e65e" font-size="34" font-weight="700">[A] iran_api_</text>
+    <text x="92" y="304" fill="#e4f2e7" font-size="82" font-weight="800">Discover the API stack</text>
+    <text x="92" y="398" fill="#45e65e" font-size="82" font-weight="800">Iran runs on.</text>
+    <text x="95" y="484" fill="#9cb5ac" font-size="29">Persian providers · MongoDB catalog · server-side caller</text>
+  </g>
+  <circle cx="1082" cy="112" r="9" fill="#45e65e"/>
+</svg>

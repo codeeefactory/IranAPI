@@ -5,24 +5,28 @@ import logging
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.conf import settings
+from django.contrib.auth import authenticate as django_authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.models import User
 from django.db.models import Avg, Count, Q, Sum
 from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.text import slugify
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 from datetime import timedelta
 
 from .models import Category, API, PricingPlan, Documentation, UserProfile, APIUsage
+from .mongo import ping_database
 from .repositories import MongoRepository
 from .schema import build_openapi_schema
 from .serializers import (
@@ -53,6 +57,7 @@ from .serializers import (
     serialize_pricing_plan,
     serialize_profile,
     serialize_api_project,
+    serialize_project_deployment,
     serialize_studio_flow,
     serialize_subscription_checkout,
     serialize_subscription_plan,
@@ -64,6 +69,9 @@ from .serializers import (
     UserSerializer,
 )
 from .project_templates import SUPPORTED_PROJECT_LANGUAGES
+from .project_analysis import ProjectArchiveError, analyze_project_archive, store_project_archive
+from .caller import execute_provider_request, execute_public_request, get_provider_config
+from .exceptions import DeploymentCapabilityUnavailable
 
 
 logger = logging.getLogger(__name__)
@@ -77,7 +85,7 @@ def current_user_document(request):
     if request.user and getattr(request.user, "is_authenticated", False):
         if hasattr(request.user, "id"):
             return get_repository().get_user_by_id(int(request.user.id))
-    session_id = request.COOKIES.get(settings.SESSION_COOKIE_NAME, "")
+    session_id = request.COOKIES.get(settings.MONGO_SESSION_COOKIE_NAME, "")
     return get_repository().session_user(session_id)
 
 
@@ -111,19 +119,43 @@ def enrich_api_list(api_docs, repository):
 
 def set_session_cookie(response, session_id: str):
     response.set_cookie(
-        settings.SESSION_COOKIE_NAME,
+        settings.MONGO_SESSION_COOKIE_NAME,
         session_id,
         max_age=settings.SESSION_COOKIE_AGE,
         httponly=True,
         samesite="Lax",
+        secure=not settings.DEBUG,
     )
 
 
+def start_developer_admin_session(request, user_doc, password: str):
+    if user_doc.get("account_type") != "api_developer":
+        return
+    raw_request = getattr(request, "_request", request)
+    admin_user = django_authenticate(raw_request, username=user_doc["username"], password=password)
+    if admin_user is not None:
+        django_login(raw_request, admin_user)
+
+
 class HealthCheckView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response({"status": "ok", "timestamp": timezone.now()})
+        try:
+            database_ok = ping_database()
+        except Exception:
+            logger.exception("MongoDB health check failed")
+            return Response(
+                {"status": "unavailable", "database": "down", "timestamp": timezone.now()},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if not database_ok:
+            return Response(
+                {"status": "unavailable", "database": "down", "timestamp": timezone.now()},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        return Response({"status": "ok", "database": "up", "timestamp": timezone.now()})
 
 
 class OpenAPISchemaView(APIView):
@@ -133,6 +165,7 @@ class OpenAPISchemaView(APIView):
         return Response(build_openapi_schema())
 
 
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class SessionView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -301,12 +334,36 @@ class UsageStatsView(APIView):
 
 
 class CallerExecuteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     def post(self, request):
         serializer = CallerRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+
+        if data.get("url"):
+            caller_result = execute_public_request(
+                url=data["url"],
+                method=data["method"],
+                headers=data.get("headers") or {},
+                body=data.get("body"),
+                query=data.get("query") or {},
+            )
+            return Response(
+                {
+                    "status_code": caller_result.status_code,
+                    "latency_ms": caller_result.latency_ms,
+                    "region": "public-direct",
+                    "content_type": caller_result.content_type,
+                    "body": caller_result.body,
+                    "usage": None,
+                }
+            )
+
+        if not getattr(request.user, "is_authenticated", False):
+            raise PermissionDenied("Sign in is required for catalog endpoints with server-managed credentials.")
+
         repository = get_repository()
 
         api_doc = repository.get_api_by_slug(data["api_slug"])
@@ -332,19 +389,49 @@ class CallerExecuteView(APIView):
         elif endpoints:
             endpoint = endpoints[0]
 
+        if not endpoint:
+            raise NotFound("API endpoint was not found.")
+
         method = data["method"]
-        path = data.get("path") or (endpoint.get("path") if endpoint else "/")
-        response_body = endpoint.get("sample_response", {"ok": True}) if endpoint else {"ok": True}
-        latency_ms = 90 + (int(api_doc["_id"]) * 17 + len(path) * 3) % 220
-        response_size = len(str(response_body).encode("utf-8"))
+        endpoint_method = str(endpoint.get("method") or "GET").upper()
+        if method != endpoint_method:
+            raise ValidationError({"method": [f"Method must match catalog endpoint: {endpoint_method}."]})
+
+        access_grant = repository.access_grants.find_one(
+            {
+                "user_id": int(request.user.id),
+                "api_id": int(api_doc["_id"]),
+                "status": "active",
+            },
+            sort=[("created_at", -1)],
+        )
+        if access_grant:
+            now = timezone.now()
+            starts_at = access_grant.get("starts_at")
+            ends_at = access_grant.get("ends_at")
+            if (starts_at and starts_at > now) or (ends_at and ends_at <= now):
+                access_grant = None
+        if not access_grant and not bool(getattr(request.user, "is_staff", False)):
+            raise PermissionDenied("An active access grant is required for live caller execution.")
+
+        path = str(endpoint.get("path") or "/")
+        provider_config = get_provider_config(api_doc["slug"])
+        caller_result = execute_provider_request(
+            config=provider_config,
+            endpoint=endpoint,
+            method=method,
+            body=data.get("body"),
+            query=data.get("query") or {},
+            path_params=data.get("path_params") or {},
+        )
         usage_doc = repository.record_caller_usage(
             user_id=int(request.user.id),
             api_doc=api_doc,
             method=method,
             path=path,
-            status_code=200,
-            latency_ms=latency_ms,
-            response_size=response_size,
+            status_code=caller_result.status_code,
+            latency_ms=caller_result.latency_ms,
+            response_size=caller_result.response_size,
         )
 
         category = (
@@ -355,14 +442,15 @@ class CallerExecuteView(APIView):
         pricing_from = repository.pricing_min_map([int(api_doc["_id"])]).get(int(api_doc["_id"]))
         return Response(
             {
-                "status_code": 200,
-                "latency_ms": latency_ms,
-                "region": "ir-tehran-1",
-                "body": response_body,
+                "status_code": caller_result.status_code,
+                "latency_ms": caller_result.latency_ms,
+                "region": "provider-direct",
+                "content_type": caller_result.content_type,
+                "body": caller_result.body,
                 "usage": serialize_usage_item(
                     usage_doc,
                     api_doc=api_doc,
-                    access_grant=None,
+                    access_grant=access_grant,
                     pricing_plan=None,
                     category=category,
                     pricing_from=pricing_from,
@@ -462,6 +550,95 @@ class APIProjectInitView(APIView):
         )
 
 
+class ProjectArchiveAnalyzeView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        archive = request.FILES.get("archive")
+        if archive is None:
+            raise ValidationError({"archive": ["Attach a compressed project archive."]})
+        try:
+            analysis = analyze_project_archive(archive)
+        except ProjectArchiveError as exc:
+            raise ValidationError({"archive": [str(exc)]}) from exc
+        return Response({"message": "Project archive analyzed.", "analysis": analysis})
+
+
+class ProjectDeploymentListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        repository = get_repository()
+        deployments = [
+            serialize_project_deployment(item)
+            for item in repository.list_project_deployments(int(request.user.id))
+        ]
+        return Response(paginate(request, deployments))
+
+    def post(self, request):
+        if not settings.PROJECT_DEPLOYMENT_ENABLED:
+            raise DeploymentCapabilityUnavailable()
+        archive = request.FILES.get("archive")
+        if archive is None:
+            raise ValidationError({"archive": ["Attach a compressed project archive."]})
+        try:
+            analysis = analyze_project_archive(archive)
+        except ProjectArchiveError as exc:
+            raise ValidationError({"archive": [str(exc)]}) from exc
+        if analysis.get("security", {}).get("secret_findings"):
+            raise ValidationError(
+                {"archive": ["Remove potential hard-coded credentials before deployment."]}
+            )
+        if not analysis["deployment"]["ready"]:
+            raise ValidationError(
+                {"archive": ["Project needs a supported runtime entrypoint or Dockerfile before deployment."]}
+            )
+
+        project_name = str(request.data.get("project_name") or "").strip()
+        if not project_name:
+            project_name = analysis["filename"].rsplit(".", 1)[0]
+        if len(project_name) < 3 or len(project_name) > 120:
+            raise ValidationError({"project_name": ["Project name must contain 3 to 120 characters."]})
+        region = str(request.data.get("region") or "ir-tehran-1").strip()
+        if region not in {"ir-tehran-1", "ir-mashhad-1", "eu-frankfurt-1"}:
+            raise ValidationError({"region": ["Select a supported deployment region."]})
+
+        try:
+            archive_path = store_project_archive(
+                archive,
+                user_id=int(request.user.id),
+                fingerprint=analysis["fingerprint"],
+            )
+        except ProjectArchiveError as exc:
+            raise ValidationError({"archive": [str(exc)]}) from exc
+        repository = get_repository()
+        deployment = repository.create_project_deployment(
+            user_id=int(request.user.id),
+            project_name=project_name,
+            region=region,
+            analysis=analysis,
+            archive_path=archive_path,
+        )
+        return Response(
+            {
+                "message": "Project accepted and queued for an isolated build.",
+                "deployment": serialize_project_deployment(deployment),
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class ProjectDeploymentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        deployment = get_repository().get_project_deployment(int(request.user.id), slug)
+        if not deployment:
+            raise NotFound("Project deployment was not found.")
+        return Response({"deployment": serialize_project_deployment(deployment)})
+
 class GenerateApiKeyView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -481,10 +658,11 @@ class SessionLogoutView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        session_id = request.COOKIES.get(settings.SESSION_COOKIE_NAME, "")
+        session_id = request.COOKIES.get(settings.MONGO_SESSION_COOKIE_NAME, "")
         get_repository().delete_session(session_id)
+        django_logout(getattr(request, "_request", request))
         response = Response({"authenticated": False})
-        response.delete_cookie(settings.SESSION_COOKIE_NAME)
+        response.delete_cookie(settings.MONGO_SESSION_COOKIE_NAME)
         return response
 
 
@@ -892,6 +1070,7 @@ class APIEndpointListView(APIView):
         return Response(paginate(request, [serialize_api_endpoint(endpoint) for endpoint in endpoints]))
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class RegisterView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -915,7 +1094,9 @@ class RegisterView(APIView):
             email=serializer.validated_data.get("email", ""),
             first_name=serializer.validated_data.get("first_name", ""),
             last_name=serializer.validated_data.get("last_name", ""),
+            account_type=serializer.validated_data["account_type"],
         )
+        start_developer_admin_session(request, user_doc, serializer.validated_data["password"])
         token = repository.create_or_get_legacy_token(int(user_doc["_id"]))
         session_id = repository.create_session(int(user_doc["_id"]))
         response = Response(
@@ -931,6 +1112,7 @@ class RegisterView(APIView):
         return response
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class SessionRegisterView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -954,7 +1136,9 @@ class SessionRegisterView(APIView):
             email=serializer.validated_data.get("email", ""),
             first_name=serializer.validated_data.get("first_name", ""),
             last_name=serializer.validated_data.get("last_name", ""),
+            account_type=serializer.validated_data["account_type"],
         )
+        start_developer_admin_session(request, user_doc, serializer.validated_data["password"])
         session_id = repository.create_session(int(user_doc["_id"]))
         response = Response(
             {
@@ -967,6 +1151,7 @@ class SessionRegisterView(APIView):
         return response
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class LoginView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -983,6 +1168,7 @@ class LoginView(APIView):
         if not user_doc:
             raise ValidationError("نام کاربری یا رمز عبور اشتباه است.")
 
+        start_developer_admin_session(request, user_doc, serializer.validated_data["password"])
         token = repository.create_or_get_legacy_token(int(user_doc["_id"]))
         session_id = repository.create_session(int(user_doc["_id"]))
         response = Response(
@@ -997,6 +1183,7 @@ class LoginView(APIView):
         return response
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class SessionLoginView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -1013,6 +1200,7 @@ class SessionLoginView(APIView):
         if not user_doc:
             raise ValidationError("نام کاربری یا رمز عبور اشتباه است.")
 
+        start_developer_admin_session(request, user_doc, serializer.validated_data["password"])
         session_id = repository.create_session(int(user_doc["_id"]))
         response = Response(
             {
@@ -1022,6 +1210,64 @@ class SessionLoginView(APIView):
         )
         set_session_cookie(response, session_id)
         return response
+
+
+class CliAuthorizeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        callback_url = str(request.data.get("callback_url") or "").strip()
+        state_value = str(request.data.get("state") or "").strip()
+        code_challenge = str(request.data.get("code_challenge") or "").strip()
+        try:
+            callback = urlsplit(callback_url)
+            callback_port = callback.port
+        except ValueError as exc:
+            raise ValidationError("CLI callback URL is invalid.") from exc
+
+        if (
+            callback.scheme != "http"
+            or callback.hostname not in {"127.0.0.1", "localhost", "::1"}
+            or not callback_port
+            or callback.path != "/callback"
+            or callback.username
+            or callback.password
+            or callback.query
+            or callback.fragment
+        ):
+            raise ValidationError("CLI callback must be an HTTP loopback /callback URL with an explicit port.")
+        if not (20 <= len(state_value) <= 200) or not state_value.replace("-", "").replace("_", "").isalnum():
+            raise ValidationError("CLI state is invalid.")
+        if len(code_challenge) != 43 or not code_challenge.replace("-", "").replace("_", "").isalnum():
+            raise ValidationError("CLI PKCE challenge is invalid.")
+
+        repository = get_repository()
+        code = repository.create_cli_auth_code(user_id=int(request.user.id), code_challenge=code_challenge)
+        redirect_query = urlencode({"code": code, "state": state_value})
+        redirect_url = urlunsplit((callback.scheme, callback.netloc, callback.path, redirect_query, ""))
+        return Response({"redirect_url": redirect_url})
+
+
+class CliTokenView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        code = str(request.data.get("code") or "").strip()
+        code_verifier = str(request.data.get("code_verifier") or "").strip()
+        if not code or not (43 <= len(code_verifier) <= 128):
+            raise ValidationError("CLI authorization code or verifier is invalid.")
+
+        repository = get_repository()
+        authorization = repository.consume_cli_auth_code(code=code, code_verifier=code_verifier)
+        if not authorization:
+            raise ValidationError("CLI authorization code is invalid or expired.")
+        user_doc = repository.get_user_by_id(int(authorization["user_id"]))
+        if not user_doc or not user_doc.get("is_active", True):
+            raise ValidationError("CLI authorization user is unavailable.")
+        token = repository.create_or_get_legacy_token(int(user_doc["_id"]))
+        return Response({"token": token, "user": serialize_user(user_doc)})
 
 
 def serialize_social_provider(slug: str, provider: dict[str, object]) -> dict[str, object]:
@@ -1199,43 +1445,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def generate_api_key(self, request):
-        """Generate a new API key for the user"""
-        import secrets
-        import string
-        
-        if not request.user.is_authenticated:
-            return Response(
-                {'detail': 'Authentication credentials were not provided.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        try:
-            profile, created = UserProfile.objects.get_or_create(user=request.user)
-            
-            # Generate a secure random API key
-            alphabet = string.ascii_letters + string.digits
-            api_key = 'iapi_' + ''.join(secrets.choice(alphabet) for _ in range(32))
-            
-            # Ensure uniqueness
-            max_attempts = 10
-            attempts = 0
-            while UserProfile.objects.filter(api_key=api_key).exclude(user=request.user).exists() and attempts < max_attempts:
-                api_key = 'iapi_' + ''.join(secrets.choice(alphabet) for _ in range(32))
-                attempts += 1
-            
-            profile.api_key = api_key
-            profile.save()
-            
-            serializer = UserProfileSerializer(profile)
-            return Response({
-                'api_key': api_key,
-                'profile': serializer.data
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {'detail': f'خطا در ساخت کلید API: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        """The plaintext legacy ORM key flow is permanently disabled."""
+        raise PermissionDenied("Use /api/v1/account/api-key/rotate/ instead.")
 
 
 class APIUsageViewSet(viewsets.ModelViewSet):
