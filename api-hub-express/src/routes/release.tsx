@@ -61,8 +61,8 @@ export default function ReleasePage() {
         subtitle="// authenticated releases go straight into Explore with docs metadata and searchable tags."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
-        <form onSubmit={submit} className="terminal-border rounded-sm bg-card/50 p-4 sm:p-6">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <form onSubmit={submit} className="terminal-border min-w-0 rounded-sm bg-card/50 p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField id="release-name" label="--name" value={form.name} onChange={(event) => setForm((v) => ({ ...v, name: event.target.value }))} icon={Rocket} required />
             <SelectField id="release-auth" label="--auth" value={form.auth_scheme} onChange={(event) => setForm((v) => ({ ...v, auth_scheme: event.target.value as ApiReleaseInput["auth_scheme"] }))} icon={KeyRound}>
@@ -97,7 +97,7 @@ export default function ReleasePage() {
           </button>
         </form>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <TerminalWindow title="~/iranapi/releases">
             <div className="space-y-2 text-sm" data-ltr>
               <Prompt>iranapi apis release --name "{form.name}"</Prompt>

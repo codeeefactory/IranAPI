@@ -54,29 +54,33 @@
 \contentsline {section}{\numberline {4-5}فرانت‌اند}{34}{section.5.4}%
 \contentsline {section}{\numberline {5-5}جریان‌های اصلی پیاده‌سازی}{34}{section.5.5}%
 \contentsline {section}{\numberline {6-5}بخش‌های فنی}{35}{section.5.6}%
-\contentsline {section}{\numberline {7-5}نمونه کد}{36}{section.5.7}%
-\contentsline {section}{\numberline {8-5}جمع‌بندی فصل}{36}{section.5.8}%
-\contentsline {chapter}{\numberline {6}آزمون و ارزیابی}{37}{chapter.6}%
-\contentsline {section}{\numberline {1-6}راهبرد آزمون}{37}{section.6.1}%
-\contentsline {section}{\numberline {2-6}نتایج اجرا}{37}{section.6.2}%
-\contentsline {section}{\numberline {3-6}جدول آزمون‌ها}{38}{section.6.3}%
-\contentsline {section}{\numberline {4-6}محدودیت‌های آزمون}{39}{section.6.4}%
-\contentsline {section}{\numberline {5-6}جمع‌بندی فصل}{39}{section.6.5}%
-\contentsline {chapter}{\numberline {7}نتایج و بحث}{40}{chapter.7}%
-\contentsline {section}{\numberline {1-7}ویژگی‌های پیاده‌سازی‌شده}{40}{section.7.1}%
-\contentsline {section}{\numberline {2-7}نمونه خروجی \lr {API}}{40}{section.7.2}%
-\contentsline {section}{\numberline {3-7}نقاط قوت}{41}{section.7.3}%
-\contentsline {section}{\numberline {4-7}چالش‌ها و بدهی فنی}{41}{section.7.4}%
-\contentsline {section}{\numberline {5-7}بحث}{41}{section.7.5}%
-\contentsline {section}{\numberline {6-7}جمع‌بندی فصل}{42}{section.7.6}%
-\contentsline {chapter}{\numberline {8}نتیجه‌گیری و کارهای آینده}{43}{chapter.8}%
-\contentsline {section}{\numberline {1-8}جمع‌بندی کار انجام‌شده}{43}{section.8.1}%
-\contentsline {section}{\numberline {2-8}دستاوردهای اصلی}{43}{section.8.2}%
-\contentsline {section}{\numberline {3-8}محدودیت‌های فعلی}{44}{section.8.3}%
-\contentsline {section}{\numberline {4-8}کارهای آینده}{44}{section.8.4}%
-\contentsline {section}{\numberline {5-8}جمع‌بندی فصل}{44}{section.8.5}%
-\contentsline {chapter}{منابع}{45}{section*.43}%
-\contentsline {chapter}{\numberline {الف}راهنمای اجرا و شواهد تکمیلی}{47}{appendix.Alph1}%
-\contentsline {section}{\numberline {1-الف}اجرای محلی}{47}{section.Alph1.1}%
-\contentsline {section}{\numberline {2-الف}اجرای آزمون بک‌اند}{47}{section.Alph1.2}%
-\contentsline {section}{\numberline {3-الف}مسیرهای مهم}{48}{section.Alph1.3}%
+\contentsline {section}{\numberline {7-5}کلاینت خط فرمان و دامنه پویا}{36}{section.5.7}%
+\contentsline {section}{\numberline {8-5}تحویل تولیدی، کشف‌پذیری و کارایی}{36}{section.5.8}%
+\contentsline {section}{\numberline {9-5}نمونه کد}{36}{section.5.9}%
+\contentsline {section}{\numberline {10-5}جمع‌بندی فصل}{37}{section.5.10}%
+\contentsline {chapter}{\numberline {6}آزمون و ارزیابی}{38}{chapter.6}%
+\contentsline {section}{\numberline {1-6}راهبرد آزمون}{38}{section.6.1}%
+\contentsline {section}{\numberline {2-6}نتایج اجرا}{38}{section.6.2}%
+\contentsline {section}{\numberline {3-6}جدول آزمون‌ها}{39}{section.6.3}%
+\contentsline {section}{\numberline {4-6}محدودیت‌های آزمون}{40}{section.6.4}%
+\contentsline {section}{\numberline {5-6}جمع‌بندی فصل}{41}{section.6.5}%
+\contentsline {chapter}{\numberline {7}نتایج و بحث}{42}{chapter.7}%
+\contentsline {section}{\numberline {1-7}ویژگی‌های پیاده‌سازی‌شده}{42}{section.7.1}%
+\contentsline {section}{\numberline {2-7}نمونه خروجی \lr {API}}{42}{section.7.2}%
+\contentsline {section}{\numberline {3-7}استقرار و کیفیت نسخه زنده}{43}{section.7.3}%
+\contentsline {section}{\numberline {4-7}نقاط قوت}{43}{section.7.4}%
+\contentsline {section}{\numberline {5-7}چالش‌ها و بدهی فنی}{43}{section.7.5}%
+\contentsline {section}{\numberline {6-7}بحث}{44}{section.7.6}%
+\contentsline {section}{\numberline {7-7}جمع‌بندی فصل}{44}{section.7.7}%
+\contentsline {chapter}{\numberline {8}نتیجه‌گیری و کارهای آینده}{45}{chapter.8}%
+\contentsline {section}{\numberline {1-8}جمع‌بندی کار انجام‌شده}{45}{section.8.1}%
+\contentsline {section}{\numberline {2-8}دستاوردهای اصلی}{45}{section.8.2}%
+\contentsline {section}{\numberline {3-8}محدودیت‌های فعلی}{46}{section.8.3}%
+\contentsline {section}{\numberline {4-8}کارهای آینده}{46}{section.8.4}%
+\contentsline {section}{\numberline {5-8}جمع‌بندی فصل}{46}{section.8.5}%
+\contentsline {chapter}{منابع}{47}{section*.43}%
+\contentsline {chapter}{\numberline {الف}راهنمای اجرا و شواهد تکمیلی}{49}{appendix.Alph1}%
+\contentsline {section}{\numberline {1-الف}اجرای محلی}{49}{section.Alph1.1}%
+\contentsline {section}{\numberline {2-الف}اجرای آزمون بک‌اند}{49}{section.Alph1.2}%
+\contentsline {section}{\numberline {3-الف}کنترل کامل و استقرار زنده}{50}{section.Alph1.3}%
+\contentsline {section}{\numberline {4-الف}مسیرهای مهم}{50}{section.Alph1.4}%

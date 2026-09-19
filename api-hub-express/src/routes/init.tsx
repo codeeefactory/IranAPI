@@ -96,8 +96,8 @@ export default function InitPage() {
       />
       <BuildTabs />
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-[minmax(0,1fr),380px]">
-        <form onSubmit={analyzeArchive} className="terminal-border rounded-sm bg-card/50 p-4 sm:p-6">
+      <div className="mb-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr),380px]">
+        <form onSubmit={analyzeArchive} className="terminal-border min-w-0 rounded-sm bg-card/50 p-4 sm:p-6">
           <div className="flex items-center gap-2 text-sm font-bold text-primary">
             <FileArchive className="h-4 w-4" /> compressed project analyzer
           </div>
@@ -110,7 +110,7 @@ export default function InitPage() {
               id="project-archive"
               type="file"
               accept=".zip,.tar,.tar.gz,.tgz,application/zip,application/gzip"
-              className="field mt-1 file:me-3 file:border-0 file:bg-primary/10 file:px-2 file:py-1 file:text-primary"
+              className="field mt-1 min-w-0 max-w-full file:me-3 file:border-0 file:bg-primary/10 file:px-2 file:py-1 file:text-primary"
               onChange={(event) => {
                 setArchive(event.target.files?.[0] ?? null);
                 analyze.reset();
@@ -182,8 +182,8 @@ export default function InitPage() {
         </TerminalWindow>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),380px]">
-        <form onSubmit={submit} className="terminal-border rounded-sm bg-card/50 p-4 sm:p-6">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr),380px]">
+        <form onSubmit={submit} className="terminal-border min-w-0 rounded-sm bg-card/50 p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField id="init-project-name" label="--project-name" value={form.project_name} onChange={(event) => setForm((v) => ({ ...v, project_name: event.target.value }))} icon={FolderKanban} required />
             <TextField id="init-package" label="--package" value={form.package_name} onChange={(event) => setForm((v) => ({ ...v, package_name: event.target.value }))} icon={Boxes} dir="ltr" />
@@ -216,14 +216,14 @@ export default function InitPage() {
           <button
             type="submit"
             disabled={initialize.isPending || sessionLoading}
-            className="btn-primary mt-5 justify-center disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary relative z-10 mt-5 scroll-mt-24 justify-center disabled:cursor-not-allowed disabled:opacity-60"
           >
             {initialize.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PackagePlus className="h-3.5 w-3.5" />}
             {isAuthenticated ? "./init_project" : "./signin_to_init"}
           </button>
         </form>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <TerminalWindow title="~/iranapi/init">
             <div className="space-y-2 text-sm" data-ltr>
               <Prompt>iranapi init --lang {form.language} --name "{form.project_name}"</Prompt>

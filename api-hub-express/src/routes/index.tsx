@@ -9,14 +9,13 @@ import { ArrowRight, Boxes, GitBranch, Lock, Radio, Sparkles, Star, Zap } from "
 export default function IndexPage() {
   const { t } = useI18n();
   const { apis, categories, stats, isLoading, isError, isFallback, refetch } = useCatalogHome();
-  if (isLoading) {
-    return <PageShell><div className="state-block" data-tone="loading"><div className="spinner" aria-hidden /><div className="state-sub">loading catalog...</div></div></PageShell>;
-  }
   if (isError && !isFallback) {
     return <PageShell><div className="state-block" data-tone="error" role="alert"><div className="state-title">// catalog unavailable</div><button type="button" className="btn-primary mt-3" onClick={() => void refetch()}>./retry</button></div></PageShell>;
   }
+const busy = (isLoading || isFallback) as boolean;
   return (
     <PageShell>
+      {busy && <div className="sr-only" role="status" aria-live="polite"><span>loading catalog</span> <span>catalog://local snapshot</span></div>}
       {/* HERO */}
       <section className="linux-home-hero relative -mx-4 sm:-mx-6 px-4 sm:px-6 py-16 overflow-hidden">
 

@@ -27,9 +27,9 @@ export function printRows(rows: Record<string, unknown>[], columns: string[], js
   const widths = columns.map((column, index) => Math.max(column.length, ...values.map((row) => row[index].length)));
   const border = (left: string, fill: string, right: string) => `${left}${widths.map((width) => fill.repeat(width + 2)).join("┼")}${right}`;
   const line = (row: string[]) => `│ ${row.map((value, index) => value.padEnd(widths[index])).join(" │ ")} │`;
-  process.stdout.write(`${border("╭", "─", "╮")}\n`);
+  process.stdout.write(`${border("┌", "─", "┐")}\n`);
   process.stdout.write(`${paint(line(columns), "primary")}\n`);
   process.stdout.write(`${border("├", "─", "┤")}\n`);
   values.forEach((row) => process.stdout.write(`${line(row)}\n`));
-  process.stdout.write(`${border("╰", "─", "╯")}\n`);
+  process.stdout.write(`${border("└", "─", "┘")}\n`);
 }

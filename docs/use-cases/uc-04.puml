@@ -9,10 +9,10 @@ rectangle IranAPI {
   usecase "View access grants" as Grants
 }
 Developer --> Main
-Main ..> Profile : <<include>>
-Main ..> Key : <<include>>
-Main ..> Org : <<include>>
-Main ..> Grants : <<include>>
+Profile ..> Main : <<extend>>
+Key ..> Main : <<extend>>
+Org ..> Main : <<extend>>
+Grants ..> Main : <<extend>>
 note bottom of Key
 Full key appears only in rotation response.
 end note

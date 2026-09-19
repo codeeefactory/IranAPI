@@ -35,15 +35,26 @@ function ScrollToTop() {
   return null;
 }
 
+function RuntimeMetadata() {
+  const location = useLocation();
+  useEffect(() => {
+    const pageUrl = `${window.location.origin}${location.pathname}`;
+    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", pageUrl);
+    document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.setAttribute("content", pageUrl);
+  }, [location.pathname]);
+  return null;
+}
+
 function RouteFallback() {
   return <div className="min-h-screen bg-background p-6 font-mono text-primary">booting iranapi...</div>;
 }
 
 function AppRoutes() {
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter>
       <CommandPalette />
       <ScrollToTop />
+      <RuntimeMetadata />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -63,6 +74,8 @@ function AppRoutes() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Help />} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

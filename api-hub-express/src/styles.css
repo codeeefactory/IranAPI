@@ -148,7 +148,7 @@ html.cyber-cursor-active * {
 }
 
 .linux-shell > header > .absolute,
-.linux-shell .grid-bg,
+.linux-shell .grid-bg[aria-hidden="true"],
 .linux-shell .scan-line,
 .linux-home-hero > [style*="background-image"] {
   display: none !important;

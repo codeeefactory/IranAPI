@@ -13,6 +13,7 @@ type EndpointPreview = {
   method?: string;
   path?: string;
   summary?: string;
+  requires_auth?: boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

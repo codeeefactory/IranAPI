@@ -2,10 +2,12 @@ import { chmod, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promi
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export const DEFAULT_API_URL = "https://iranapi-2mc-iranapi.runflare.cloud/api/v1";
+export const API_URL_HINT =
+  "No IranAPI base URL configured. Pass --api-url <url>, set IRANAPI_API_URL, or run `iranapi login --api-url <url>` to store one.";
 
 export interface StoredConfig {
   api_url?: string;
+  site_url?: string;
   token?: string;
 }
 
@@ -19,6 +21,16 @@ export interface ResolvedSettings {
   apiUrl: string;
   token?: string;
   tokenSource?: "flag" | "environment" | "config";
+}
+
+export interface RuntimeManifest {
+  schema_version: number;
+  origin: string;
+  api_url: string;
+  cli?: {
+    version?: string;
+    download_url?: string;
+  };
 }
 
 export function configPath(env: NodeJS.ProcessEnv = process.env): string {
@@ -42,12 +54,58 @@ export async function loadConfig(path = configPath()): Promise<StoredConfig> {
     const value = parsed as Record<string, unknown>;
     return {
       api_url: typeof value.api_url === "string" ? value.api_url : undefined,
+      site_url: typeof value.site_url === "string" ? value.site_url : undefined,
       token: typeof value.token === "string" ? value.token : undefined,
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
     throw new Error(`Cannot read IranAPI config at ${path}: ${(error as Error).message}`);
   }
+}
+
+export function runtimeManifestUrl(siteUrl: string): URL {
+  const site = new URL(siteUrl);
+  if (site.protocol !== "http:" && site.protocol !== "https:") {
+    throw new Error("Site URL must use http or https.");
+  }
+  return new URL("/cli/manifest.json", site.origin);
+}
+
+export async function discoverRuntime(siteUrl: string): Promise<RuntimeManifest> {
+  const manifestUrl = runtimeManifestUrl(siteUrl);
+  let response: Response;
+  try {
+    response = await fetch(manifestUrl, {
+      headers: { Accept: "application/json", "User-Agent": "iranapi-cli/1.1.0" },
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (error) {
+    throw new Error(`Cannot reach IranAPI site ${manifestUrl.origin}: ${(error as Error).message}`);
+  }
+  if (!response.ok) {
+    throw new Error(`IranAPI runtime manifest returned HTTP ${response.status}.`);
+  }
+  const value: unknown = await response.json();
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("IranAPI runtime manifest is not a JSON object.");
+  }
+  const manifest = value as Record<string, unknown>;
+  if (manifest.schema_version !== 1 || typeof manifest.origin !== "string" || typeof manifest.api_url !== "string") {
+    throw new Error("IranAPI runtime manifest is missing required fields.");
+  }
+  const origin = new URL(manifest.origin);
+  const apiUrl = new URL(manifest.api_url);
+  if (origin.origin !== manifestUrl.origin || apiUrl.origin !== manifestUrl.origin) {
+    throw new Error("IranAPI runtime manifest points to a different origin.");
+  }
+  return {
+    schema_version: 1,
+    origin: origin.origin,
+    api_url: normalizeApiUrl(apiUrl.toString()),
+    cli: typeof manifest.cli === "object" && manifest.cli !== null
+      ? manifest.cli as RuntimeManifest["cli"]
+      : undefined,
+  };
 }
 
 export async function saveConfig(config: StoredConfig, path = configPath()): Promise<void> {
@@ -86,8 +144,10 @@ export function resolveSettings(
       : config.token
         ? "config"
         : undefined;
+  const rawUrl = options.apiUrl || env.IRANAPI_API_URL || config.api_url;
+  if (!rawUrl) throw new Error(API_URL_HINT);
   return {
-    apiUrl: normalizeApiUrl(options.apiUrl || env.IRANAPI_API_URL || config.api_url || DEFAULT_API_URL),
+    apiUrl: normalizeApiUrl(rawUrl),
     token,
     tokenSource,
   };

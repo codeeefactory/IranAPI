@@ -71,8 +71,8 @@ export default function StudioPage() {
       <SectionHeader kicker="build / flows" title="Flow builder" subtitle="// Create and deploy API orchestration flows." />
       <BuildTabs />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr,320px]">
-        <div className="terminal-border rounded-sm bg-card/40 min-h-[420px] p-4 sm:p-6 grid-bg overflow-x-auto">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="terminal-border min-w-0 overflow-hidden rounded-sm bg-card/40 min-h-[420px] p-4 sm:p-6 grid-bg">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs uppercase text-muted-foreground">{"// "}{t("studio.canvas")}</div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -87,21 +87,23 @@ export default function StudioPage() {
             </div>
           </div>
 
-          <div className="mt-4 grid sm:grid-cols-3 gap-4 sm:gap-6 sm:items-center min-w-[520px] sm:min-w-0">
-            {nodes.map((node, index) => (
-              <div key={node.order} className="relative">
-                <div className="terminal-border bg-background/80 rounded-sm p-4 shadow-glow">
-                  <Tag color={index === 0 ? "amber" : index === 1 ? "primary" : "cyan"}>{node.type}</Tag>
-                  <div className="mt-2 text-sm text-foreground">{node.label}</div>
-                  <div className="mt-2 text-[10px] text-muted-foreground" data-ltr>// node #{node.order}</div>
-                </div>
-                {index < nodes.length - 1 && (
-                  <div className="absolute top-1/2 -end-4 hidden sm:flex items-center text-primary text-glow rtl-flip" aria-hidden>
-                    →
+          <div className="mt-4 overflow-x-auto pb-2">
+            <div className="grid min-w-[520px] gap-4 sm:min-w-0 sm:grid-cols-3 sm:items-center sm:gap-6">
+              {nodes.map((node, index) => (
+                <div key={node.order} className="relative">
+                  <div className="terminal-border bg-background/80 rounded-sm p-4 shadow-glow">
+                    <Tag color={index === 0 ? "amber" : index === 1 ? "primary" : "cyan"}>{node.type}</Tag>
+                    <div className="mt-2 text-sm text-foreground">{node.label}</div>
+                    <div className="mt-2 text-[10px] text-muted-foreground" data-ltr>// node #{node.order}</div>
                   </div>
-                )}
-              </div>
-            ))}
+                  {index < nodes.length - 1 && (
+                    <div className="absolute top-1/2 -end-4 hidden sm:flex items-center text-primary text-glow rtl-flip" aria-hidden>
+                      →
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="ascii-divider mt-8" />
@@ -114,7 +116,7 @@ export default function StudioPage() {
               type="button"
               onClick={deployFlow}
               disabled={deploy.isPending || sessionLoading}
-              className="btn-primary justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary relative z-10 scroll-mt-24 justify-center disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {deploy.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
               {deploy.isPending ? "./deploying" : "./deploy"}
@@ -133,7 +135,7 @@ export default function StudioPage() {
 // triggers: 1   nodes: ${nodes.length}   branches: 0   recorded latency: ${deploy.data?.flow.latency_ms ? `${deploy.data.flow.latency_ms}ms` : "—"}`}</pre>
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <TerminalWindow title="~/iranapi/studio/deploy">
             <div data-terminal className="text-sm space-y-2">
               <Prompt>iranapi flow deploy {flowName}</Prompt>

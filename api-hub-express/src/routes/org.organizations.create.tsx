@@ -38,7 +38,7 @@ export default function OrgCreate() {
   return (
     <PageShell>
       <SectionHeader kicker="iranapi org create" title="provision a new organization" subtitle="// orgs scope billing, keys, members and rbac." />
-      <div className="mx-auto grid max-w-4xl gap-4 lg:grid-cols-[1fr,320px]">
+      <div className="mx-auto grid min-w-0 max-w-4xl grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <TerminalWindow title="~/iranapi/orgs/create" glow>
           <form onSubmit={submit} className="space-y-3 text-sm">
             <Prompt>iranapi org create</Prompt>

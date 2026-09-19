@@ -56,7 +56,18 @@ async function gotoApp(page: Page, path: string) {
 
 async function expectCurrentAppShell(page: Page) {
   await expect(page.locator("main#main")).toBeVisible();
-  await expect(page.locator('a[aria-label="iranapi home"]')).toBeVisible();
+  await expect(page.getByRole("link", { name: "iran api", exact: true })).toBeVisible();
+}
+
+async function logoutThroughResponsiveHeader(page: Page) {
+  const desktopLogout = page.locator('button[aria-label="logout"]');
+  if (await desktopLogout.isVisible()) {
+    await desktopLogout.click();
+    return;
+  }
+  const mobileMenu = page.locator('button[aria-controls="mobile-nav"]');
+  if ((await mobileMenu.getAttribute("aria-expanded")) !== "true") await mobileMenu.click();
+  await page.locator("#mobile-nav button").filter({ hasText: /logout/i }).click();
 }
 
 test("public crawler validates navigation, metadata, and core CTAs", async ({ page }) => {
@@ -70,7 +81,14 @@ test("public crawler validates navigation, metadata, and core CTAs", async ({ pa
   expect(description).toBeTruthy();
   expect(description).not.toContain("40,000");
 
-  await page.locator('a[href="/browse"]').first().click();
+  const mobileMenu = page.locator('button[aria-controls="mobile-nav"]');
+  if (await mobileMenu.isVisible()) {
+    await mobileMenu.focus();
+    await expect(mobileMenu).toBeFocused();
+    await mobileMenu.click();
+    await expect(mobileMenu).toHaveAttribute("aria-expanded", "true");
+  }
+  await page.locator('a[href="/browse"]:visible').first().click();
   await expect(page).toHaveURL(/\/browse$/);
   await expect(page.locator("main#main")).toContainText("browse the registry");
 
@@ -105,35 +123,36 @@ test("public crawler validates navigation, metadata, and core CTAs", async ({ pa
 });
 
 test("authenticated crawler validates register, login, dashboard forms, rating, and logout", async ({ page }) => {
+  test.setTimeout(150_000);
   const backendSession = await page.request.get("/api/v1/auth/session/");
   test.skip(!backendSession.ok(), "IranAPI backend unavailable; authenticated flow requires live MongoDB backend");
   const issues = monitorPage(page);
-  const uniqueSuffix = Date.now().toString();
+  const uniqueSuffix = `${process.env.LIVE_E2E_RUN_ID || "live-e2e"}-${test.info().project.name}-${Date.now()}`;
 
   await gotoApp(page, "/signup");
   await expect(page.locator("main#main")).toContainText("iranapi account create");
 
   await page.locator("#first_name").fill("QA");
   await page.locator("#last_name").fill("Crawler");
-  await page.locator("#username").fill(`qa-ui-${uniqueSuffix}`);
-  await page.locator("#email").fill(`qa-ui-${uniqueSuffix}@example.com`);
+  await page.locator("#username").fill(uniqueSuffix);
+  await page.locator("#email").fill(`${uniqueSuffix}@example.com`);
   await page.locator("#password").fill(demoPassword);
   await page.locator("#password_confirm").fill(demoPassword);
   await page.locator('button[type="submit"]').first().click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.locator("main")).toContainText(`qa-ui-${uniqueSuffix}@example.com`);
+  await expect(page.locator("main")).toContainText(`${uniqueSuffix}@example.com`);
 
-  await page.getByRole("button", { name: /logout/i }).click();
-  await expect(page.getByRole("banner").getByRole("link", { name: "./signin" })).toBeVisible();
+  await logoutThroughResponsiveHeader(page);
+  await expect(page.locator('header a[href="/signin"]:visible').first()).toBeVisible();
 
   await gotoApp(page, "/signin");
-  await page.locator("#username").fill(`qa-ui-${uniqueSuffix}`);
+  await page.locator("#username").fill(uniqueSuffix);
   await page.locator("#password").fill(demoPassword);
   await page.locator('button[type="submit"]').click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.locator("main")).toContainText(`qa-ui-${uniqueSuffix}@example.com`);
+  await expect(page.locator("main")).toContainText(`${uniqueSuffix}@example.com`);
   await expect(page.locator("main")).toContainText("requests");
   await expect(page.locator("main")).toContainText("account subscription");
 
@@ -146,22 +165,37 @@ test("authenticated crawler validates register, login, dashboard forms, rating, 
   await expect(page.locator("main#main")).toContainText("initialized qa-starter");
   await expect(page.getByRole("button", { name: "package.json" })).toBeVisible();
 
+  await gotoApp(page, "/org/organizations/create");
+  await page.locator("#org-name").fill(`QA Organization ${uniqueSuffix}`);
+  await page.locator("#org-region").selectOption("eu-frankfurt-1");
+  await page.getByRole("button", { name: "./provision" }).click();
+  await expect(page.getByRole("status")).toContainText("provisioned");
+
+  await gotoApp(page, "/studio");
+  await expect(page.locator("#studio-api option").first()).toBeAttached();
+  await page.locator("#studio-flow").fill(`qa-flow-${uniqueSuffix}`);
+  await page.locator("#studio-region").selectOption("ir-mashhad-1");
+  await page.getByRole("button", { name: "./deploy" }).click();
+  await expect(page.getByRole("status")).toContainText("deployed");
+
   await gotoApp(page, "/payment?subscription=growth");
   await expect(page).toHaveURL(/\/payment\?subscription=growth$/);
-  await expect(page.getByRole("button", { name: "./confirm_manual_checkout" })).toBeVisible();
+  await page.getByRole("button", { name: "./confirm_manual_checkout" }).click();
+  await expect(page.getByRole("link", { name: "./subscription_active" })).toBeVisible();
 
   await gotoApp(page, "/release");
-  const apiName = `QA Release ${uniqueSuffix}`;
+  const apiName = `${uniqueSuffix}-release`;
+  const fixtureOrigin = `https://example.dev/${encodeURIComponent(uniqueSuffix)}`;
   await page.locator("form input").nth(0).fill(apiName);
-  await page.locator("form input").nth(1).fill(`https://qa-release-${uniqueSuffix}.example.dev/v1`);
-  await page.locator("form input").nth(2).fill(`https://qa-release-${uniqueSuffix}.example.dev/docs`);
+  await page.locator("form input").nth(1).fill(`${fixtureOrigin}/v1`);
+  await page.locator("form input").nth(2).fill(`${fixtureOrigin}/docs`);
   await page.locator("form input").nth(3).fill("QA");
   await page.locator("form input").nth(4).fill("qa, release");
   await page.locator("form textarea").fill("Published by the Playwright crawler and visible in Explore.");
   await page.getByRole("button", { name: /publish/ }).click();
   await expect(page.getByRole("link", { name: "view listing" }).first()).toBeVisible();
   await page.getByRole("link", { name: "view listing" }).first().click();
-  await expect(page).toHaveURL(/\/api\/qa-release-/);
+  expect(new URL(page.url()).pathname).toBe(`/api/${apiName}`);
   await expect(page.locator("h1")).toContainText(apiName);
 
   await gotoApp(page, "/dashboard");
@@ -179,8 +213,8 @@ test("authenticated crawler validates register, login, dashboard forms, rating, 
   await expect(page).toHaveURL(/\/api\/.+/);
   await page.getByRole("button", { name: "rate 4 stars" }).click();
 
-  await page.getByRole("button", { name: /logout/i }).click();
-  await expect(page.getByRole("banner").getByRole("link", { name: "./signin" })).toBeVisible();
+  await logoutThroughResponsiveHeader(page);
+  await expect(page.locator('header a[href="/signin"]:visible').first()).toBeVisible();
   await gotoApp(page, "/dashboard");
   await expect(page.locator("main")).toContainText("// not authenticated");
 

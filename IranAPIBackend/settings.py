@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import re
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -104,19 +105,15 @@ ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv(
         "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1,::1,backend,0.0.0.0,"
-        "iranapi-vou-iranapi.runflare.cloud,"
-        "iranapi-kgy-iranapi.runflare.cloud,iranapi-78x-iranapi.runflare.cloud,"
-        "iranapi-2mc-iranapi.runflare.cloud,*",
+        "localhost,127.0.0.1,::1,backend,0.0.0.0,*",
     ).split(",")
     if host.strip()
 ]
 
+# Runflare temporary deployment hosts rotate. Keep the platform wildcard and
+# exact localhost origins; never pin ad-hoc *.runflare.cloud hostnames here.
 CSRF_TRUSTED_ORIGINS = [
-    'https://iranapi-vou-iranapi.runflare.cloud',
-    'https://iranapi-kgy-iranapi.runflare.cloud',
-    'https://iranapi-78x-iranapi.runflare.cloud',
-    'https://iranapi-2mc-iranapi.runflare.cloud',
+    'https://*.runflare.cloud',
 ]
 
 if DEBUG:
@@ -274,10 +271,11 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "api.middleware.RequestContextMiddleware",
+    "api.middleware.AdminLocalAssetsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "api.middleware.SecurityHeadersMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "api.middleware.PublicFrontendGZipMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -409,6 +407,12 @@ CONTENT_SECURITY_POLICY = (
 ADMIN_CONTENT_SECURITY_POLICY = CONTENT_SECURITY_POLICY.replace(
     "script-src 'self'",
     "script-src 'self' 'unsafe-inline'",
+).replace(
+    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+).replace(
+    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
 )
 PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 
@@ -421,6 +425,17 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 FRONTEND_ASSETS_DIR = FRONTEND_DIR / "assets"
 STATICFILES_DIRS = [("assets", FRONTEND_ASSETS_DIR)] if FRONTEND_ASSETS_DIR.is_dir() else []
 WHITENOISE_ROOT = FRONTEND_DIR
+
+
+def _vite_asset_is_immutable(path, url):
+    """Treat Vite's content-hashed assets as immutable across every host."""
+    normalized_url = f"/{str(url).lstrip('/')}"
+    return normalized_url.startswith("/assets/") and bool(
+        re.search(r"-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$", normalized_url)
+    )
+
+
+WHITENOISE_IMMUTABLE_FILE_TEST = _vite_asset_is_immutable
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field

@@ -1,21 +1,22 @@
 import { cn } from "@/lib/utils";
 
-type Props = { className?: string; size?: number };
+type Props = { className?: string; size?: number; decorative?: boolean };
 
 /**
  * Modern hackerish iranapi mark.
  * Stylized monogram: bracketed "iA" with a scan-bar and signal dot.
  * Pure SVG — scales crisply, theme-aware via currentColor.
  */
-export function Logo({ className, size = 22 }: Props) {
+export function Logo({ className, size = 22, decorative = false }: Props) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 32 32"
       className={cn("shrink-0", className)}
-      role="img"
-      aria-label="iranapi"
+      role={decorative ? undefined : "img"}
+      aria-label={decorative ? undefined : "iranapi"}
+      aria-hidden={decorative || undefined}
       fill="none"
     >
       {/* outer terminal bracket */}

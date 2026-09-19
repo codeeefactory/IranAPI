@@ -1,12 +1,12 @@
 @startuml
 !include style.puml
 actor "Authenticated Developer" as Developer
-actor "Deployment Worker" as Worker
 actor "Docker Engine" as Docker
 rectangle IranAPI {
   usecase "UC-14\nDeploy project archive" as Main
   usecase "Re-analyze and store archive" as Analyze
   usecase "Queue deployment" as Queue
+  usecase "Process queued deployment" as Process
   usecase "Build image" as Build
   usecase "Run restricted container" as Run
   usecase "Check health and expose URL" as Health
@@ -14,13 +14,13 @@ rectangle IranAPI {
 Developer --> Main
 Main ..> Analyze : <<include>>
 Main ..> Queue : <<include>>
-Worker --> Queue
-Worker --> Build
-Worker --> Run
-Worker --> Health
+Process ..> Queue : <<extend>>
+Process ..> Build : <<include>>
+Process ..> Run : <<include>>
+Process ..> Health : <<include>>
 Docker --> Build
 Docker --> Run
-Build ..> Queue : <<extend>>
-Run ..> Build : <<include>>
-Health ..> Run : <<include>>
+note bottom of Process
+The deployment worker is an internal IranAPI component.
+end note
 @enduml

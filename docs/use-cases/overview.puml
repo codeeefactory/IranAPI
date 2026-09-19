@@ -3,9 +3,11 @@
 skinparam defaultFontSize 15
 actor Visitor
 actor "Authenticated Developer" as Developer
-actor "API Developer" as ApiDeveloper
+actor "Staff API Developer" as StaffDeveloper
 actor "System Administrator" as Admin
-actor "External Services" as External
+actor "Social Identity Provider" as IdP
+actor "Upstream API" as Upstream
+actor "Docker Engine" as Docker
 rectangle IranAPI {
   usecase "UC-01 Discover APIs" as UC01
   usecase "UC-02 Inspect details" as UC02
@@ -39,12 +41,12 @@ Developer --> UC11
 Developer --> UC13
 Developer --> UC14
 Developer --> UC15
-ApiDeveloper --> UC06
-ApiDeveloper --> UC12
+Developer --> UC06
+StaffDeveloper --> UC12
 Admin --> UC12
-External --> UC03
-External --> UC08
-External --> UC14
+IdP --> UC03
+Upstream --> UC08
+Docker --> UC14
 UC02 ..> UC01 : <<extend>>
 UC07 ..> UC02 : <<extend>>
 UC14 ..> UC13 : <<include>>

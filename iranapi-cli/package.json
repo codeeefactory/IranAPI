@@ -1,6 +1,6 @@
 {
   "name": "iranapi-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Production command-line client for IranAPI catalog, authentication, caller, and project deployment",
   "type": "module",
   "bin": {

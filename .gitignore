@@ -96,3 +96,16 @@ Thumbs.db
 /report/*.blg
 /report/main.pdf
 /tmp/pdfs/
+
+# Local build/audit tooling (never upload to Runflare)
+/.chart-data-*/
+/.codex-finalizer/
+/.codex-pptx-build/
+/.kilo/
+/.tmp-pip-audit/
+/.tmp-runflare-probe/
+/lighthouse-*.json
+/output/
+/report/
+/staticfiles/
+/frontend_static/

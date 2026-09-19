@@ -44,3 +44,14 @@ export function styleHelp(help: string, enabled = colorsEnabled()): string {
     })
     .join("\n");
 }
+
+export function spinnerFrame(index: number): string {
+  return ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"][index % 10];
+}
+
+export function banner(enabled = colorsEnabled()): string {
+  const core = "IranAPI CLI";
+  const tagline = "catalog · caller · deployments";
+  if (!enabled) return `${core} — ${tagline}\n`;
+  return `${paint("╦ ", "primary", enabled)}${paint(core, "cyan", enabled)}${paint(" ═", "primary", enabled)}${paint(" " + tagline, "muted", enabled)}\n`;
+}

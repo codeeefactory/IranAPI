@@ -256,6 +256,72 @@ class HealthCheckTests(APISimpleTestCase):
         self.assertEqual(response.status_code, 503)
         self.assertNotIn("connection details", str(response.data))
 
+    def test_cli_runtime_manifest_tracks_current_host_and_download_alias(self):
+        response = self.client.get(
+            "/cli/manifest.json",
+            secure=True,
+            HTTP_HOST="fresh-temporary-domain.runflare.cloud",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Cache-Control"], "no-store")
+        self.assertEqual(response.json()["origin"], "https://fresh-temporary-domain.runflare.cloud")
+        self.assertEqual(response.json()["api_url"], "https://fresh-temporary-domain.runflare.cloud/api/v1")
+        self.assertEqual(
+            response.json()["cli"]["download_url"],
+            "https://fresh-temporary-domain.runflare.cloud/downloads/iranapi-cli.tgz",
+        )
+        self.assertEqual(response.json()["cli"]["version"], "1.1.0")
+        self.assertEqual(
+            response.json()["cli"]["connect_command"],
+            "iranapi connect https://fresh-temporary-domain.runflare.cloud",
+        )
+
+        latest = self.client.get("/downloads/iranapi-cli.tgz")
+        versioned = self.client.get("/downloads/iranapi-cli-1.1.0.tgz")
+        legacy = self.client.get("/downloads/iranapi-cli-1.0.0.tgz")
+        self.assertEqual(latest.status_code, 200)
+        self.assertEqual(versioned.status_code, 200)
+        self.assertEqual(legacy.status_code, 200)
+        self.assertIn("iranapi-cli-1.1.0.tgz", latest["Content-Disposition"])
+        self.assertEqual(latest["Cache-Control"], "no-cache, must-revalidate")
+        self.assertIn("immutable", versioned["Cache-Control"])
+
+    @override_settings(FRONTEND_DIR=settings.BASE_DIR / "api-hub-express")
+    @patch("api.repositories.MongoRepository")
+    def test_every_public_domain_trace_tracks_each_request_host(self, repository_class):
+        old_host = "old-temporary-domain.runflare.cloud"
+        new_host = "new-temporary-domain.runflare.cloud"
+        repository_class.return_value.list_apis.return_value = []
+
+        old_home = self.client.get("/", secure=True, HTTP_HOST=old_host)
+        new_page = self.client.get("/caller", secure=True, HTTP_HOST=new_host)
+        manifest = self.client.get("/cli/manifest.json", secure=True, HTTP_HOST=new_host)
+        robots = self.client.get("/robots.txt", secure=True, HTTP_HOST=new_host)
+        sitemap = self.client.get("/sitemap.xml", secure=True, HTTP_HOST=new_host)
+
+        old_html = old_home.content.decode("utf-8")
+        new_html = new_page.content.decode("utf-8")
+        self.assertIn(f'https://{old_host}/', old_html)
+        self.assertNotIn(old_host, new_html)
+        self.assertIn(f'<link rel="canonical" href="https://{new_host}/caller"', new_html)
+        self.assertIn(f'<meta property="og:url" content="https://{new_host}/caller"', new_html)
+        self.assertIn(f'https://{new_host}/iranapi-social.svg', new_html)
+        self.assertIn(f'"origin":"https://{new_host}"', new_html)
+        self.assertIn(f'"api_url":"https://{new_host}/api/v1"', new_html)
+        self.assertEqual(new_page["Cache-Control"], "no-store")
+
+        def response_text(response):
+            body = b"".join(response.streaming_content) if response.streaming else response.content
+            return body.decode("utf-8")
+
+        domain_responses = (response_text(manifest), response_text(robots), response_text(sitemap))
+        for body in domain_responses:
+            self.assertIn(new_host, body)
+            self.assertNotIn(old_host, body)
+        self.assertEqual(robots["Cache-Control"], "no-store")
+        self.assertEqual(sitemap["Cache-Control"], "no-store")
+
 
 class LiveMongoAdminTests(TestCase):
     def setUp(self):
@@ -685,6 +751,9 @@ class SecurityConfigurationTests(SimpleTestCase):
         self.assertEqual(settings.CSRF_COOKIE_SAMESITE, "Lax")
         self.assertIn("script-src 'self'", settings.CONTENT_SECURITY_POLICY)
         self.assertIn("frame-ancestors 'none'", settings.CONTENT_SECURITY_POLICY)
+        self.assertNotIn("fonts.googleapis.com", settings.CONTENT_SECURITY_POLICY)
+        self.assertIn("https://fonts.googleapis.com", settings.ADMIN_CONTENT_SECURITY_POLICY)
+        self.assertIn("https://fonts.gstatic.com", settings.ADMIN_CONTENT_SECURITY_POLICY)
 
     def test_nginx_disables_legacy_tls_and_version_tokens(self):
         config = (settings.BASE_DIR / "api-hub-express" / "nginx.conf").read_text(encoding="utf-8")
@@ -696,6 +765,8 @@ class SecurityConfigurationTests(SimpleTestCase):
         self.assertIn("location ~ ^/api/", config)
         self.assertIn("proxy_set_header Host $http_host;", config)
         self.assertIn("proxy_hide_header Content-Security-Policy;", config)
+        self.assertIn("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", config)
+        self.assertIn("font-src 'self' data: https://fonts.gstatic.com", config)
         self.assertNotIn("location /api/ {", config)
 
 
@@ -2020,12 +2091,15 @@ class MongoApiTests(APISimpleTestCase):
         sitemap_body = b"".join(sitemap.streaming_content) if sitemap.streaming else sitemap.content
 
         self.assertEqual(robots.status_code, 200)
-        self.assertIn("Sitemap:", robots_body.decode("utf-8"))
-        self.assertIn("Disallow: /admin/", robots_body.decode("utf-8"))
-        self.assertIn("Disallow: /api/v1/account/", robots_body.decode("utf-8"))
+        robots_text = robots_body.decode("utf-8")
+        self.assertIn("Sitemap: http://testserver/sitemap.xml", robots_text)
+        self.assertIn("Disallow: /admin/", robots_text)
+        self.assertIn("Disallow: /api/v1/account/", robots_text)
         self.assertEqual(sitemap.status_code, 200)
-        self.assertIn('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"', sitemap_body.decode("utf-8"))
-        self.assertIn(f"/api/{self.api['slug']}", sitemap_body.decode("utf-8"))
+        sitemap_text = sitemap_body.decode("utf-8")
+        self.assertIn('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"', sitemap_text)
+        self.assertIn("<loc>http://testserver/</loc>", sitemap_text)
+        self.assertIn(f"<loc>http://testserver/api/{self.api['slug']}</loc>", sitemap_text)
         self.assertIn("script-src 'self'", sitemap["Content-Security-Policy"])
         self.assertEqual(sitemap["X-Frame-Options"], "DENY")
         self.assertIn("camera=()", sitemap["Permissions-Policy"])

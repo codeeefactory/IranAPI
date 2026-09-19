@@ -3,9 +3,12 @@ __pycache__/
 .venv/
 venv/
 env/
+.validation-venv/
+.tmp-pip-audit/
 node_modules/
 api-hub-express/node_modules/
 api-hub-express/dist/
+api-hub-express/frontend_static/
 api-hub-express/output/
 api-hub-express/test-results/
 api-hub-express/.playwright-cli/
@@ -19,4 +22,10 @@ report/
 .gitignore
 .DS_Store
 *.log
+.chart-data-*/
+.codex-finalizer/
+.codex-pptx-build/
+.kilo/
+lighthouse-*.json
+staticfiles/
 

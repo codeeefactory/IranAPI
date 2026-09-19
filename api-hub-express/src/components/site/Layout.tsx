@@ -42,8 +42,12 @@ export function SiteHeader() {
       {/* gradient hairline */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-1.5 sm:gap-3 px-2.5 sm:px-6">
-        <Link to="/" className="group flex items-center gap-1 font-bold text-glow shrink-0" aria-label="iranapi home">
-          <Logo size={20} className="text-primary" />
+        <Link
+          to="/"
+          className="group flex items-center gap-1 font-bold text-glow shrink-0"
+          title="iran api home"
+        >
+          <Logo size={20} className="text-primary" decorative />
           <span className="text-primary">iran</span>
           <span className="text-foreground">api</span>
           <span className="text-amber blink hidden sm:inline" aria-hidden>_</span>

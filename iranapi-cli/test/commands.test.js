@@ -5,7 +5,6 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, beforeEach, describe, it } from "node:test";
-import { DEFAULT_API_URL } from "../dist/config.js";
 
 let server;
 let apiUrl;
@@ -32,6 +31,15 @@ before(async () => {
       if (bytes.length && contentType.includes("application/json")) body = JSON.parse(bytes.toString("utf8"));
       requests.push({ method: request.method, url, headers: request.headers, body, bytes, contentType });
 
+      if (url.pathname === "/cli/manifest.json") {
+        const origin = `http://${request.headers.host}`;
+        return json(response, 200, {
+          schema_version: 1,
+          origin,
+          api_url: `${origin}/api/v1`,
+          cli: { version: "1.1.0", download_url: `${origin}/downloads/iranapi-cli.tgz` },
+        });
+      }
       if (url.pathname === "/api/v1/system/health/") return json(response, 200, { status: "ok", database: "up" });
       if (url.pathname === "/api/v1/account/user/") return json(response, 200, { id: "user-1", username: "cli-user" });
       if (url.pathname === "/api/v1/catalog/apis/") {
@@ -55,6 +63,19 @@ before(async () => {
       if (url.pathname === "/api/v1/raw/echo/") return json(response, 200, { method: request.method, body });
       if (url.pathname === "/api/v1/account/projects/analyze/") return json(response, 200, { analysis: { runtime: "python" } });
       if (url.pathname === "/api/v1/account/projects/deployments/" && request.method === "POST") {
+        if (bytes.toString("latin1").includes("ir-unavailable")) {
+          // Real backend 503 body (DRF exception handler envelope).
+          response.writeHead(503, { "content-type": "application/json" });
+          return response.end(
+            JSON.stringify({
+              error: { code: "deployment_capability_unavailable", message: "Project deployment capability is unavailable." },
+            }),
+          );
+        }
+        if (bytes.toString("latin1").includes("ir-unavailable-empty")) {
+          response.writeHead(503);
+          return response.end();
+        }
         return json(response, 200, { deployment: { slug: "demo", status: "queued" } });
       }
       if (url.pathname === "/api/v1/account/projects/deployments/demo/") {
@@ -117,17 +138,26 @@ async function runJson(args, options) {
   return { result, payload: JSON.parse(result.stdout) };
 }
 
-describe("production defaults and command help", () => {
-  it("targets production by default and reports production version", () => {
-    assert.equal(DEFAULT_API_URL, "https://iranapi-2mc-iranapi.runflare.cloud/api/v1");
+describe("runtime defaults and command help", () => {
+  it("reports version and requires an explicit API URL (no baked-in domain)", async () => {
     const version = spawnSync(process.execPath, ["dist/cli.js", "--version"], { encoding: "utf8" });
     assert.equal(version.status, 0, version.stderr);
-    assert.equal(version.stdout.trim(), "1.0.0");
+    assert.equal(version.stdout.trim(), "1.1.0");
+
+    await rm(configFile, { force: true });
+    const nudged = await runCli(["doctor", "--json"], { env: { IRANAPI_API_URL: "", IRANAPI_TOKEN: "" } });
+    assert.equal(nudged.status, 1);
+    assert.equal(JSON.parse(nudged.stdout).error.code, "cli_error");
+    assert.match(JSON.parse(nudged.stdout).error.message, /--api-url/i);
+
+    const fromEnv = await runJson(["doctor", "--json"], { env: { IRANAPI_API_URL: apiUrl } });
+    assert.equal(fromEnv.payload.ok, true);
+    assert.equal(fromEnv.payload.api_url, apiUrl);
   });
 
   it("renders help for every command and command group", () => {
     const commands = [
-      [], ["doctor"], ["login"], ["logout"], ["whoami"], ["apis"], ["apis", "list"], ["apis", "get"],
+      [], ["doctor"], ["connect"], ["login"], ["logout"], ["whoami"], ["apis"], ["apis", "list"], ["apis", "get"],
       ["docs"], ["docs", "search"], ["call"], ["request"], ["analyze"], ["deploy"], ["schema"],
     ];
     for (const command of commands) {
@@ -136,13 +166,31 @@ describe("production defaults and command help", () => {
       assert.match(result.stdout, /Usage:/);
     }
   });
+
+  it("connect discovers and stores the current rotating domain", async () => {
+    await rm(configFile, { force: true });
+    const siteUrl = new URL(apiUrl).origin;
+    const connected = await runJson(["connect", `${siteUrl}/from-any-page`, "--json"]);
+    assert.equal(connected.payload.ok, true);
+    assert.equal(connected.payload.site_url, siteUrl);
+    assert.equal(connected.payload.api_url, apiUrl);
+    assert.equal(connected.payload.cli_download_url, `${siteUrl}/downloads/iranapi-cli.tgz`);
+
+    const stored = JSON.parse(await readFile(configFile, "utf8"));
+    assert.equal(stored.site_url, siteUrl);
+    assert.equal(stored.api_url, apiUrl);
+
+    const doctor = await runJson(["doctor", "--json"]);
+    assert.equal(doctor.payload.ok, true);
+    assert.equal(doctor.payload.api_url, apiUrl);
+  });
 });
 
 describe("complete CLI command and parameter matrix", () => {
   it("doctor supports global API, token, and JSON flags", async () => {
     const { payload } = await runJson(["--api-url", apiUrl, "--token", "iapi_secret1234", "doctor", "--json"]);
     assert.equal(payload.ok, true);
-    assert.equal(payload.cli_version, "1.0.0");
+    assert.equal(payload.cli_version, "1.1.0");
     assert.equal(payload.auth.token, "iapi...1234");
     assert.equal(payload.auth.valid, true);
     assert.equal(requests.length, 2);
@@ -255,6 +303,30 @@ describe("complete CLI command and parameter matrix", () => {
     assert.equal(deployed.payload.deployment.status, "deployed");
     assert.equal(deployed.payload.deployment.deployment_url, "https://demo.example");
     assert.equal(requests.at(-1).url.pathname, "/api/v1/account/projects/deployments/demo/");
+
+    const unavailable = await runCli([
+      "--api-url", apiUrl, "--token", "deploy-token", "deploy", archive,
+      "--region", "ir-unavailable", "--no-wait", "--json",
+    ]);
+    assert.equal(unavailable.status, 1);
+    assert.deepEqual(JSON.parse(unavailable.stdout).error, {
+      code: "deployment_capability_unavailable",
+      message: "Project deployment is unavailable because this service has no Docker build worker.",
+      status: 503,
+    });
+
+    const unavailableEmpty = await runCli([
+      "--api-url", apiUrl, "--token", "deploy-token", "deploy", archive,
+      "--region", "ir-unavailable-empty", "--no-wait", "--json",
+    ]);
+    assert.equal(unavailableEmpty.status, 1);
+    assert.equal(JSON.parse(unavailableEmpty.stdout).error.code, "deployment_capability_unavailable");
+
+    const invalidTimeout = await runCli([
+      "--api-url", apiUrl, "--token", "deploy-token", "deploy", archive, "--timeout", "0", "--json",
+    ]);
+    assert.equal(invalidTimeout.status, 1);
+    assert.equal(JSON.parse(invalidTimeout.stdout).error.code, "cli_error");
   });
 
   it("schema prints JSON and supports output path", async () => {

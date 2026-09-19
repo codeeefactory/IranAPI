@@ -12,21 +12,28 @@ test("anonymous visitor can call a public API", async ({ page }) => {
         latency_ms: 24,
         region: "public-direct",
         content_type: "application/json",
-        body: { url: "https://httpbin.org/get" },
+        body: { url: payload?.url },
         usage: null,
       }),
     });
   });
 
   await page.goto("/caller", { waitUntil: "networkidle" });
-  await expect(page.getByLabel("url")).toHaveValue("https://httpbin.org/get");
+  await expect(page.getByLabel("url")).toHaveValue(/api\.open-meteo\.com/);
+  await expect(page.getByRole("button", { name: "Tehran weather" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Python on GitHub" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Public holidays" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Persian Quran" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Python on GitHub" }).click();
+  await expect(page.getByLabel("url")).toHaveValue("https://api.github.com/repos/python/cpython");
   await page.getByRole("button", { name: /execute/i }).click();
 
   await expect(page.locator("main#main")).toContainText("[200]");
-  await expect(page.locator("main#main")).toContainText('"url": "https://httpbin.org/get"');
+  await expect(page.locator("main#main")).toContainText('"url": "https://api.github.com/repos/python/cpython"');
   expect(payload).toEqual({
-    url: "https://httpbin.org/get",
+    url: "https://api.github.com/repos/python/cpython",
     method: "GET",
-    headers: {},
+    headers: { Accept: "application/vnd.github+json" },
   });
 });

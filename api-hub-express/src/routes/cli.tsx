@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, FileArchive, Globe2, KeyRound, PackageCheck, Stethoscope, Terminal } from "lucide-react";
+import { Check, Copy, Download, FileArchive, Globe2, KeyRound, PackageCheck, RefreshCw, Stethoscope, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell, SectionHeader } from "@/components/site/Layout";
 import { CodeBlock, Prompt, Tag, TerminalWindow } from "@/components/site/Terminal";
@@ -7,7 +7,8 @@ import { useI18n } from "@/lib/i18n";
 
 const PRODUCTION_ORIGIN = window.location.origin;
 const PRODUCTION_API_URL = `${PRODUCTION_ORIGIN}/api/v1`;
-const CLI_PACKAGE_URL = `${PRODUCTION_ORIGIN}/downloads/iranapi-cli-1.0.0.tgz`;
+const CLI_PACKAGE_URL = `${PRODUCTION_ORIGIN}/downloads/iranapi-cli.tgz`;
+const CLI_MANIFEST_URL = `${PRODUCTION_ORIGIN}/cli/manifest.json`;
 
 function Copyable({ children }: { children: string }) {
   const [done, setDone] = useState(false);
@@ -52,7 +53,7 @@ export default function CliPage() {
 
       <div className="mb-6 flex items-start gap-3 rounded-sm border border-primary/60 bg-primary/5 p-4 text-sm text-primary" role="status">
         <PackageCheck className="mt-0.5 h-4 w-4 shrink-0" />
-        <span data-ltr>CLI 1.0.0 uses production IranAPI by default and is available as a verified package.</span>
+        <span data-ltr>CLI 1.1.0 has no hardcoded host. This page and runtime manifest always derive download/API URLs from the current temporary domain.</span>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -62,13 +63,22 @@ export default function CliPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <Tag color="primary">npm</Tag>
                 <Tag color="amber">node &gt;= 20</Tag>
-                <Tag color="primary">iranapi 1.0.0</Tag>
+                <Tag color="primary">iranapi 1.1.0</Tag>
               </div>
               <Copyable>{`npm install --global ${CLI_PACKAGE_URL}
 iranapi --version
+iranapi connect ${PRODUCTION_ORIGIN}
 iranapi doctor`}</Copyable>
+              <div className="flex flex-wrap gap-3">
+                <a href={CLI_PACKAGE_URL} download className="btn-primary justify-center" data-ltr>
+                  <Download className="h-4 w-4" aria-hidden /> Download CLI
+                </a>
+                <a href={CLI_MANIFEST_URL} className="cta-grad justify-center" data-ltr>
+                  <RefreshCw className="h-4 w-4" aria-hidden /> Runtime manifest
+                </a>
+              </div>
               <div className="text-xs text-muted-foreground" data-ltr>
-                Production package: <span className="text-foreground">iranapi-cli-1.0.0.tgz</span>
+                Stable path: <span className="text-foreground">/downloads/iranapi-cli.tgz</span> · current host resolved at request time
               </div>
             </div>
           </TerminalWindow>
@@ -93,11 +103,10 @@ iranapi doctor`}</Copyable>
               <p className="text-xs leading-6 text-muted-foreground" data-ltr>
                 No IranAPI account required. Target must be a public HTTP(S) endpoint allowed by backend network policy.
               </p>
-              <Copyable>{`iranapi call GET https://httpbin.org/get \\
+              <Copyable>{`iranapi call GET "https://api.open-meteo.com/v1/forecast?latitude=35.6892&longitude=51.3890&current=temperature_2m" \\
   --header "Accept: application/json" --json`}</Copyable>
-              <Copyable>{`iranapi call POST https://example.com/events \\
-  --header "Content-Type: application/json" \\
-  --body '{"event":"created"}' --json`}</Copyable>
+              <Copyable>{`iranapi call GET https://api.github.com/repos/python/cpython \\
+  --header "Accept: application/vnd.github+json" --json`}</Copyable>
             </div>
           </TerminalWindow>
 
@@ -143,7 +152,7 @@ IRANAPI_TOKEN
               <Copyable>{`iranapi doctor --json`}</Copyable>
               <CodeBlock>{`{
   "ok": true,
-  "cli_version": "1.0.0",
+  "cli_version": "1.1.0",
   "api": {
     "reachable": true,
     "status": "ok",
@@ -174,7 +183,7 @@ iranapi request PATCH account/user/ \\
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Prompt>iranapi --help</Prompt>
-              <CodeBlock>{`doctor   login   logout   whoami
+              <CodeBlock>{`doctor   connect login    logout   whoami
 apis     docs    call     request
 analyze  deploy  schema`}</CodeBlock>
             </div>

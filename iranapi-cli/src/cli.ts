@@ -5,6 +5,7 @@ import { Command, Help, Option } from "commander";
 import { ApiError, normalizeLimit, parseHeaders, requestJson, requestMultipart } from "./api.js";
 import {
   configPath,
+  discoverRuntime,
   loadConfig,
   redactToken,
   removeToken,
@@ -14,12 +15,13 @@ import {
 } from "./config.js";
 import { readJsonInput } from "./input.js";
 import { printJson, printRows, printValue, type Page } from "./output.js";
-import { paint, styleHelp } from "./theme.js";
+import { colorsEnabled, paint, spinnerFrame, styleHelp, banner } from "./theme.js";
 import { createBrowserAuthorization, launchBrowser } from "./browser-auth.js";
 
 const program = new Command();
 
 program.configureHelp({ formatHelp: (command, helper) => styleHelp(new Help().formatHelp(command, helper)) });
+program.addHelpText("before", () => (colorsEnabled() ? `${banner()}\n` : ""));
 
 function globals(command: Command): GlobalOptions {
   return command.optsWithGlobals() as GlobalOptions;
@@ -48,19 +50,25 @@ type DeploymentStatus = {
 
 async function waitForDeployment(settings: Awaited<ReturnType<typeof context>>["settings"], slug: string, timeoutSeconds: number) {
   const deadline = Date.now() + timeoutSeconds * 1000;
+  const animate = colorsEnabled() && Boolean(process.stdout.isTTY);
+  let frame = 0;
   while (Date.now() < deadline) {
     const response = await requestJson<{ deployment: DeploymentStatus }>(
       settings,
       "GET",
       `account/projects/deployments/${encodeURIComponent(slug)}/`,
     );
-    if (response.deployment.status === "deployed") return response;
+    if (response.deployment.status === "deployed") {
+      if (animate) process.stdout.write(`\r${paint("✓ deployed", "primary")}                         \n`);
+      return response;
+    }
     if (response.deployment.status === "failed") {
       throw new ApiError(
         response.deployment.failure_reason || "Project deployment build failed.",
         "deployment_failed",
       );
     }
+    if (animate) process.stdout.write(`\r${paint(`${spinnerFrame(frame++)} ${response.deployment.status}…`, "cyan")}`);
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
   throw new ApiError(`Deployment did not finish within ${timeoutSeconds} seconds.`, "deployment_timeout");
@@ -69,7 +77,7 @@ async function waitForDeployment(settings: Awaited<ReturnType<typeof context>>["
 program
   .name("iranapi")
   .description("IranAPI catalog and public caller CLI")
-  .version("1.0.0")
+  .version("1.1.0")
   .option("--api-url <url>", "IranAPI base URL (or IRANAPI_API_URL)")
   .option("--token <token>", "one-off API token (or IRANAPI_TOKEN)")
   .option("--json", "emit machine-readable JSON");
@@ -114,6 +122,27 @@ program
   });
 
 program
+  .command("connect <site-url>")
+  .description("discover current API URL from a rotating IranAPI website domain and save it")
+  .action(async (siteUrl: string, _local, command: Command) => {
+    const options = globals(command);
+    const stored = await loadConfig();
+    const manifest = await discoverRuntime(siteUrl);
+    await saveConfig({ ...stored, site_url: manifest.origin, api_url: manifest.api_url });
+    printValue(
+      {
+        ok: true,
+        message: "Current IranAPI domain saved.",
+        site_url: manifest.origin,
+        api_url: manifest.api_url,
+        cli_download_url: manifest.cli?.download_url ?? null,
+        config_path: configPath(),
+      },
+      Boolean(options.json),
+    );
+  });
+
+program
   .command("login")
   .description("sign in with a browser or validate and store an IranAPI token")
   .option("-t, --token <token>", "token to store")
@@ -133,7 +162,7 @@ program
         throw new Error("Browser login timeout must be an integer from 30 to 900 seconds.");
       }
       const authorization = await createBrowserAuthorization(settings.apiUrl, local.browserUrl, timeoutSeconds);
-      process.stderr.write(`${local.browser ? "Opening browser" : "Open this URL"}: ${authorization.authorizationUrl}\n`);
+      process.stderr.write(`${paint(local.browser ? "Opening browser" : "Open this URL", "cyan")}: ${paint(authorization.authorizationUrl, "primary")}\n`);
       if (local.browser) launchBrowser(authorization.authorizationUrl);
       try {
         const code = await authorization.waitForCode();
@@ -289,19 +318,31 @@ program
     const { options, settings } = await context(command);
     requireToken(settings.token);
     const bytes = await readFile(archive);
-    const result = await requestMultipart<{ deployment: DeploymentStatus }>(
-      settings,
-      "account/projects/deployments/",
-      { name: basename(archive), bytes },
-      { project_name: local.name || basename(archive).replace(/\.(?:tar\.gz|tgz|tar|zip)$/i, ""), region: local.region },
-    );
+    const timeoutSeconds = Number(local.timeout);
+    if (local.wait && (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 10 || timeoutSeconds > 3600)) {
+      throw new Error("Deployment timeout must be an integer from 10 to 3600 seconds.");
+    }
+    let result: { deployment: DeploymentStatus };
+    try {
+      result = await requestMultipart<{ deployment: DeploymentStatus }>(
+        settings,
+        "account/projects/deployments/",
+        { name: basename(archive), bytes },
+        { project_name: local.name || basename(archive).replace(/\.(?:tar\.gz|tgz|tar|zip)$/i, ""), region: local.region },
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 503) {
+        throw new ApiError(
+          "Project deployment is unavailable because this service has no Docker build worker.",
+          "deployment_capability_unavailable",
+          503,
+        );
+      }
+      throw error;
+    }
     if (!local.wait) {
       printValue(result, Boolean(options.json));
       return;
-    }
-    const timeoutSeconds = Number(local.timeout);
-    if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 10 || timeoutSeconds > 3600) {
-      throw new Error("Deployment timeout must be an integer from 10 to 3600 seconds.");
     }
     printValue(await waitForDeployment(settings, result.deployment.slug, timeoutSeconds), Boolean(options.json));
   });

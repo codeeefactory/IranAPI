@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 
 
@@ -15,6 +17,26 @@ class PublicFrontendGZipMiddleware:
 
     def __call__(self, request):
         return self.get_response(request)
+
+
+class AdminLocalAssetsMiddleware:
+    """Keep the admin console usable when external font CDNs are unavailable."""
+
+    _google_font_link = re.compile(
+        rb'<link[^>]+href=["\']https://fonts\.googleapis\.com/[^"\']+["\'][^>]*>',
+        re.IGNORECASE,
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.path.startswith("/admin/") and response.get("Content-Type", "").startswith("text/html"):
+            content = self._google_font_link.sub(b"", response.content)
+            response.content = content
+            response["Content-Length"] = str(len(content))
+        return response
 
 
 class SecurityHeadersMiddleware:

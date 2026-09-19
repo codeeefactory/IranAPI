@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { describe, it } from "node:test";
 import { archiveContentType, buildUrl, normalizeLimit, parseHeaders, requestJson } from "../dist/api.js";
-import { redactToken, resolveSettings } from "../dist/config.js";
+import { redactToken, resolveSettings, runtimeManifestUrl } from "../dist/config.js";
 import { browserBaseUrl } from "../dist/browser-auth.js";
 
 describe("URL construction", () => {
@@ -15,6 +15,14 @@ describe("URL construction", () => {
 
   it("allows absolute URLs for raw requests", () => {
     assert.equal(buildUrl("http://localhost:8000/api/v1", "https://example.com/status").toString(), "https://example.com/status");
+  });
+
+  it("derives runtime manifest from any current temporary site URL", () => {
+    assert.equal(
+      runtimeManifestUrl("https://iranapi-random.runflare.cloud/cli").toString(),
+      "https://iranapi-random.runflare.cloud/cli/manifest.json",
+    );
+    assert.throws(() => runtimeManifestUrl("file:///tmp/iranapi"), /http or https/);
   });
 });
 
@@ -56,9 +64,20 @@ describe("input validation", () => {
 
 describe("auth settings", () => {
   it("uses flag, environment, then config precedence", () => {
-    assert.equal(resolveSettings({ token: "flag" }, { token: "config" }, { IRANAPI_TOKEN: "env" }).token, "flag");
-    assert.equal(resolveSettings({}, { token: "config" }, { IRANAPI_TOKEN: "env" }).token, "env");
-    assert.equal(resolveSettings({}, { token: "config" }, {}).token, "config");
+    const base = { token: "config", api_url: "http://config/api/v1" };
+    assert.equal(resolveSettings({ token: "flag" }, base, { IRANAPI_TOKEN: "env" }).token, "flag");
+    assert.equal(resolveSettings({}, base, { IRANAPI_TOKEN: "env" }).token, "env");
+    assert.equal(resolveSettings({}, base, {}).token, "config");
+  });
+
+  it("resolves API URL from flag, environment, then config and requires one", () => {
+    const envUrl = "http://env/api/v1";
+    const configUrl = "http://config/api/v1";
+    const flagUrl = "http://flag/api/v1";
+    assert.equal(resolveSettings({}, { api_url: configUrl }, { IRANAPI_API_URL: envUrl }).apiUrl, envUrl);
+    assert.equal(resolveSettings({ apiUrl: flagUrl }, { api_url: configUrl }, { IRANAPI_API_URL: envUrl }).apiUrl, flagUrl);
+    assert.equal(resolveSettings({}, { api_url: configUrl }, {}).apiUrl, configUrl);
+    assert.throws(() => resolveSettings({}, {}, {}), /--api-url/);
   });
 
   it("redacts tokens", () => {

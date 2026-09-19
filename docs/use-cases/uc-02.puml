@@ -12,7 +12,7 @@ rectangle IranAPI {
 Visitor --> Main
 Developer --> Main
 Main ..> Contract : <<include>>
-Main ..> Docs : <<include>>
-Main ..> Similar : <<include>>
+Docs ..> Main : <<extend>>
+Similar ..> Main : <<extend>>
 Main ..> View : <<include>>
 @enduml

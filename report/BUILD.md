@@ -16,8 +16,8 @@
 - Metadata sync: title, student name, supervisor, and date are set in `main.tex`; student ID is intentionally not shown because the attached PDF cover sample does not include it. Latest metadata values are `سایت اشتراک گذاری API با پایتون`, `سجاد رضاقلی زاده`, and `دکتر زهره کریمی`.
 - Intended report build command: `xelatex -interaction=nonstopmode -file-line-error main.tex` repeated three times from `report/`.
 - Backend test command: `python manage.py test api`.
-- Backend test status (latest workspace): 99 tests discovered; execution blocked locally because MongoDB at `localhost:27017` is not running. Prior recorded run passed against isolated `test_iranapi`.
-- Browser test status (latest workspace): 20 Playwright scenarios are defined; prior recorded run covered 16 scenarios plus manual desktop/mobile visual inspection.
+- Backend test status (latest workspace): 109 tests discovered; focused health/domain tests pass 5/5. Full execution is locally blocked because MongoDB at `localhost:27017` is not running; the prior 107-test inventory passed against isolated `test_iranapi`.
+- Browser test status (latest workspace): 48 Playwright executions are defined across desktop and mobile; the production-safe gate passes 46/46 runnable executions and skips the two credential-bound superuser variants.
 - Compilation status: successful with the user-installed MiKTeX `xelatex.exe`; `main.pdf` was produced after repeated XeLaTeX runs.
 - Modernization pass on 2026-07-19:
   - Removed all visible missing-information placeholder text from report body.
@@ -64,5 +64,25 @@
   - Enlarged every embedded use-case diagram to 98% available width with a 4.8 cm height cap while preserving one dedicated page per use case.
   - Rebuilt `main.pdf` repeatedly; current output is 58 pages. Pages 19--36 were rendered, and all summary/use-case pages were visually checked for readable diagrams, clipping, and overlap.
   - Final LaTeX log has no unresolved references/citations, missing characters, LaTeX errors, or overfull boxes.
+
+- Platform quality/deployment pass on 2026-09-18:
+  - Started MongoDB, backend, deployer, and frontend with Docker Compose; health endpoint returned HTTP 200 with database `up`.
+  - Re-ran the then-current Django suite against authenticated MongoDB: 107 tests passed. The current inventory is 109 after adding runtime-domain regression coverage; the focused health/domain group passes 5/5 locally.
+  - Fixed TypeScript regressions (`BrowserRouter` future prop and `EndpointPreview.requires_auth`); frontend typecheck, lint, build, and i18n checks pass.
+  - Fixed desktop Studio flow visibility and mobile init-project overlay interaction; authenticated crawler paths now pass.
+  - Added backend static-asset proxying for the admin UI and local admin font-link filtering, removing external-CDN failures from admin E2E.
+  - Provisioned the local-only E2E superuser fixture; final full Playwright run passed all 48 tests across desktop and mobile projects.
+  - Added SEO/accessibility/agent discovery metadata: runtime-domain canonical and social URLs, valid dynamic-domain robots and sitemap responses, OpenGraph/Twitter metadata, JSON-LD WebSite data, web manifest, and `llms.txt`; Lighthouse artifact `lighthouse-local.json` now scores performance 91, accessibility 100, best practices 100, and SEO 100.
+  - Improved CLI presentation with ANSI semantic colors, animated deployment spinner, and UTF-8 table borders while preserving `--json` machine output. API URLs remain runtime-selectable through `--api-url`, `IRANAPI_API_URL`, or config; CLI suite passed 26/26 tests.
+  - Added `examples/hello-api` (Express health/echo service), archived as `examples/iranapi-hello-api.zip`, and verified with CLI `analyze` (JavaScript/Express, three routes, no secret findings). CLI deployment later succeeded as `hello-api-4` (`deployed`, Dockerfile builder); `/` and `/health` returned `ok` at the generated temporary URL `http://localhost:47491`.
+  - Re-ran the complete production-safe Playwright gate after deployment: 46/46 runnable executions passed across desktop and mobile; two destructive superuser variants were skipped because production admin credentials were intentionally not supplied.
+  - Deployed production image `v20` to Runflare project `iranapii` / service `iranapi` (`33430`/`78967`). Portal reported active status and 1/1 pod. After the prior one-hour hostname expired, a fresh runtime hostname passed live root, health, catalog, security-header, metadata, downloadable-CLI, and domain-rotation checks; no fixed Runflare hostname is required.
+  - Hardened production startup: `DEBUG=false`, proxy HTTPS awareness, HSTS/CSP/permissions headers, generated fallback secret when no explicit secret is supplied, and removal of fixed E2E-superuser provisioning from the production entrypoint.
+  - Replaced shadowing static robots/sitemap files with runtime-domain Django responses and corrected the agent-facing endpoint inventory in `llms.txt`.
+  - Final confirming Lighthouse artifact `lighthouse-runflare-v20-confirm.json`: performance 98, accessibility 100, best practices 100, SEO 100; FCP/LCP 1.8 s, TBT 70 ms, CLS 0. A preceding warm run scored performance 97; accessible-name matching now passes.
+  - Re-audited all 15 detailed use-case sources plus the overview. Corrected optional include/extend semantics, clarified staff and external actors, moved the deployment worker inside the IranAPI boundary, and documented runtime API-base selection in UC-15. Regenerated all diagrams with current PlantUML for final PDF verification.
+  - Final post-deployment gate passed: focused Django health/domain tests 5/5 (109 tests discovered; last full Mongo-backed run 107/107), Playwright 46/46 runnable plus two credential-bound skips, CLI 26/26, i18n 237 keys across five languages, TypeScript, ESLint, and production frontend build.
+  - Rebuilt the report three times with XeLaTeX. The final 61-page PDF has no unresolved references/citations, missing characters, overfull boxes, or LaTeX errors. All pages were rendered with Poppler; the full contact sheet and focused deployment, testing, conclusion, runbook, UC-14, and UC-15 pages were visually checked with no clipping or overlap.
+  - Re-rendered report pages 19--36 with Poppler and visually audited the complete UC-01 through UC-15 contact sheet, plus full-size checks of UC-01, UC-09, and UC-15: actors, system boundaries, include/extend links, captions, Persian text, and margins are intact with no clipping or overlap. All 18 summary/use-case pages rendered successfully.
 
 Unresolved warnings: MiKTeX reports that updates have not been checked. Some underfull boxes remain from narrow Persian table columns; they do not stop compilation. The final LaTeX log has no unresolved citations, missing references, font warnings, or overfull boxes.

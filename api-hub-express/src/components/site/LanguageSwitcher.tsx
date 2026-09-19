@@ -22,7 +22,7 @@ export function LanguageSwitcher() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-card/50 h-10 sm:h-9 px-2.5 sm:px-3 text-xs text-foreground/80 hover:border-primary hover:text-primary transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-        aria-label="language"
+        aria-label={`${current.label} language`}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls="language-menu"

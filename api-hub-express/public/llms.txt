@@ -1,0 +1,35 @@
+# IranAPI
+
+IranAPI is a developer API hub and control plane for Iranian product teams: browse a
+vetted API catalog, inspect OpenAPI-backed documentation, test public endpoints, and
+publish your own integrations from the same dashboard.
+
+## Public routes (SPA)
+- `/` — landing page with live catalog stats
+- `/browse` — API catalog (searchable, filterable, sortable)
+- `/documentation` — machine-readable API docs
+- `/pricing` — plans and quotas
+- `/cli` — CLI download (iranapi-cli, npm-installable)
+- `/release` — publish a new API to the catalog
+- `/caller` — test/consume a public endpoint
+
+## Machine endpoints
+- `/api/v1/system/health/` — service + MongoDB health check
+- `/api/v1/catalog/apis/` — catalog entries (queryset, paginated)
+- `/api/v1/catalog/categories/` — categories
+- `/api/v1/catalog/documentations/` — documentation entries
+- `/api/v1/schema/openapi.json` — canonical OpenAPI 3.0 schema for this API
+- `/cli/manifest.json` — no-cache runtime discovery for the current temporary host
+- `/downloads/iranapi-cli.tgz` — host-relative latest CLI package alias
+
+## Formats & conventions
+- All dynamic data is served as JSON (REST, Django Rest Framework).
+- Catalog entries link their endpoint and documentation resources for exact request/response shapes.
+- The frontend is a bilingual (en/fa, RTL-aware) single-page application.
+
+## Notes for AI agents
+- The deployment domain is temporary; resolve all absolute URLs against the host this
+  file is served from.
+- Structured site metadata is available in the `application/ld+json` block in the
+  document head of the SPA entry page.
+- Health endpoint returns 200 only when MongoDB is reachable.

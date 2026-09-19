@@ -9,6 +9,7 @@ rectangle IranAPI {
   usecase "Store or remove token" as Token
   usecase "Who am I / raw request" as Private
   usecase "Analyze or deploy project" as Project
+  usecase "Resolve runtime API base URL" as BaseUrl
 }
 Visitor --> Public
 Visitor --> Call
@@ -20,8 +21,13 @@ Call ..> Main : <<extend>>
 Token ..> Main : <<extend>>
 Private ..> Main : <<extend>>
 Project ..> Main : <<extend>>
+Main ..> BaseUrl : <<include>>
 note bottom of Token
 login validates and stores an existing token;
 it does not accept username/password.
+end note
+note bottom of BaseUrl
+Temporary domains can be selected with --api-url,
+IRANAPI_API_URL, or saved configuration.
 end note
 @enduml

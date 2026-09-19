@@ -20,14 +20,34 @@ import { useCallerExecute, useUsageHistory } from "@/hooks/useUsage";
 import { useI18n } from "@/lib/i18n";
 
 const EXAMPLES = [
-  { label: "GET JSON", method: "GET", url: "https://httpbin.org/get", body: "" },
   {
-    label: "POST JSON",
-    method: "POST",
-    url: "https://httpbin.org/anything",
-    body: '{\n  "message": "hello from IranAPI"\n}',
+    label: "Tehran weather",
+    method: "GET",
+    url: "https://api.open-meteo.com/v1/forecast?latitude=35.6892&longitude=51.3890&current=temperature_2m,wind_speed_10m&timezone=Asia%2FTehran",
+    headers: "{}",
+    body: "",
   },
-  { label: "404 response", method: "GET", url: "https://httpbin.org/status/404", body: "" },
+  {
+    label: "Python on GitHub",
+    method: "GET",
+    url: "https://api.github.com/repos/python/cpython",
+    headers: '{\n  "Accept": "application/vnd.github+json"\n}',
+    body: "",
+  },
+  {
+    label: "Public holidays",
+    method: "GET",
+    url: "https://date.nager.at/api/v3/PublicHolidays/2026/US",
+    headers: "{}",
+    body: "",
+  },
+  {
+    label: "Persian Quran",
+    method: "GET",
+    url: "https://api.alquran.cloud/v1/ayah/1:1/fa.makarem",
+    headers: "{}",
+    body: "",
+  },
 ] as const;
 
 type RequestTab = "headers" | "body";
@@ -40,7 +60,7 @@ export default function CallerPage() {
   const { t } = useI18n();
   const { isAuthenticated } = useSession();
   const [method, setMethod] = useState("GET");
-  const [url, setUrl] = useState("https://httpbin.org/get");
+  const [url, setUrl] = useState<string>(EXAMPLES[0].url);
   const [headers, setHeaders] = useState("{}");
   const [body, setBody] = useState("");
   const [activeRequestTab, setActiveRequestTab] = useState<RequestTab>("headers");
@@ -53,7 +73,7 @@ export default function CallerPage() {
   function loadExample(example: (typeof EXAMPLES)[number]) {
     setMethod(example.method);
     setUrl(example.url);
-    setHeaders("{}");
+    setHeaders(example.headers);
     setBody(example.body);
     setActiveRequestTab(example.body ? "body" : "headers");
     setResponseBody(null);

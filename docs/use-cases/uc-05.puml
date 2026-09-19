@@ -10,8 +10,8 @@ rectangle IranAPI {
   usecase "Cancel pending checkout" as Cancel
 }
 Developer --> Main
-Main ..> Plans : <<include>>
-Main ..> Create : <<include>>
+Plans ..> Main : <<extend>>
+Create ..> Main : <<extend>>
 Inspect ..> Main : <<extend>>
 Confirm ..> Main : <<extend>>
 Cancel ..> Main : <<extend>>

@@ -10,7 +10,7 @@ rectangle IranAPI {
 }
 Visitor --> Main
 Developer --> Main
-Main ..> Search : <<include>>
-Main ..> Sort : <<include>>
+Search ..> Main : <<extend>>
+Sort ..> Main : <<extend>>
 Detail ..> Main : <<extend>>
 @enduml

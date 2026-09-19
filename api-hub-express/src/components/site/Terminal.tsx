@@ -15,7 +15,7 @@ export function TerminalWindow({
   return (
     <div
       className={cn(
-        "terminal-border linux-window rounded-md bg-card/80 backdrop-blur-sm overflow-hidden",
+        "terminal-border linux-window min-w-0 max-w-full rounded-md bg-card/80 backdrop-blur-sm overflow-hidden",
         glow && "shadow-glow",
         className,
       )}
@@ -24,7 +24,7 @@ export function TerminalWindow({
         <span className="h-2.5 w-2.5 rounded-full bg-destructive/80" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber/80" />
         <span className="h-2.5 w-2.5 rounded-full bg-primary/80" />
-        <span className="ml-3 text-xs text-muted-foreground">{title}</span>
+        <span className="ml-3 min-w-0 truncate text-xs text-muted-foreground">{title}</span>
       </div>
       <div className="terminal-window-body overflow-x-auto p-4 sm:p-6">{children}</div>
     </div>
