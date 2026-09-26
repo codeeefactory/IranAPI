@@ -13,11 +13,11 @@
   - Page 2 rules: captions checked. Table captions are above tables; figure captions are below figures; caption font is 12pt.
   - Page 2 rules: references checked. Bibliography is numeric and now ordered by first citation.
   - Page 4 rules: cover sample checked. Report title page follows the sample order and no longer shows the student ID line, because the attached PDF cover sample does not include it.
-- Metadata sync: title, student name, supervisor, and date are set in `main.tex`; student ID is intentionally not shown because the attached PDF cover sample does not include it. Latest metadata values are `سایت اشتراک گذاری API با پایتون`, `سجاد رضاقلی زاده`, and `دکتر زهره کریمی`.
+- Metadata sync: title, student name, supervisor, and date are set in `main.tex`; student ID is intentionally not shown because the attached PDF cover sample does not include it. Latest metadata values are `سایت اشتراک‌گذاری رابط برنامه‌نویسی کاربردی با پایتون`, `سجاد رضاقلی زاده`, and `دکتر زهره کریمی`.
 - Intended report build command: `xelatex -interaction=nonstopmode -file-line-error main.tex` repeated three times from `report/`.
 - Backend test command: `python manage.py test api`.
-- Backend test status (latest workspace): 109 tests discovered; focused health/domain tests pass 5/5. Full execution is locally blocked because MongoDB at `localhost:27017` is not running; the prior 107-test inventory passed against isolated `test_iranapi`.
-- Browser test status (latest workspace): 48 Playwright executions are defined across desktop and mobile; the production-safe gate passes 46/46 runnable executions and skips the two credential-bound superuser variants.
+- Backend test status (latest workspace): the full 109/109 suite passed against isolated MongoDB; the test database was destroyed afterward.
+- Browser test status (latest workspace): all 48/48 Playwright executions passed locally across desktop and mobile, including superuser CRUD. The prior production-safe gate passed 46/46 and skipped two credential-bound superuser variants.
 - Compilation status: successful with the user-installed MiKTeX `xelatex.exe`; `main.pdf` was produced after repeated XeLaTeX runs.
 - Modernization pass on 2026-07-19:
   - Removed all visible missing-information placeholder text from report body.
@@ -84,5 +84,23 @@
   - Final post-deployment gate passed: focused Django health/domain tests 5/5 (109 tests discovered; last full Mongo-backed run 107/107), Playwright 46/46 runnable plus two credential-bound skips, CLI 26/26, i18n 237 keys across five languages, TypeScript, ESLint, and production frontend build.
   - Rebuilt the report three times with XeLaTeX. The final 61-page PDF has no unresolved references/citations, missing characters, overfull boxes, or LaTeX errors. All pages were rendered with Poppler; the full contact sheet and focused deployment, testing, conclusion, runbook, UC-14, and UC-15 pages were visually checked with no clipping or overlap.
   - Re-rendered report pages 19--36 with Poppler and visually audited the complete UC-01 through UC-15 contact sheet, plus full-size checks of UC-01, UC-09, and UC-15: actors, system boundaries, include/extend links, captions, Persian text, and margins are intact with no clipping or overlap. All 18 summary/use-case pages rendered successfully.
+
+- Final runtime-domain verification on 2026-09-21:
+  - Removed the duplicate undefined `Help` route that caused a blank React application at runtime; rebuilt and passed all 48/48 local Playwright executions on desktop and mobile, including superuser Unicode CRUD.
+  - Changed landing-page and API-detail `curl` examples to derive their origin from `window.location.origin`; regression tests now reject `localhost:8000` and require the current runtime origin.
+  - Re-ran the complete Django suite against isolated MongoDB: 109/109 tests passed and the test database was destroyed afterward. CLI suite passed 26/26.
+  - Deployed Runflare image `v21`; portal reported active status and 1/1 pod. Generated a fresh one-hour hostname and verified root, health, runtime CLI manifest, `robots.txt`, `sitemap.xml`, `llms.txt`, and both CLI archives without hardcoding that hostname in the repository.
+  - Installed the CLI directly from the fresh hostname; `connect` saved the runtime API URL, `doctor` reported API `ok` and database `up`, and catalog listing returned live APIs.
+  - Re-ran the production-safe Playwright gate after deployment: 46/46 runnable executions passed across desktop and mobile; two superuser variants were intentionally skipped because production admin credentials were not supplied.
+  - Ran two confirming Lighthouse audits on the fresh v21 hostname: performance 96, accessibility 100, best practices 100, SEO 100; FCP about 1.8 s, LCP about 2.37 s, TBT 71--116 ms, and CLS 0. The earlier v20 confirmation remains 98/100/100/100.
+  - Reflowed the final runbook route table so it remains on one page; the report now builds as 60 pages without table spill.
+
+- Final Persian layout and terminology pass on 2026-09-22:
+  - Changed section and subsection labels to Persian RTL number order and visually verified examples such as `۳-۱` and `۳-۳-۲`.
+  - Prevented manual table captions from being orphaned; the chapter 3 figure caption stays below its figure and the table caption stays above its table on the following page.
+  - Forced the bibliography into a left-to-right environment and visually verified reference order, numbering, names, and URLs.
+  - Replaced common foreign prose terms with Persian equivalents, added first-use English footnotes, and expanded the bilingual glossary.
+  - Re-audited all 15 use-case diagrams against their detailed flows, actors, system boundaries, and include/extend semantics; removed the otherwise blank use-case introduction page.
+  - Rebuilt three times with XeLaTeX. Final output is 61 pages with no unresolved references, citations, font errors, or horizontal overfull boxes; target pages and all use-case pages were rendered for visual review.
 
 Unresolved warnings: MiKTeX reports that updates have not been checked. Some underfull boxes remain from narrow Persian table columns; they do not stop compilation. The final LaTeX log has no unresolved citations, missing references, font warnings, or overfull boxes.

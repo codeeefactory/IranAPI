@@ -74,8 +74,6 @@ function AppRoutes() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Help />} />
-
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

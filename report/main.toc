@@ -6,57 +6,57 @@
 \contentsline {section}{\numberline {2-1}بیان مسئله}{1}{section.1.2}%
 \contentsline {section}{\numberline {3-1}اهداف}{2}{section.1.3}%
 \contentsline {section}{\numberline {4-1}دامنه و محدودیت‌ها}{2}{section.1.4}%
-\contentsline {section}{\numberline {5-1}ذی‌نفعان}{2}{section.1.5}%
+\contentsline {section}{\numberline {5-1}ذی‌نفعان}{3}{section.1.5}%
 \contentsline {section}{\numberline {6-1}سازمان‌دهی گزارش}{3}{section.1.6}%
 \contentsline {section}{\numberline {7-1}جمع‌بندی فصل}{3}{section.1.7}%
 \contentsline {chapter}{\numberline {2}فناوری‌ها و پیشینه}{4}{chapter.2}%
 \contentsline {section}{\numberline {1-2}\lr {Python}، \lr {Django} و \lr {Django REST Framework}}{4}{section.2.1}%
 \contentsline {section}{\numberline {2-2}\lr {MongoDB} و مدل داده}{4}{section.2.2}%
 \contentsline {section}{\numberline {3-2}\lr {React}، \lr {TypeScript} و \lr {Vite}}{5}{section.2.3}%
-\contentsline {section}{\numberline {4-2}\lr {Node.js} و ابزارهای فرانت‌اند}{5}{section.2.4}%
+\contentsline {section}{\numberline {4-2}\lr {Node.js} و ابزارهای سمت کاربر}{5}{section.2.4}%
 \contentsline {section}{\numberline {5-2}\lr {Docker Compose} و اجرای محلی}{5}{section.2.5}%
-\contentsline {section}{\numberline {6-2}\lr {OpenAPI} و \lr {RapidAPI}}{5}{section.2.6}%
+\contentsline {section}{\numberline {6-2}\lr {OpenAPI} و \lr {RapidAPI}}{6}{section.2.6}%
 \contentsline {section}{\numberline {7-2}جمع‌بندی فصل}{6}{section.2.7}%
 \contentsline {chapter}{\numberline {3}تحلیل نیازمندی‌ها}{7}{chapter.3}%
 \contentsline {section}{\numberline {1-3}نقش‌های کاربری}{7}{section.3.1}%
 \contentsline {section}{\numberline {2-3}نیازمندی‌های عملکردی و غیرفعال}{7}{section.3.2}%
 \contentsline {section}{\numberline {3-3}موارد کاربرد سامانه}{9}{section.3.3}%
-\contentsline {subsection}{\numberline {1-3-3}نمودارهای موارد کاربرد}{11}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {2-3-3}مورد کاربرد \lr {UC-01}: کشف و جستجوی \lr {API}}{12}{subsection.3.3.2}%
-\contentsline {subsection}{\numberline {3-3-3}مورد کاربرد \lr {UC-02}: بررسی جزئیات و مستندات}{13}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {4-3-3}مورد کاربرد \lr {UC-03}: ثبت‌نام، ورود و خروج}{14}{subsection.3.3.4}%
-\contentsline {subsection}{\numberline {5-3-3}مورد کاربرد \lr {UC-04}: مدیریت حساب، کلید و سازمان}{15}{subsection.3.3.5}%
-\contentsline {subsection}{\numberline {6-3-3}مورد کاربرد \lr {UC-05}: انتخاب و فعال‌سازی اشتراک}{16}{subsection.3.3.6}%
-\contentsline {subsection}{\numberline {7-3-3}مورد کاربرد \lr {UC-06}: انتشار \lr {API}}{17}{subsection.3.3.7}%
-\contentsline {subsection}{\numberline {8-3-3}مورد کاربرد \lr {UC-07}: ثبت یا اصلاح امتیاز}{18}{subsection.3.3.8}%
-\contentsline {subsection}{\numberline {9-3-3}مورد کاربرد \lr {UC-08}: اجرای درخواست در \lr {Caller}}{19}{subsection.3.3.9}%
-\contentsline {subsection}{\numberline {10-3-3}مورد کاربرد \lr {UC-09}: تعریف و ذخیره جریان در \lr {Studio}}{20}{subsection.3.3.10}%
-\contentsline {subsection}{\numberline {11-3-3}مورد کاربرد \lr {UC-10}: ایجاد پروژه آغازین}{21}{subsection.3.3.11}%
-\contentsline {subsection}{\numberline {12-3-3}مورد کاربرد \lr {UC-11}: مشاهده داشبورد، دسترسی و مصرف}{22}{subsection.3.3.12}%
-\contentsline {subsection}{\numberline {13-3-3}مورد کاربرد \lr {UC-12}: مدیریت داده‌های زنده سامانه}{23}{subsection.3.3.13}%
-\contentsline {subsection}{\numberline {14-3-3}مورد کاربرد \lr {UC-13}: تحلیل آرشیو پروژه}{24}{subsection.3.3.14}%
-\contentsline {subsection}{\numberline {15-3-3}مورد کاربرد \lr {UC-14}: استقرار پروژه فشرده}{25}{subsection.3.3.15}%
-\contentsline {subsection}{\numberline {16-3-3}مورد کاربرد \lr {UC-15}: کار با کاتالوگ و پروژه از خط فرمان}{26}{subsection.3.3.16}%
-\contentsline {subsection}{\numberline {17-3-3}روابط و قابلیت ردیابی موارد کاربرد}{27}{subsection.3.3.17}%
-\contentsline {section}{\numberline {4-3}ورودی‌ها، خروجی‌ها و اعتبارسنجی}{28}{section.3.4}%
-\contentsline {section}{\numberline {5-3}امنیت}{28}{section.3.5}%
-\contentsline {section}{\numberline {6-3}جمع‌بندی فصل}{29}{section.3.6}%
-\contentsline {chapter}{\numberline {4}معماری و طراحی}{30}{chapter.4}%
-\contentsline {section}{\numberline {1-4}نمای کلی}{30}{section.4.1}%
-\contentsline {section}{\numberline {2-4}نمودار معماری}{30}{section.4.2}%
-\contentsline {section}{\numberline {3-4}مدل داده}{31}{section.4.3}%
-\contentsline {section}{\numberline {4-4}مرزهای خارجی}{32}{section.4.4}%
-\contentsline {section}{\numberline {5-4}جمع‌بندی فصل}{32}{section.4.5}%
+\contentsline {subsection}{\numberline {1-3-3}نمودارهای موارد کاربرد}{10}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {2-3-3}مورد کاربرد \lr {UC-01}: کشف و جستجوی رابط}{11}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3-3-3}مورد کاربرد \lr {UC-02}: بررسی جزئیات و مستندات}{12}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {4-3-3}مورد کاربرد \lr {UC-03}: ثبت‌نام، ورود و خروج}{13}{subsection.3.3.4}%
+\contentsline {subsection}{\numberline {5-3-3}مورد کاربرد \lr {UC-04}: مدیریت حساب، کلید و سازمان}{14}{subsection.3.3.5}%
+\contentsline {subsection}{\numberline {6-3-3}مورد کاربرد \lr {UC-05}: انتخاب و فعال‌سازی اشتراک}{15}{subsection.3.3.6}%
+\contentsline {subsection}{\numberline {7-3-3}مورد کاربرد \lr {UC-06}: انتشار رابط}{16}{subsection.3.3.7}%
+\contentsline {subsection}{\numberline {8-3-3}مورد کاربرد \lr {UC-07}: ثبت یا اصلاح امتیاز}{17}{subsection.3.3.8}%
+\contentsline {subsection}{\numberline {9-3-3}مورد کاربرد \lr {UC-08}: اجرای درخواست در ابزار فراخوان}{18}{subsection.3.3.9}%
+\contentsline {subsection}{\numberline {10-3-3}مورد کاربرد \lr {UC-09}: تعریف و ذخیره جریان در محیط طراحی}{19}{subsection.3.3.10}%
+\contentsline {subsection}{\numberline {11-3-3}مورد کاربرد \lr {UC-10}: ایجاد پروژه آغازین}{20}{subsection.3.3.11}%
+\contentsline {subsection}{\numberline {12-3-3}مورد کاربرد \lr {UC-11}: مشاهده پیشخوان، دسترسی و مصرف}{21}{subsection.3.3.12}%
+\contentsline {subsection}{\numberline {13-3-3}مورد کاربرد \lr {UC-12}: مدیریت داده‌های زنده سامانه}{22}{subsection.3.3.13}%
+\contentsline {subsection}{\numberline {14-3-3}مورد کاربرد \lr {UC-13}: تحلیل آرشیو پروژه}{23}{subsection.3.3.14}%
+\contentsline {subsection}{\numberline {15-3-3}مورد کاربرد \lr {UC-14}: استقرار پروژه فشرده}{24}{subsection.3.3.15}%
+\contentsline {subsection}{\numberline {16-3-3}مورد کاربرد \lr {UC-15}: کار با فهرست و پروژه از خط فرمان}{25}{subsection.3.3.16}%
+\contentsline {subsection}{\numberline {17-3-3}روابط و قابلیت ردیابی موارد کاربرد}{26}{subsection.3.3.17}%
+\contentsline {section}{\numberline {4-3}ورودی‌ها، خروجی‌ها و اعتبارسنجی}{27}{section.3.4}%
+\contentsline {section}{\numberline {5-3}امنیت}{27}{section.3.5}%
+\contentsline {section}{\numberline {6-3}جمع‌بندی فصل}{28}{section.3.6}%
+\contentsline {chapter}{\numberline {4}معماری و طراحی}{29}{chapter.4}%
+\contentsline {section}{\numberline {1-4}نمای کلی}{29}{section.4.1}%
+\contentsline {section}{\numberline {2-4}نمودار معماری}{29}{section.4.2}%
+\contentsline {section}{\numberline {3-4}مدل داده}{30}{section.4.3}%
+\contentsline {section}{\numberline {4-4}مرزهای خارجی}{31}{section.4.4}%
+\contentsline {section}{\numberline {5-4}جمع‌بندی فصل}{31}{section.4.5}%
 \contentsline {chapter}{\numberline {5}پیاده‌سازی}{33}{chapter.5}%
-\contentsline {section}{\numberline {1-5}مسیرهای بک‌اند}{33}{section.5.1}%
-\contentsline {section}{\numberline {2-5}لایه \lr {Repository}}{33}{section.5.2}%
-\contentsline {section}{\numberline {3-5}\lr {Serializer} و قرارداد پاسخ}{34}{section.5.3}%
-\contentsline {section}{\numberline {4-5}فرانت‌اند}{34}{section.5.4}%
+\contentsline {section}{\numberline {1-5}مسیرهای سمت سرور}{33}{section.5.1}%
+\contentsline {section}{\numberline {2-5}لایه مخزن}{33}{section.5.2}%
+\contentsline {section}{\numberline {3-5}تبدیل‌گر داده و قرارداد پاسخ}{34}{section.5.3}%
+\contentsline {section}{\numberline {4-5}سمت کاربر}{34}{section.5.4}%
 \contentsline {section}{\numberline {5-5}جریان‌های اصلی پیاده‌سازی}{34}{section.5.5}%
 \contentsline {section}{\numberline {6-5}بخش‌های فنی}{35}{section.5.6}%
 \contentsline {section}{\numberline {7-5}کلاینت خط فرمان و دامنه پویا}{36}{section.5.7}%
 \contentsline {section}{\numberline {8-5}تحویل تولیدی، کشف‌پذیری و کارایی}{36}{section.5.8}%
-\contentsline {section}{\numberline {9-5}نمونه کد}{36}{section.5.9}%
+\contentsline {section}{\numberline {9-5}نمونه کد}{37}{section.5.9}%
 \contentsline {section}{\numberline {10-5}جمع‌بندی فصل}{37}{section.5.10}%
 \contentsline {chapter}{\numberline {6}آزمون و ارزیابی}{38}{chapter.6}%
 \contentsline {section}{\numberline {1-6}راهبرد آزمون}{38}{section.6.1}%
@@ -66,7 +66,7 @@
 \contentsline {section}{\numberline {5-6}جمع‌بندی فصل}{41}{section.6.5}%
 \contentsline {chapter}{\numberline {7}نتایج و بحث}{42}{chapter.7}%
 \contentsline {section}{\numberline {1-7}ویژگی‌های پیاده‌سازی‌شده}{42}{section.7.1}%
-\contentsline {section}{\numberline {2-7}نمونه خروجی \lr {API}}{42}{section.7.2}%
+\contentsline {section}{\numberline {2-7}نمونه خروجی رابط}{42}{section.7.2}%
 \contentsline {section}{\numberline {3-7}استقرار و کیفیت نسخه زنده}{43}{section.7.3}%
 \contentsline {section}{\numberline {4-7}نقاط قوت}{43}{section.7.4}%
 \contentsline {section}{\numberline {5-7}چالش‌ها و بدهی فنی}{43}{section.7.5}%
@@ -78,9 +78,9 @@
 \contentsline {section}{\numberline {3-8}محدودیت‌های فعلی}{46}{section.8.3}%
 \contentsline {section}{\numberline {4-8}کارهای آینده}{46}{section.8.4}%
 \contentsline {section}{\numberline {5-8}جمع‌بندی فصل}{46}{section.8.5}%
-\contentsline {chapter}{منابع}{47}{section*.43}%
-\contentsline {chapter}{\numberline {الف}راهنمای اجرا و شواهد تکمیلی}{49}{appendix.Alph1}%
-\contentsline {section}{\numberline {1-الف}اجرای محلی}{49}{section.Alph1.1}%
-\contentsline {section}{\numberline {2-الف}اجرای آزمون بک‌اند}{49}{section.Alph1.2}%
-\contentsline {section}{\numberline {3-الف}کنترل کامل و استقرار زنده}{50}{section.Alph1.3}%
-\contentsline {section}{\numberline {4-الف}مسیرهای مهم}{50}{section.Alph1.4}%
+\contentsline {chapter}{منابع}{48}{section*.43}%
+\contentsline {chapter}{\numberline {الف}راهنمای اجرا و شواهد تکمیلی}{50}{appendix.Alph1}%
+\contentsline {section}{\numberline {1-الف}اجرای محلی}{50}{section.Alph1.1}%
+\contentsline {section}{\numberline {2-الف}اجرای آزمون سمت سرور}{50}{section.Alph1.2}%
+\contentsline {section}{\numberline {3-الف}کنترل کامل و استقرار زنده}{51}{section.Alph1.3}%
+\contentsline {section}{\numberline {4-الف}مسیرهای مهم}{51}{section.Alph1.4}%

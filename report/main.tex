@@ -23,6 +23,7 @@
 \usepackage{titlesec}
 \usepackage{caption}
 \usepackage{enumitem}
+\usepackage{needspace}
 \usepackage{listings}
 \usepackage{tikz}
 \usepackage{etoolbox}
@@ -33,7 +34,7 @@
 \newcommand{\UniversityName}{دانشگاه دامغان}
 \newcommand{\FacultyName}{دانشکده فنی و مهندسی}
 \newcommand{\DegreeName}{پایان‌نامه دوره کارشناسی مهندسی کامپیوتر}
-\newcommand{\ThesisTitle}{سایت اشتراک گذاری \lr{API} با پایتون}
+\newcommand{\ThesisTitle}{سایت اشتراک‌گذاری رابط برنامه‌نویسی کاربردی با پایتون}
 \newcommand{\StudentName}{سجاد رضاقلی زاده}
 \newcommand{\SupervisorName}{دکتر زهره کریمی}
 \newcommand{\ThesisDate}{تیر ۱۴۰۵}
@@ -153,19 +154,19 @@
 
 \titleformat{\section}
   {\titlefont\bfseries\fontsize{14}{18}\selectfont\color{damghanNavy}}
-  {\color{damghanTeal}\lr{\thesection}}
+  {\color{damghanTeal}\thesection}
   {0.75em}
   {}
 
 \titleformat{\subsection}
   {\titlefont\bfseries\fontsize{14}{18}\selectfont\color{damghanNavy}}
-  {\color{damghanTeal}\lr{\thesubsection}}
+  {\color{damghanTeal}\thesubsection}
   {0.75em}
   {}
 
 \titleformat{\subsubsection}
   {\titlefont\bfseries\fontsize{14}{18}\selectfont\color{damghanNavy}}
-  {\color{damghanTeal}\lr{\thesubsubsection}}
+  {\color{damghanTeal}\thesubsubsection}
   {0.75em}
   {}
 
@@ -191,6 +192,7 @@
 \AtBeginEnvironment{table}{\fontsize{12}{15}\selectfont}
 
 \newcommand{\ManualTableCaption}[2]{%
+  \Needspace{8\baselineskip}%
   \refstepcounter{table}\label{#2}%
   \addcontentsline{lot}{table}{\protect\numberline{\thetable}#1}%
   \par\vspace{0.25\baselineskip}%
@@ -344,12 +346,12 @@
 }
 
 \FrontPage{چکیده}{
-این گزارش درباره یک پلتفرم فارسی برای اشتراک‌گذاری، جستجو و مصرف \lr{API} است؛ سامانه‌ای که تلاش می‌کند تجربه کشف سرویس، خواندن مستندات، مدیریت حساب و انتشار \lr{API} را در یک مسیر پیوسته کنار هم قرار دهد. در این پروژه، بک‌اند با \lr{Django REST Framework} و رابط کاربری با \lr{React} ساخته شده و فضای کلی آن به \lr{API Marketplace} نزدیک است. کاربر می‌تواند کاتالوگ را ببیند، مستندات را بررسی کند، وارد حساب خود شود، مصرف و اشتراک را دنبال کند، \lr{API} منتشر کند و از ابزارهایی مانند \lr{Caller} و \lr{Studio} کمک بگیرد.
+این گزارش درباره یک سکوی فارسی\footnote{\lr{Platform}} برای اشتراک‌گذاری، جست‌وجو و مصرف رابط برنامه‌نویسی کاربردی\footnote{\lr{Application Programming Interface (API)}} است؛ سامانه‌ای که تلاش می‌کند تجربه کشف سرویس، خواندن مستندات، مدیریت حساب و انتشار رابط را در یک مسیر پیوسته کنار هم قرار دهد. در این پروژه، سمت سرور\footnote{\lr{Backend}} با \lr{Django REST Framework} و سمت کاربر\footnote{\lr{Frontend}} با \lr{React} ساخته شده و فضای کلی آن به بازارچه رابط‌های برنامه‌نویسی\footnote{\lr{API Marketplace}} نزدیک است. کاربر می‌تواند فهرست را ببیند، مستندات را بررسی کند، وارد حساب خود شود، مصرف و اشتراک را دنبال کند، رابط منتشر کند و از ابزار فراخوان\footnote{\lr{Caller}} و محیط طراحی جریان\footnote{\lr{Studio}} کمک بگیرد.
 
-گزارش از دو زاویه به پروژه نگاه می‌کند: تجربه کاربر و ساختار فنی. ابتدا روشن می‌شود کاربر با سامانه چه کاری انجام می‌دهد و سپس توضیح داده می‌شود این رفتارها چگونه میان رابط کاربری، بک‌اند و لایه داده تقسیم شده‌اند. منابع فنی از داکیومنت‌های رسمی مانند \lr{Python}، \lr{Django}، \lr{Django REST Framework}، \lr{React}، \lr{Node.js}، \lr{Docker}، \lr{MongoDB}، \lr{OpenAPI} و \lr{RapidAPI} انتخاب شده‌اند. برای ارزیابی بک‌اند نیز دستور \lr{python manage.py test api} اجرا شد و نتیجه آن در فصل آزمون آمده است.
+گزارش از دو زاویه به پروژه نگاه می‌کند: تجربه کاربر و ساختار فنی. ابتدا روشن می‌شود کاربر با سامانه چه کاری انجام می‌دهد و سپس توضیح داده می‌شود این رفتارها چگونه میان رابط کاربری، سمت سرور و لایه داده تقسیم شده‌اند. منابع فنی از مستندات رسمی \lr{Python}، \lr{Django}، \lr{Django REST Framework}، \lr{React}، \lr{Node.js}، \lr{Docker}، \lr{MongoDB}، \lr{OpenAPI} و \lr{RapidAPI} انتخاب شده‌اند. برای ارزیابی سمت سرور نیز دستور \lr{python manage.py test api} اجرا شد و نتیجه آن در فصل آزمون آمده است.
 
 \vspace{1cm}
-\noindent\textbf{کلیدواژه‌ها:} پلتفرم اشتراک‌گذاری \lr{API}، \lr{Django REST Framework}، \lr{React}، احراز هویت، \lr{OpenAPI}
+\noindent\textbf{کلیدواژه‌ها:} سکوی اشتراک‌گذاری رابط برنامه‌نویسی، \lr{Django REST Framework}، \lr{React}، احراز هویت، \lr{OpenAPI}
 }
 
 \StartAbjadPages
@@ -397,6 +399,7 @@
 \clearpage
 \phantomsection
 \addcontentsline{toc}{chapter}{منابع}
+\begin{latin}
 \begin{thebibliography}{99}
 
 \bibitem{python}
@@ -436,6 +439,7 @@
 \lr{Microsoft}. \lr{Playwright Documentation}. \url{https://playwright.dev/docs/intro}.
 
 \end{thebibliography}
+\end{latin}
 
 \StartBackMatter
 
@@ -446,10 +450,19 @@
 \rowcolor{tablehead}\textbf{واژه فارسی} & \textbf{برابر انگلیسی} \\
 \midrule
 \ModernTableStart
-پلتفرم اشتراک‌گذاری \lr{API} & \lr{API Marketplace} \\
-احراز هویت نشست & \lr{Session Authentication} \\
-\lr{Legacy Token} & \lr{Legacy Token} \\
-\lr{Studio Flow} & \lr{Studio Flow} \\
+رابط برنامه‌نویسی کاربردی & \lr{Application Programming Interface (API)} \\
+سکوی اشتراک‌گذاری رابط & \lr{API Marketplace} \\
+سمت سرور & \lr{Backend} \\
+سمت کاربر & \lr{Frontend} \\
+پیشخوان & \lr{Dashboard} \\
+نقطه پایانی & \lr{Endpoint} \\
+کارخواه & \lr{Client} \\
+تبدیل‌گر داده & \lr{Serializer} \\
+احراز هویت نشست‌محور & \lr{Session Authentication} \\
+نشانه سازگار قدیمی & \lr{Legacy Token} \\
+جریان طراحی & \lr{Studio Flow} \\
+اطلاعات اعتبارسنجی & \lr{Credential} \\
+محفظه & \lr{Container} \\
 مجوز دسترسی & \lr{Access Grant} \\
 \ModernTableStop
 \bottomrule

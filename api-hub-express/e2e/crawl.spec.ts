@@ -76,6 +76,8 @@ test("public crawler validates navigation, metadata, and core CTAs", async ({ pa
   await gotoApp(page, "/");
   await expect(page).toHaveTitle(/IranAPI/);
   await expectCurrentAppShell(page);
+  await expect(page.locator("main#main")).toContainText(`curl ${new URL(page.url()).origin}/api/v1/catalog/apis/`);
+  await expect(page.locator("main#main")).not.toContainText("http://localhost:8000");
 
   const description = await page.locator('meta[name="description"]').getAttribute("content");
   expect(description).toBeTruthy();
@@ -99,6 +101,7 @@ test("public crawler validates navigation, metadata, and core CTAs", async ({ pa
   await expect(page.locator("pre").first()).toBeVisible();
   await expect(page.getByText("// endpoints")).toBeVisible();
   await expect(page.getByText("// response")).toBeVisible();
+  await expect(page.locator("main#main")).not.toContainText("http://localhost:8000");
 
   await gotoApp(page, "/pricing");
   await expect(page).toHaveTitle(/IranAPI/);

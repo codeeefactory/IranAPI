@@ -80,7 +80,7 @@ export default function ApiDetailsPage() {
   const activeRating = selectedRating ?? Math.round(api.ratingValue);
   const quickstartPayload = firstEndpoint ? buildCallerPayload(api.slug, firstEndpoint) : null;
   const quickstartCurl = quickstartPayload
-    ? `curl -X POST http://localhost:8000/api/v1/account/caller/ \\\n  -H "Authorization: Bearer \${IRANAPI_KEY}" \\\n  -H "Content-Type: application/json" \\\n  --data '${JSON.stringify(quickstartPayload)}'`
+    ? `curl -X POST ${window.location.origin}/api/v1/account/caller/ \\\n  -H "Authorization: Bearer \${IRANAPI_KEY}" \\\n  -H "Content-Type: application/json" \\\n  --data '${JSON.stringify(quickstartPayload)}'`
     : "No active endpoint is registered for this API yet.";
 
   return (

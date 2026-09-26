@@ -9,6 +9,7 @@ import { ArrowRight, Boxes, GitBranch, Lock, Radio, Sparkles, Star, Zap } from "
 export default function IndexPage() {
   const { t } = useI18n();
   const { apis, categories, stats, isLoading, isError, isFallback, refetch } = useCatalogHome();
+  const origin = window.location.origin;
   if (isError && !isFallback) {
     return <PageShell><div className="state-block" data-tone="error" role="alert"><div className="state-title">// catalog unavailable</div><button type="button" className="btn-primary mt-3" onClick={() => void refetch()}>./retry</button></div></PageShell>;
   }
@@ -66,9 +67,9 @@ const busy = (isLoading || isFallback) as boolean;
 
           <TerminalWindow title="~/iranapi/quickstart.sh" glow>
             <div data-terminal className="min-w-max space-y-2 text-sm">
-              <Prompt>curl http://localhost:8000/api/v1/catalog/apis/</Prompt>
+              <Prompt>{`curl ${origin}/api/v1/catalog/apis/`}</Prompt>
               <div className="pt-3 text-xs text-muted-foreground">{"// live catalog JSON from MongoDB"}</div>
-              <Prompt>curl http://localhost:8000/api/v1/schema/openapi.json</Prompt>
+              <Prompt>{`curl ${origin}/api/v1/schema/openapi.json`}</Prompt>
               <div className="pt-3 text-xs text-primary">{"// machine-readable OpenAPI contract"}</div>
               <Prompt><Cursor /></Prompt>
             </div>
